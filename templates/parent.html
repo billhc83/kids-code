@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Parent Dashboard — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <h1>👪 Parent Dashboard</h1>
+        <p class="dash-sub">Manage your children's KidsCode accounts.</p>
+    </div>
+
+    {% if error %}
+    <div class="flash-msg error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="flash-msg success">{{ success }}</div>
+    {% endif %}
+
+    <!-- Student accounts -->
+    <div class="dash-card">
+        <div class="dash-card-label">
+            👨‍💻 Student Accounts ({{ student_count }} / {{ max_students }})
+        </div>
+
+        {% if students %}
+        <div class="student-grid">
+            {% for student in students %}
+            <div class="student-card">
+                <div class="student-header">
+                    <div class="student-avatar">{{ student.username[0].upper() }}</div>
+                    <div>
+                        <div class="student-name">{{ student.username }}</div>
+                        <div class="student-email">{{ student.email }}</div>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="student-progress">
+                    <div class="progress-label">
+                        Progress: {{ student.completed_count }} / {{ student.total }} projects
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" 
+                             style="width: {{ student.progress_pct }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset password -->
+                <details class="reset-wrap">
+                    <summary>🔑 Reset Password</summary>
+                    <form method="POST" class="reset-form">
+                        <input type="hidden" name="action" value="reset_password">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="password" name="new_password" 
+                               placeholder="New password" required>
+                        <button type="submit" class="reset-btn">Reset</button>
+                    </form>
+                </details>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">
+            No student accounts yet. Create one below.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Create student -->
+    {% if student_count < max_students %}
+    <div class="dash-card">
+        <div class="dash-card-label">➕ Create Student Account</div>
+        <form method="POST" class="create-student-form">
+            <input type="hidden" name="action" value="create">
+            <div class="create-fields">
+                <input type="text" name="username" 
+                    placeholder="Username" required>
+                <input type="password" name="password" 
+                    placeholder="Password" required>
+                <button type="submit" class="next-btn">
+                    Create Account
+                </button>
+            </div>
+        </form>
+        <p style="font-size:12px;color:#57606a;margin-top:12px;">
+            You can create {{ max_students - student_count }} more 
+            student account{{ 's' if max_students - student_count != 1 else '' }}.
+        </p>
+    </div>
+    {% else %}
+    <div class="dash-card">
+        <div class="dash-card-label">➕ Create Student Account</div>
+        <p style="color:#57606a;font-size:14px;">
+            You have reached the maximum of {{ max_students }} student accounts.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <!-- Welcome -->
+    <div class="dash-header">
+        <h1>👋 Welcome back, {{ session.username }}!</h1>
+        <p class="dash-sub">Keep building, keep learning.</p>
+    </div>
+
+    <!-- Current lesson card -->
+    {% if current_lesson %}
+    <div class="dash-card current-card">
+        <div class="dash-card-label">📍 Continue where you left off</div>
+        <h2>{{ current_lesson.title }}</h2>
+        <a href="{{ url_for('lesson', lesson_key=current_lesson.key) }}" 
+           class="next-btn">Continue →</a>
+    </div>
+    {% else %}
+    <div class="dash-card current-card">
+        <div class="dash-card-label">🏆 All caught up!</div>
+        <h2>You've completed everything available so far.</h2>
+    </div>
+    {% endif %}
+
+    <!-- Progress bar -->
+    <div class="dash-card">
+        <div class="dash-card-label">📊 Your Progress</div> 
+        <div class="progress-row">
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" 
+                     style="width: {{ ((completed|length / total_lessons) * 100)|int }}%">
+                </div>
+            </div>
+            <span class="progress-count">
+                {{ completed|length }} / {{ total_lessons }} projects
+            </span>
+        </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="dash-card">
+        <div class="dash-card-label">🏅 Badges</div>
+        <div class="badge-grid">
+            {% for badge in badges %}
+            <div class="badge-item {% if not badge.earned %}badge-locked{% endif %}">
+                <div class="badge-icon">{{ badge.icon }}</div>
+                <div class="badge-title">{{ badge.title }}</div>
+                <div class="badge-desc">{{ badge.description }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Completed projects -->
+    {% if completed %}
+    <div class="dash-card">
+        <div class="dash-card-label">✅ Completed Projects</div>
+        <div class="completed-grid">
+            {% for key in completed %}
+                {% if key in lesson_by_key %}
+                <a href="{{ url_for('lesson', lesson_key=key) }}" 
+                class="completed-item">
+                    {{ lesson_by_key[key].title }}
+                </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

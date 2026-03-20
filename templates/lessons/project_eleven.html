@@ -1,0 +1,115 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 11: Engine System Start — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<!-- Banner -->
+<img src="{{ url_for('static', filename='graphics/jet_engine_start.png') }}"
+     alt="Project 11 Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<!-- Intro -->
+<div class="lesson-intro">
+    <h2>🛫 Welcome to the Flight Simulator</h2>
+    <p>Today is a big day.</p>
+    <p>You are sitting in the pilot seat of the simulator. 🧑‍✈️<br>
+    I'm still here with you — but your hands are on the controls.</p>
+    <p>Up until now, you've learned how switches work.<br>
+    You've learned how buttons work.<br>
+    You've turned lights on.<br>
+    You've made sounds happen.</p>
+    <p>Today… <strong>You decide when the engine starts. 🔥</strong></p>
+
+    <hr>
+
+    <h2>🎯 Your Mission</h2>
+    <p>This aircraft has:</p>
+    <ul>
+        <li>🔘 An <strong>Arm Switch</strong></li>
+        <li>🔴 An <strong>Engage Button</strong></li>
+        <li>💡 An <strong>Engine Light</strong></li>
+        <li>🔊 An <strong>Engine Sound</strong></li>
+    </ul>
+    <p>The aircraft follows very clear rules:</p>
+    <ul>
+        <li>If the Arm Switch is OFF → everything is OFF.</li>
+        <li>If the Arm Switch is ON → the aircraft is ready.</li>
+        <li>If the system is ready and you press the Engage Button → the engine starts.</li>
+        <li>The engine keeps running until you turn the Arm Switch OFF.</li>
+    </ul>
+    <p>Your job is to build the code that makes this happen.</p>
+</div>
+
+<hr>
+
+<!-- Tabs: Quick Overview / Step by Step -->
+<div class="lesson-tabs">
+    <button class="lesson-tab-btn active" onclick="showTab('overview', this)">
+        📋 Quick Overview
+    </button>
+    <button class="lesson-tab-btn" onclick="showTab('stepbystep', this)">
+        🔧 Step-by-Step
+    </button>
+</div>
+
+<div class="lesson-tab-panel active" id="tab-overview">
+    {{ hover_zoom("static/graphics/project_twelve_circuit.png",
+                  height=500, key="circuit1")|safe }}
+</div>
+
+<div class="lesson-tab-panel" id="tab-stepbystep">
+    {{ assembly_guide_html|safe }}
+</div>
+
+<hr>
+
+<!-- Wiring Notes -->
+<div class="lesson-section">
+    <h2>🔎 How to Read the Wiring Diagram</h2>
+    <p>Now that you know your mission, let's look at the wiring diagram. 🕵️‍♂️<br>
+    Don't worry, it looks busy — we just need to notice a few things.</p>
+
+    <h3>1️⃣ Find the Parts</h3>
+    <p>Look at the diagram. Can you spot the Switch, Button, Engine Light, Buzzer, and Arduino?</p>
+
+    <h3>2️⃣ Follow the Wires</h3>
+    <p>Trace each wire with your eyes. Where does it start? Where does it end?</p>
+
+    <h3>3️⃣ Match Each Part to a Pin</h3>
+    <p>Which pin is the switch connected to? Which pin controls the light? 
+    This tells you what to control in your code.</p>
+
+    <h3>4️⃣ Ask: Who Controls Who?</h3>
+    <p>Everything talks to the Arduino. The Arduino decides what happens — 
+    that's where your logic lives.</p>
+
+    <h3>✅ Remember</h3>
+    <p>Don't rush. When you know where everything connects, 
+    you know exactly what your code must control. 🚀</p>
+</div>
+
+<hr>
+
+<!-- Next button -->
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Part →</button>
+    </form>
+    <p>⬅️ Click here to secure the next mission!</p>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.lesson-tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.querySelectorAll('.lesson-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}

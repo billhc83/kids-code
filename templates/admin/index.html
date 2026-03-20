@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Admin — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <h1>🛠️ Admin Dashboard</h1>
+        <p class="dash-sub">Manage feedback and users.</p>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="flash-msg">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Feedback threads -->
+    <div class="dash-card">
+        <div class="dash-card-label">
+            💬 Feedback Threads ({{ threads|length }})
+        </div>
+
+        {% if threads %}
+        <div class="thread-list">
+            {% for thread in threads %}
+            <div class="thread-card">
+                <div class="thread-header">
+                    <div>
+                        <span class="thread-category">{{ thread.category }}</span>
+                        <span class="thread-subject">{{ thread.subject }}</span>
+                        <span style="font-size:12px;color:#57606a;margin-left:8px;">
+                            from {{ thread.username }}
+                        </span>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span class="thread-status {{ thread.status }}">
+                            {{ thread.status }}
+                        </span>
+
+                        <!-- Resolve button -->
+                        {% if thread.status == 'open' %}
+                        <form method="POST" style="margin:0">
+                            <input type="hidden" name="action" value="resolve">
+                            <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                            <button type="submit" class="admin-btn resolve-btn">
+                                ✓ Resolve
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Delete button -->
+                        <form method="POST" style="margin:0"
+                              onsubmit="return confirm('Delete this thread?')">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                            <button type="submit" class="admin-btn delete-btn">
+                                🗑 Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="message-list">
+                    {% for msg in thread.messages %}
+                    <div class="message-bubble
+                         {% if msg.is_admin %}admin-bubble{% else %}user-bubble{% endif %}">
+                        <div class="bubble-header">
+                            <span class="bubble-sender">
+                                {% if msg.is_admin %}
+                                    🛠️ {{ msg.sender_username }} (admin)
+                                {% else %}
+                                    👤 {{ msg.sender_username }}
+                                {% endif %}
+                            </span>
+                            <span class="bubble-time">
+                                {{ msg.created_at[:10] }}
+                            </span>
+                        </div>
+                        <div class="bubble-text">{{ msg.message }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Reply form -->
+                <form method="POST" class="reply-form">
+                    <input type="hidden" name="action" value="reply">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <div class="reply-row">
+                        <textarea name="message"
+                                  placeholder="Write a reply..."
+                                  required rows="2"></textarea>
+                        <button type="submit" class="reply-btn">Reply</button>
+                    </div>
+                </form>
+
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">No feedback threads yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

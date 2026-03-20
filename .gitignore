@@ -1,0 +1,16 @@
+# Environment variables
+.env
+
+# Configuration file with secrets
+config.py
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# Flask instance folder
+instance/

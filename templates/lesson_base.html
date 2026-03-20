@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} — KidsCode{% endblock %}
+
+{% block content %}
+{% block lesson_content %}{% endblock %}
+
+{% if block_builder_html is defined and block_builder_html %}
+{{ block_builder_html|safe }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 6: The Deep Sea Explorer — KidsCode{% endblock %}
+
+{% set project_title = "🤿 Project 6 - The Deep Sea Explorer! 🐙" %}
+{% set circuit_image = "project_six_circuit.png" %}
+
+{% block intro %}
+<p>🚢 <strong>Submarine Light Sensor Mission</strong></p>
+<p>Welcome aboard the S.S. Arduino! 🚢⚓<br>
+Today, you are part of a brave submarine crew going deep into the ocean.</p>
+<p>We are diving into the Midnight Zone, a dark place far below the surface. 🌊🌑<br>
+Down here, sunlight cannot reach, and it gets darker and darker as we go.</p>
+<p>Our submarine has a special tool called a Submarine Sensor 👁️‍🗨️<br>
+This sensor can "see" how bright or dark it is around us.</p>
+<p>If it is bright, we know we are near the surface and safe.<br>
+If it is dark, we know we are deep in the ocean… maybe even near the spooky home of the Giant Squid! 🦑✨</p>
+<p>Your mission is to:<br>
+— Watch the light sensor<br>
+— Read the data on the screen<br>
+— Discover how deep the submarine has traveled</p>
+<p>Lights on, crew! Let's dive! 🌊⚓</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the Circuit</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — The Submarine's Brain!</li>
+    <li>〰️ <strong>Jumper Wires</strong> — The Submarine's Nerve Cables!</li>
+    <li>👁️‍🗨️ <strong>Photoresistor (LDR)</strong> — The Submarine's Periscope Eye!</li>
+    <li>⚡ <strong>Resistor</strong> — The Current Controller!</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="info-box" style="margin-bottom:16px;">
+    <p>🐋 <strong>Captain's Log:</strong> This sensor acts like a submarine window. It sees how much "Ocean Light" is coming through!</p>
+</div>
+
+<div class="code-wrap">
+    <div>
+        <h2>📜 The Navigation Script</h2>
+        <div class="code-block">
+            <pre>void setup() {
+  Serial.begin(9600);
+  Serial.println("--- SUBMARINE POWER ON ---");
+}
+
+void loop() {
+  int oceanLight = analogRead(A0);
+
+  Serial.print("Light Level: ");
+  Serial.println(oceanLight);
+
+  if (oceanLight > 400) {
+    Serial.println("☀️ SURFACE: I see dolphins! 🐬");
+  } else {
+    Serial.println("🐙 MIDNIGHT ZONE: Watch for tentacles! ✨");
+  }
+
+  delay(600);
+}</pre>
+        </div>
+    </div>
+    <div class="code-explain">
+        <h3>🧬 How the Sonar Works</h3>
+        <p><strong>analogRead(A0)</strong><br>
+        Reads the Ocean Light — a number between 0 (Pitch Black) and 1023 (Super Bright). 🔢🌊</p>
+        <p><strong>The "if" Dive-Line</strong><br>
+        If the light drops below 400, the submarine knows it is in deep dark water! 🔦</p>
+        <p><strong>Serial.println()</strong><br>
+        Sends messages from the bottom of the ocean back to your computer screen! 🖥️📡</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>🔎 <strong>The Sonar Screen</strong><br>
+    Open your Serial Monitor. Cover the sensor with your hand to "Dive" into the Midnight Zone. 🦑<br>
+    Let the light back in to "Surface" and see the Dolphins! 🐬</p>
+    <p>🧪 <strong>Challenge 1:</strong> Change the code so it says "🏴‍☠️ TREASURE FOUND!" when it gets dark.</p>
+    <p>🧪 <strong>Challenge 2:</strong> Change the delay from 600 to 100. Now your submarine scans super fast! ⚡🚤</p>
+</div>
+{% endblock %}

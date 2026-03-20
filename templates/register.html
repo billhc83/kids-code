@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register — KidsCode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .auth-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-card {
+            background: #fff;
+            border: 2px solid #dbeafe;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 4px 24px rgba(9,105,218,0.08);
+        }
+        .auth-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0969da;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .auth-card .subtitle {
+            text-align: center;
+            color: #57606a;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        /* Account type cards */
+        .type-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .type-card {
+            border: 2px solid #dbeafe;
+            border-radius: 14px;
+            padding: 20px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, transform 0.1s;
+            user-select: none;
+        }
+        .type-card:hover {
+            border-color: #93c5fd;
+            background: #f4f8ff;
+        }
+        .type-card.selected {
+            border-color: #0969da;
+            background: #dbeafe;
+        }
+        .type-card.selected .type-title {
+            color: #0969da;
+        }
+        .type-card:active {
+            transform: scale(0.98);
+        }
+        .type-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .type-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #24292f;
+            margin-bottom: 6px;
+        }
+        .type-desc {
+            font-size: 12px;
+            color: #57606a;
+            line-height: 1.5;
+        }
+        /* Form fields */
+        .form-fields {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .form-fields.visible {
+            display: flex;
+        }
+        .form-fields input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #dbeafe;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-fields input:focus {
+            border-color: #0969da;
+        }
+        .form-fields button {
+            width: 100%;
+            padding: 12px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 4px;
+        }
+        .form-fields button:hover { background: #0550ae; }
+        .select-prompt {
+            text-align: center;
+            color: #57606a;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .auth-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #57606a;
+        }
+        .auth-link a {
+            color: #0969da;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .flash-msg {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            background: #ffebe9;
+            color: #cf222e;
+            border: 1px solid #ffcecb;
+        }
+    </style>
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h2>🧑‍💻 Create Account</h2>
+        <p class="subtitle">Who are you signing up as?</p>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="flash-msg">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" id="register-form" 
+      data-type="{{ request.form.get('is_parent', '') == 'true' and 'parent' or (request.form.get('is_parent', '') == 'false' and 'student' or '') }}">
+            <!-- Hidden input that gets set when a card is selected -->
+            <input type="hidden" name="is_parent" id="is_parent_input" value="">
+
+            <!-- Account type selector -->
+            <div class="type-grid">
+                <div class="type-card" id="card-student" onclick="selectType('student')">
+                    <div class="type-icon">👨‍💻</div>
+                    <div class="type-title">I'm a Student</div>
+                    <div class="type-desc">I want to learn to code and build cool projects</div>
+                </div>
+                <div class="type-card" id="card-parent" onclick="selectType('parent')">
+                    <div class="type-icon">👪</div>
+                    <div class="type-title">I'm a Parent</div>
+                    <div class="type-desc">I want to manage my child's account</div>
+                </div>
+            </div>
+
+            <!-- Form fields — hidden until type is selected -->
+            <p class="select-prompt" id="select-prompt">
+                👆 Select an account type to continue
+            </p>
+
+            <div class="form-fields" id="form-fields">
+                <input type="email" name="email" placeholder="Email address" required>
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit" id="submit-btn">Create Account</button>
+            </div>
+        </form>
+
+        <div class="auth-link">
+            Already have an account? <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectType(type) {
+    document.getElementById('card-student').classList.remove('selected');
+    document.getElementById('card-parent').classList.remove('selected');
+    document.getElementById('card-' + type).classList.add('selected');
+    document.getElementById('is_parent_input').value = type === 'parent' ? 'true' : 'false';
+    document.getElementById('form-fields').classList.add('visible');
+    document.getElementById('select-prompt').style.display = 'none';
+    var btn = document.getElementById('submit-btn');
+    btn.textContent = type === 'parent' ? 'Create Parent Account' : 'Create Student Account';
+}
+
+// Restore selection after validation error
+var savedType = document.getElementById('register-form').getAttribute('data-type');
+if (savedType) selectType(savedType);
+</script>
+</body>
+</html>

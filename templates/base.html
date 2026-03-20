@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KidsCode{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- Top bar -->
+<div id="topbar">
+    <a href="{{ url_for('index') }}" class="logo">🧑‍💻 KidsCode</a>
+
+    <div class="top-links">
+        {% if session.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+        {% endif %}
+        {% if session.is_parent %}
+            <a href="{{ url_for('parent_dashboard') }}">Parent</a>
+        {% endif %}
+        <a href="{{ url_for('feedback') }}">Feedback</a>
+    </div>
+
+    <div class="user-info">
+        {% if session.username %}
+            <span>👋 {{ session.username }}</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sidebar toggle -->
+<button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
+
+<!-- Sidebar -->
+<!-- Sidebar -->
+<div id="sidebar">
+    <div class="nav-section">Navigation</div>
+        {% if session.is_parent %}
+            <a href="{{ url_for('parent_dashboard') }}"
+            class="{% if current_endpoint == 'parent_dashboard' %}active{% endif %}">
+                👪 Parent Dashboard
+            </a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}"
+            class="{% if current_endpoint == 'dashboard' %}active{% endif %}">
+                🏠 Dashboard
+            </a>
+        {% endif %}
+
+    {% if session.user_id and not session.is_parent %}
+    <div class="nav-section">Projects</div>
+
+    {% for lesson in sidebar_standalone %}
+        {% if lesson.key != 'challenge_one' %}
+        <a href="{{ url_for('lesson', lesson_key=lesson.key) }}"
+           class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == lesson.key %}active{% endif %}">
+            {{ lesson.title }}
+        </a>
+        {% endif %}
+    {% endfor %}
+
+    {% for part, steps in sidebar_groups.items() %}
+    <div class="sidebar-group">
+        <div class="nav-section">Project {{ part }}</div>
+        {% for step in steps %}
+        <a href="{{ url_for('lesson', lesson_key=step.key) }}"
+           class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == step.key %}active{% endif %}">
+            {{ step.title }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% set challenge = sidebar_standalone | selectattr('key', 'equalto', 'challenge_one') | list %}
+    {% if challenge %}
+    <div class="nav-section">Challenges</div>
+    <a href="{{ url_for('lesson', lesson_key='challenge_one') }}"
+       class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == 'challenge_one' %}active{% endif %}">
+        🎯 Challenge
+    </a>
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<!-- Main content -->
+<div id="main">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-msg {% if category == 'error' %}error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+</div>
+
+<script>
+function toggleSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var main = document.getElementById('main');
+    var toggle = document.getElementById('sidebar-toggle');
+    sidebar.classList.toggle('collapsed');
+    main.classList.toggle('collapsed');
+    toggle.classList.toggle('collapsed');
+    toggle.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+    localStorage.setItem('sidebar', sidebar.classList.contains('collapsed') ? 'closed' : 'open');
+}
+
+// Restore sidebar state on page load
+(function() {
+    var state = localStorage.getItem('sidebar');
+    if (state === 'closed') {
+        document.getElementById('sidebar').classList.add('collapsed');
+        document.getElementById('main').classList.add('collapsed');
+        document.getElementById('sidebar-toggle').classList.add('collapsed');
+        document.getElementById('sidebar-toggle').textContent = '▶';
+    }
+})();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

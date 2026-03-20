@@ -1,0 +1,75 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 4: Space Station Launch Button — KidsCode{% endblock %}
+
+{% set project_title = "🚀 Project 4 – Space Station Launch Button" %}
+{% set circuit_image = "project_four_circuit.png" %}
+
+{% block intro %}
+<p>Welcome to the space station, Astronaut! 👨‍🚀👩‍🚀<br>
+Today is a very important day — you are helping launch a rocket into space!</p>
+<p>Inside the rocket is a spaceship computer that watches everything and keeps the mission safe.
+Wires run all through the rocket, carrying messages just like space roads.</p>
+<p>When it is time to launch, YOU press the big launch button 🔘<br>
+The computer wakes up and starts the launch sequence.</p>
+<p>Suddenly… 🚨 BEEEEEEEEEEEEp! 🚨</p>
+<p>The launch alarm sounds to warn everyone that the rocket is about to lift off!</p>
+<p>This project teaches the rocket how to:<br>
+— Listen for a button press<br>
+— Make a sound when something important happens<br>
+— Follow your commands, just like a real spacecraft</p>
+<p>Get ready… LAUNCH! 🚀✨</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the Circuit</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — The Spaceship's Computer!</li>
+    <li>〰️ <strong>Jumper Wires</strong> — The Rocket's Wiring!</li>
+    <li>🔘 <strong>Push Button</strong> — The Launch Button!</li>
+    <li>🔔 <strong>Buzzer</strong> — The Launch Alarm!</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="code-wrap">
+    <div>
+        <h2>💻 Rocket Control Code</h2>
+        <div class="code-block">
+            <pre>void setup() {
+  pinMode(8, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+}
+
+void loop() {
+  if (digitalRead(2) == LOW) {
+    digitalWrite(8, HIGH);
+  } else {
+    digitalWrite(8, LOW);
+  }
+}</pre>
+        </div>
+    </div>
+    <div class="code-explain">
+        <h3>🧬 Code Translation (Space Edition)</h3>
+        <p><strong>setup()</strong><br>
+        Pin 8 powers the rocket buzzer 🔊🚀<br>
+        Pin 2 listens for your launch button 👆</p>
+        <p><strong>loop()</strong><br>
+        Check the button 👀<br>
+        Pressed → Buzzer ON (engine roaring!) 🛸<br>
+        Not pressed → Buzzer OFF (rocket rests) 😴</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>💡 <strong>Tip 1:</strong> Make sure the buzzer's + and – are in the correct holes!</p>
+    <p>💡 <strong>Tip 2:</strong> Follow the energy path like a rocket fuel line 🚀</p>
+    <p>💡 <strong>Tip 3:</strong> If you want a louder buzzer remove the resistor! ⚡</p>
+    <p>🧪 <strong>Challenge 1:</strong> Make the buzzer beep faster or slower by adding delays.</p>
+    <p>🧪 <strong>Challenge 2:</strong> Add a second button that activates a warning light in addition to the buzzer.</p>
+</div>
+{% endblock %}

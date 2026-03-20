@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Feedback — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <h1>💬 Feedback</h1>
+        <p class="dash-sub">Send us a message, ask a question, or report a bug.</p>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="flash-msg">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- New thread form -->
+    <div class="dash-card">
+        <div class="dash-card-label">✉️ New Message</div>
+        <form method="POST" class="feedback-form">
+            <input type="hidden" name="action" value="new_thread">
+            <div class="feedback-fields">
+                <select name="category" required>
+                    <option value="" disabled selected>Select a category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="subject" 
+                       placeholder="Subject" required>
+                <textarea name="message" 
+                          placeholder="Write your message here..." 
+                          required rows="4"></textarea>
+                <button type="submit" class="next-btn">Send Message</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Existing threads -->
+    {% if threads %}
+    <div class="dash-card">
+        <div class="dash-card-label">📬 Your Conversations</div>
+        <div class="thread-list">
+            {% for thread in threads %}
+            <div class="thread-card">
+                <div class="thread-header">
+                    <div>
+                        <span class="thread-category">{{ thread.category }}</span>
+                        <span class="thread-subject">{{ thread.subject }}</span>
+                    </div>
+                    <span class="thread-status {{ thread.status }}">
+                        {{ thread.status }}
+                    </span>
+                </div>
+
+                <!-- Messages -->
+                <div class="message-list">
+                    {% for msg in thread.messages %}
+                    <div class="message-bubble 
+                         {% if msg.is_admin %}admin-bubble{% else %}user-bubble{% endif %}">
+                        <div class="bubble-header">
+                            <span class="bubble-sender">
+                                {% if msg.is_admin %}
+                                    🛠️ KidsCode Team
+                                {% else %}
+                                    👤 {{ msg.sender_username }}
+                                {% endif %}
+                            </span>
+                            <span class="bubble-time">
+                                {{ msg.created_at[:10] }}
+                            </span>
+                        </div>
+                        <div class="bubble-text">{{ msg.message }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Reply form -->
+                <form method="POST" class="reply-form">
+                    <input type="hidden" name="action" value="reply">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <div class="reply-row">
+                        <textarea name="message" 
+                                  placeholder="Write a reply..." 
+                                  required rows="2"></textarea>
+                        <button type="submit" class="reply-btn">Reply</button>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

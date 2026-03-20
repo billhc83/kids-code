@@ -1,0 +1,80 @@
+{% extends "lesson_base.html" %}
+
+{% block lesson_content %}
+
+{% if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="{{ lesson.title }}"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{% endif %}
+
+<h1>{{ project_title }}</h1>
+<hr>
+
+<div class="lesson-intro">
+    {% block intro %}{% endblock %}
+</div>
+
+<hr>
+
+{% block parts %}{% endblock %}
+
+<div class="lesson-tabs">
+    <button class="lesson-tab-btn active" onclick="showTab('overview', this)">
+        📋 Quick Overview
+    </button>
+    <button class="lesson-tab-btn" onclick="showTab('stepbystep', this)">
+        🔧 Step-by-Step
+    </button>
+</div>
+
+<div class="lesson-tab-panel active" id="tab-overview">
+    {% if circuit_image %}
+    {{ hover_zoom("static/graphics/" + circuit_image, height=500, key=lesson_key)|safe }}
+    {% endif %}
+</div>
+
+<div class="lesson-tab-panel" id="tab-stepbystep">
+    {% if assembly_guide_html %}
+    {{ assembly_guide_html|safe }}
+    {% endif %}
+</div>
+
+{% block code_section %}{% endblock %}
+
+<div class="info-box">
+    <h2>How to Move Your Code 🔌</h2>
+    <p><strong>Copy it: 📋</strong><br>Find the code box and click the Copy button.</p>
+    <p><strong>Open Arduino: ♾️</strong><br>Open the Arduino app. It is the blue circle icon.</p>
+    <p><strong>Clean the page: 🧹</strong><br>Hold Ctrl and tap A, then hit Backspace.</p>
+    <p><strong>Paste it: 📥</strong><br>Hold Ctrl and tap V. Your code will pop up!</p>
+    <p><strong>Send it: 🚀</strong><br>Plug your board in. Click the Arrow button (➔). When it says "Done" your code is ready!</p>
+</div>
+
+{% block wiring_notes %}{% endblock %}
+
+{% block tips %}{% endblock %}
+
+<hr>
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Project →</button>
+    </form>
+    <p>⬅️ Click here to add the next project to the menu</p>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.lesson-tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.querySelectorAll('.lesson-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}

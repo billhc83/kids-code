@@ -1,0 +1,90 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 3: Mad Scientist Button Machine — KidsCode{% endblock %}
+
+{% set project_title = "🧪 Project 3 – Mad Scientist Button Machine" %}
+{% set circuit_image = "project_three_circuit.png" %}
+
+{% block intro %}
+<video autoplay muted  playsinline
+       style="width:100%;border-radius:12px;margin-bottom:20px;">
+    <source src="https://github.com/billhc83/arduino_project/releases/download/v1.0.2/project_three_intro_vid.mp4.mp4"
+            type="video/mp4">
+</video>
+
+<p>Welcome to the Mad Scientist Laboratory! 🧠⚡</p>
+<p>Strange machines are buzzing… wires are glowing… and something amazing is about to happen!</p>
+<p>In this experiment, YOU are the mad scientist 😈<br>
+Your job is to control a powerful energy crystal using a button.</p>
+<p>👉 <strong>Press the button</strong> — The crystal wakes up and the light turns ON 💡<br>
+✋ <strong>Let go of the button</strong> — The crystal goes back to sleep and the light turns OFF 😴</p>
+<p>This experiment teaches the machine to listen to you.<br>
+Press means ON. Release means OFF.</p>
+<p>Mwahahaha! You are in control of the experiment! 🧪⚡</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the Circuit</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — The Mad Scientist's Super Brain!</li>
+    <li>⚡ <strong>Resistor</strong> — The Electricity Tamer!</li>
+    <li>✨ <strong>LED (Any Color)</strong> — The Energy Crystal!</li>
+    <li>〰️ <strong>Jumper Wires</strong> — The Lab Cables!</li>
+    <li>🔘 <strong>Push Button</strong> — The Experiment Trigger!</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="code-wrap">
+    <div>
+        <h2>💻 Secret Lab Code</h2>
+        <div class="code-block">
+            <pre>void setup() {
+  pinMode(8, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+}
+
+void loop() {
+  if (digitalRead(2) == LOW) {
+    digitalWrite(8, HIGH);
+  } else {
+    digitalWrite(8, LOW);
+  }
+}</pre>
+        </div>
+    </div>
+    <div class="code-explain">
+        <h3>🧬 Code Translation (Scientist Edition)</h3>
+        <p><strong>pinMode(8, OUTPUT);</strong><br>
+        Door 8 sends electricity to the crystal 💡</p>
+        <p><strong>pinMode(2, INPUT_PULLUP);</strong><br>
+        Door 2 listens for the button 🔘</p>
+        <p><strong>digitalRead(2)</strong><br>
+        Is the button being pressed?<br>
+        LOW = pressed 😄 / HIGH = not pressed 😴</p>
+        <p><strong>digitalWrite(8, HIGH);</strong><br>
+        Turn the crystal ON! 💥</p>
+        <p><strong>digitalWrite(8, LOW);</strong><br>
+        Turn the crystal OFF. 🌑</p>
+        <p><strong>The loop</strong><br>
+        Runs forever like a bubbling experiment 🧪♻️<br>
+        Check → Decide → Glow → Repeat!</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>💡 <strong>Tip 1: Follow the electricity path!</strong><br>
+    Pretend electricity is a little bug 🐜 traveling from the pin, through the LED, and back to the ground rail. Can you see its path?</p>
+    <p>💡 <strong>Tip 2: One lead per hole!</strong><br>
+    Just like a tiny puzzle, each wire or part gets its own hole. Two things in the same hole can cause a "traffic jam"! 🚦</p>
+    <p>💡 <strong>Tip 3: Press slowly and watch!</strong><br>
+    Press the button and see the LED wake up. Let go and see it sleep. Your experiment is alive! ⚡😴</p>
+    <p>🧪 <strong>Challenge: Mystery Colors</strong><br>
+    Swap in a different color LED. What happens when the button is pressed?</p>
+    <p>🧪 <strong>Challenge: Faster or Slower</strong><br>
+    Add a tiny delay in the code to make the LED blink. Watch how the energy crystal behaves! ⚡💡</p>
+</div>
+{% endblock %}

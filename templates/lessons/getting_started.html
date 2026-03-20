@@ -1,0 +1,173 @@
+{% extends "lesson_base.html" %}
+{% block title %}Getting Started — KidsCode{% endblock %}
+
+{% block lesson_content %}
+<h1>🚀 Getting Started</h1>
+<h2>🧰 Parts we will use!</h2>
+
+<!-- Arduino Uno -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🔌 Arduino Uno</h2>
+        <p>The brain 🧠</p>
+        <p>It thinks and follows your code.</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/uno.jpg') }}" alt="Arduino UNO">
+        <p class="caption">Arduino UNO</p>
+    </div>
+</div>
+
+<!-- Breadboard -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🧱 Breadboard</h2>
+        <p>A playground for wires 🛝</p>
+        <p>No glue. No solder. Just plug things in.</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/breadboard.jpg') }}" alt="Breadboard" style="max-width:200px">
+        <p class="caption">Breadboard</p>
+    </div>
+</div>
+
+<!-- LED -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>💡 LED (Light)</h2>
+        <p>A tiny light bulb.</p>
+        <p>It has two legs:</p>
+        <p>Long leg = PLUS (+)</p>
+        <p>Short leg = MINUS (–)</p>
+        <p>If it's backwards, it won't light up.</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/LED.jpg') }}" alt="LED">
+        <p class="caption">LED</p>
+    </div>
+</div>
+
+<!-- Resistor -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🛑 Resistor</h2>
+        <p>A tiny traffic police officer 🚓 for electricity.</p>
+        <p>It slows electricity down so the LED does not break.</p>
+        <p>The little lines of color on the resistor tell you how strong it is!</p>
+        <p>Always use one with LEDs.</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/resistor.png') }}" alt="Resistor" style="max-width:200px">
+        <p class="caption">Resistor</p>
+    </div>
+</div>
+
+<!-- Button -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🔘 Button</h2>
+        <p>A tiny door 🚪</p>
+        <p>Press = door open &nbsp; Release = door closed</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/button.png') }}" alt="Button" style="max-width:200px">
+        <p class="caption">Button</p>
+    </div>
+</div>
+
+<!-- Photoresistor -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🌟 Photoresistor</h2>
+        <p>A Photoresistor (also called an LDR) is like a "Magic Eye" for your projects!</p>
+        <p>💡 Light Sensor: tells how much light is in the room.</p>
+        <p>🏃 The Bright Rule: bright light = electricity zooms through fast!</p>
+        <p>🧱 The Dark Rule: darkness = electricity can barely pass through.</p>
+        <p>🌅 Real-World Helper: same parts used in streetlights!</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/photoresistor.jpeg') }}" alt="Photoresistor" style="max-width:200px">
+        <p class="caption">Photoresistor</p>
+    </div>
+</div>
+
+<!-- Jumper Wires -->
+<div class="part-row">
+    <div class="part-text">
+        <hr>
+        <h2>🧵 Jumper Wires</h2>
+        <p>Tiny roads for electricity 🛣️</p>
+        <p>They connect everything together.</p>
+    </div>
+    <div class="part-img">
+        <hr>
+        <img src="{{ url_for('static', filename='graphics/jumper.jpg') }}" alt="Jumper Wire" style="max-width:250px">
+        <p class="caption">Jumper Wire</p>
+    </div>
+</div>
+
+<hr>
+<h2>🧱 How a breadboard works (kid version)</h2>
+
+<div class="part-row">
+    <div class="part-text">
+        <p>Think of the breadboard like a LEGO city for wires 🏙️</p>
+        <p>Inside are hidden metal clips that grab the legs of parts.</p>
+        <h3>🧠 Three important rules</h3>
+        <h3>Rule 1 – Rows are friends 🤝</h3>
+        <p>If you plug two legs in the same row, they are holding hands.</p>
+        <h3>Rule 2 – The middle gap is a river 🌊</h3>
+        <p>Electricity cannot jump across the middle.</p>
+        <p>So parts like LEDs and buttons usually sit across the river.</p>
+        <h3>Rule 3 – The rows on the long edges are connected</h3>
+        <p>The long lines on the sides are electricity highways:</p>
+        <p><span style="color:#cf222e">Red</span> line = PLUS (+)</p>
+        <p><span style="color:#0969da">Blue</span> line = MINUS (– / GND)</p>
+        <h3>🧪 How we build a circuit</h3>
+        <p>Put parts in different rows</p>
+        <p>Use wires to connect rows</p>
+        <p>Make a loop so electricity can go out and back home</p>
+        <p>A circle path = a circuit 🔁</p>
+    </div>
+    <div class="part-img">
+        <img src="{{ url_for('static', filename='graphics/labled_breadboard.jpg') }}" 
+             alt="Labeled Breadboard" style="max-width:400px">
+        <p class="caption">How all the holes are connected on a breadboard</p>
+    </div>
+</div>
+
+<hr>
+
+<!-- Videos -->
+<h2>Arduino IDE Download Walkthrough</h2>
+<video controls style="width:100%;border-radius:12px;margin:16px 0;">
+    <source src="https://github.com/billhc83/arduino_project/releases/download/v1.0.0/download_arduino.mp4" type="video/mp4">
+</video>
+
+<h2>How To Load Your Code</h2>
+<video controls style="width:100%;border-radius:12px;margin:16px 0;">
+    <source src="https://github.com/billhc83/arduino_project/releases/download/v1.0.1/First.arduino.code.mp4" type="video/mp4">
+</video>
+
+<hr>
+
+<!-- Next button -->
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Project →</button>
+</form>
+</div>
+{% endblock %}

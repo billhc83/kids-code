@@ -1,0 +1,84 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 1: Lights On! — KidsCode{% endblock %}
+
+{% set project_title = "Project One - Lights On! 💡💡💡" %}
+{% set circuit_image = "project_one_circuit.png" %}
+
+{% block intro %}
+<h2>Goal</h2>
+<p>🚨 Make a tiny light turn on using the Arduino. 🚨</p>
+
+<h3>New ideas 💭</h3>
+<hr>
+<h4>Pins</h4>
+<p>Imagine your Arduino is a tiny robot brain, and the pins are its arms, ears, and mouth! 🤖</p>
+<p>Without pins, the brain would just sit there thinking. The pins allow it to reach out and touch the world.</p>
+
+<h4>👂 The "Ear" Pins (Inputs)</h4>
+<p>Some pins are for listening. When you plug a button or a sensor into these, the Arduino can "hear" what's happening:</p>
+<p>❓ "Is someone pressing my button?"<br>
+❓ "Is it dark in this room?"<br>
+❓ "Is there a cat nearby?"</p>
+
+<h4>🗣️ The "Mouth" Pins (Outputs)</h4>
+<p>Other pins are for talking to your toys. When the Arduino wants to do something, it sends a tiny zap of electricity through these pins:</p>
+<p>💡 "Turn on the light!" (Makes a light glow)<br>
+⚙️ "Spin the wheel!" (Makes a motor turn)<br>
+🎵 "Beep-beep!" (Makes a buzzer make noise)</p>
+
+<hr>
+<h4>Two ways to "talk":</h4>
+<p>1️⃣ <strong>On or Off:</strong> Like a light switch. The Arduino says "YES, turn on!" or "NO, stay off!" 💡</p>
+<p>2️⃣ <strong>A Little Bit:</strong> Like a volume knob. The Arduino can make a light look dim or make a motor spin slowly. 🔉</p>
+
+<hr>
+<h4>First code 🖥️</h4>
+<p>Imagine your Arduino code is the Rule Book for your tiny robot brain! 📖🤖</p>
+<p>Arduino code is called a "Sketch." It is like a recipe or a list of chores the robot brain follows:</p>
+<p>📋 First, I gather my tools. (Setting up the pins)<br>
+📋 Next, I do my work. (Turning on lights or moving motors)<br>
+📋 Then, I do it all over again! (Repeating the rules)</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the circuit</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 Arduino UNO (It's the computer brain!)</li>
+    <li>⚡ Resistor (It's the electricity speed-bump!)</li>
+    <li>✨ Any color LED (It's the tiny glowing light!)</li>
+    <li>〰️ Wires (They are the robot's veins and nerves!)</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="code-wrap">
+    <div>
+        <h2>Code</h2>
+        <div class="code-block">
+            <pre>void setup() {
+  pinMode(8, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(8, HIGH);
+}</pre>
+        </div>
+    </div>
+    <div class="code-explain">
+        <h3>🧩 What this code means</h3>
+        <p>setup() → runs once when Arduino wakes up 🌅</p>
+        <p>pinMode(8, OUTPUT) → pin 8 sends power out 🗲</p>
+        <p>loop() → runs forever 🔁</p>
+        <p>digitalWrite(8, HIGH) → turns the LED on 💡</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>🟦 <strong>The Magic Blue Brain:</strong> If your light isn't turning on, check the green light on the Arduino board itself. If that's not on, your brain isn't getting power! Check your USB cable.</p>
+    <p>🌈 <strong>Color Matching:</strong> Wires come in different colors, but inside, they are all the same! You can use a yellow wire for a red light and it will still work. It's like wearing a blue shirt or a red shirt — you're still you!</p>
+</div>
+{% endblock %}
