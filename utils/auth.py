@@ -2,7 +2,7 @@ import os
 import requests
 from config import SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY
 import bcrypt
-import hashlib
+import hashlib, secrets
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -232,7 +232,7 @@ def reset_password_with_token(token, new_password):
     user, err = verify_reset_token(token)
     if err:
         return False, err
-    
+        
     password_hash = hash_password(new_password)
     requests.patch(
         f"{SUPABASE_URL}/rest/v1/users?id=eq.{user['id']}",
