@@ -1,0 +1,67 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 14 Part 2: Code Cracker — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/code_cracker.png') }}"
+     alt="Code Cracker Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<div class="lesson-intro">
+    <h2>🕵️ Spy Training: Code Breaker System</h2>
+    <p>Welcome, Agent. You are building a <b>Code Breaker</b> for future trainees.</p>
+    <p>Your system will challenge them to find a hidden 5-letter word. Every step you complete adds a new ability to your machine.</p>
+
+    <hr>
+
+    <h3>🧠 How the System Works</h3>
+    <p>Every Code Breaker follows the same process:</p>
+    <ul style="list-style: none; padding-left: 0;">
+        <li>⌨️ <b>INPUT</b> → The trainee types a guess</li>
+        <li>📓 <b>STORE</b> → The program remembers the guess</li>
+        <li>🔍 <b>CHECK</b> → The program compares it to the answer</li>
+        <li>💻 <b>OUTPUT</b> → The result is shown on the screen</li>
+        <li>🏁 <b>RESULT</b> → The system checks if the code is cracked</li>
+    </ul>
+
+    <hr>
+
+    <h3>🔁 The Flow of Your Program</h3>
+    <p>Your program will always follow this loop:</p>
+    <p style="text-align: center; font-weight: bold; background: #f0f0f0; padding: 10px; border-radius: 8px;">
+        ⏳ WAIT → 📡 READ → 📓 STORE → 🔍 CHECK → 💬 RESPOND
+    </p>
+    <p>Right now, your system is incomplete… but each step you build brings it closer to life.</p>
+</div>
+
+<hr>
+
+<div class="block-builder-section" style="margin: 30px 0;">
+    <h3>🧩 Build Your Code</h3>
+    <p>Use the block builder button in the bottom right corner to assemble the pieces of your system: <b>Variables</b>, <b>Input</b>, <b>Logic</b>, and <b>Conditions</b>.</p>
+</div>
+
+<hr>
+
+<div class="mission-checklist" style="background: #e9f7ef; padding: 20px; border-radius: 12px; border-left: 5px solid #28a745;">
+    <h3>🎯 Your Mission Objectives</h3>
+    <ul style="list-style: none; padding-left: 0;">
+        <li>✅ Read a guess</li>
+        <li>✅ Check how close it is</li>
+        <li>✅ Display the result</li>
+        <li>✅ Detect when the code is cracked</li>
+    </ul>
+    <p>Stay sharp, Agent… 🕶️</p>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_fourteen_part_two">
+        <button type="submit" class="next-btn">Next Step →</button>
+    </form>
+    <p>⬅️ Click here to continue to the next step!</p>
+</div>
+
+{% endblock %}

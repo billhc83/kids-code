@@ -1,0 +1,77 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 9: The Universal Power Slot — KidsCode{% endblock %}
+
+{% set project_title = "🛠️ Project 9 - The Universal Power Slot!" %}
+{% set circuit_image = "project_one_circuit.png" %}
+
+{% block intro %}
+<p>👷 <strong>Welcome, Senior Systems Engineer!</strong></p>
+<p>Today you will learn about <strong>Variables</strong> — special slots that hold information.</p>
+<p>But be careful… the <strong>wrong item in the slot</strong> can break the system! ⚠️</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the Circuit</h2>
+<ul class="parts-list">
+    <li>🟦 Arduino UNO</li>
+    <li>〰️ Jumper Wires</li>
+    <li>💡 LED</li>
+    <li>⚡ 220Ω Resistor</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="code-wrap">
+<div>
+<h2>📜 The Inspection Script</h2>
+<pre>String powerSlot = "Crusty Club Sandwich"; 
+
+int currentEnergy = 0;
+
+void setup() {
+  pinMode(8, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  if (powerSlot == "Mega-Glow Lightening-Milk") {
+    currentEnergy = 100;
+  } 
+  else if (powerSlot == "Sparky-Squirrel Static") {
+    currentEnergy = 50;
+  }
+  else if (powerSlot == "Zappy-Zucchini Juice") {
+    currentEnergy = 10;
+  }
+  else {
+    currentEnergy = 0;
+  }
+
+  if (currentEnergy > 0) {
+    digitalWrite(8, HIGH);
+  } else {
+    digitalWrite(8, LOW);
+  }
+
+  delay(3000);
+}</pre>
+</div>
+
+<div class="code-explain">
+<h3>🧠 Key Concept</h3>
+<p><strong>Variables</strong> store information.</p>
+<p><strong>Matching values</strong> decides what happens next.</p>
+<p>If the value is wrong → system does nothing.</p>
+</div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+<p>🧪 Try changing the powerSlot value</p>
+<p>🧪 Only ONE active value should be used</p>
+<p>🏆 What happens if you use something invalid?</p>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 10: The Spy Vault — KidsCode{% endblock %}
+
+{% set project_title = "🕵️‍♂️ Project 10 - The Spy Vault Security Console" %}
+{% set circuit_image = "project_ten_circuit.png" %}
+
+{% block intro %}
+<p>Welcome back, <strong>Agent Engineer</strong>! 🕶️💼</p>
+<p>The Agency needs your help! You are building the high-security lock for the <strong>Top Secret Spy Vault</strong>. To open the heavy steel doors, you need to slide two <strong>Secret Key Cards</strong> (Switches) at the exact same time.</p>
+<p>We are going to use <strong>Variables</strong> as <strong>Security Locks</strong>. In your code, a variable will track if each bolt is "Locked" (0) or "Unlocked" (1). Only when both bolts are pulled back will the <strong>Vault Light</strong> turn on! 🚨🔓</p>
+<p>Ready to secure the base? Let's get to work! ⚔️🛡️</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🛡️ Build the Security Lock</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — The Mission Control Brain!</li>
+    <li>🔘 <strong>2 Switches</strong> — The Key Card Readers!</li>
+    <li>✨ <strong>LED</strong> — The Vault Indicator!</li>
+    <li>⚡ <strong>Resistor</strong> — The Electricity Guard!</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="info-box" style="margin-bottom:16px;">
+    <p>🧠 <strong>Spy Logic Secret:</strong> We use Variables to store a "Status." <code>boltA = 0</code> means stuck; <code>boltA = 1</code> means open! 🔓</p>
+</div>
+
+<div class="code-wrap">
+    <div>
+        <h2>📜 The Security Script</h2>
+        <div class="code-block">
+            <pre>
+// 🔐 Our Security Lock Variables
+int LockA = 0; 
+int LockB = 0;
+
+void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(8, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("--- VAULT SYSTEM ARMED ---");
+}
+
+void loop() {
+  LockA = digitalRead(2);
+  LockB = digitalRead(3);
+
+  if (LockA == 1 && LockB == 1) {
+    digitalWrite(8, HIGH);
+    Serial.println("🔓 ACCESS GRANTED: Vault Open!");
+  } 
+  else {
+    digitalWrite(8, LOW);
+    Serial.println("🔒 ACCESS DENIED: Locks Engaged.");
+  }
+  delay(500); 
+}</pre>
+        </div>
+    </div>
+    <div class="code-explain">
+        <h3>🧬 How the Spy Logic Works</h3>
+        <p><strong>The "&&" Code</strong><br>
+        This means <strong>"AND."</strong> The computer asks: "Is Lock A open AND is Lock B open?" 🤝</p>
+        <p><strong>Variables as Memory</strong><br>
+        Variables "remember" the switch state while the computer checks other things. 🧩</p>
+        <p><strong>Decision Making</strong><br>
+        Engineers use variables to help computers make complex choices! 🧠</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>🔎 <strong>Vault Monitor</strong><br>
+    Open your Serial Monitor. Flip just one switch—does it open? Now flip both! 🔓✨</p>
+    <p>🧪 <strong>Challenge 1:</strong> Change the <code>delay</code> to 100 for a super-speed lock! ⚡</p>
+    <p>🧪 <strong>Challenge 2:</strong> Change the message to say <strong>"🚨 INTRUDER ALERT!"</strong> when access is denied.</p>
+</div>
+{% endblock %}

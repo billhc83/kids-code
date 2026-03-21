@@ -1,0 +1,46 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 14 Part 1: Code Cracker — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/code_cracker.png') }}"
+     alt="Code Cracker Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<div class="lesson-intro">
+    <h2>🕵️ Project: Code Cracker</h2>
+    <p>Welcome to the Agent Training Program.</p>
+    <p>During spy training, recruits must prove they can solve problems, think logically, and understand secret communication systems.</p>
+    <p>Your first test is called <strong>The Code Breaker Challenge</strong>.</p>
+
+    <div class="mission-box" style="background: #f8f9fa; padding: 20px; border-left: 5px solid #333; border-radius: 8px; margin: 20px 0;">
+        <p>A computer system has locked a message behind a five-letter password. Your job is to build a program that can help crack the code.</p>
+        <p>Each time someone enters a guess, the computer will compare it to the real password and report how many letters match. When all five letters match… the system will unlock the hidden message.</p>
+    </div>
+
+    <h3>🔐 What Happens Next?</h3>
+    <p>Inside the system is a message left by the training engineers. But no one knows what it says yet.</p>
+    <p>The only way to read it is to discover the password. Once the system unlocks, the message will appear in the mission terminal. Your training instructions will be revealed.</p>
+</div>
+
+<hr>
+
+<div style="margin: 30px 0;">
+    <iframe id="serial-monitor-frame"
+            srcdoc="{{ serial_monitor_html|e }}"
+            style="width:100%;border:none;border-radius:12px;"
+            height="520">
+    </iframe>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_fourteen_part_one">
+        <button type="submit" class="next-btn">Next Step →</button>
+    </form>
+    <p>⬅️ Click here to continue the mission!</p>
+</div>
+
+{% endblock %}

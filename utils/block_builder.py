@@ -15,7 +15,7 @@ def get_builder_html(preset, username=None, page=None,
     """
     try:
         from utils.arduino_blocks import render_builder
-
+        from config import SUPABASE_ANON_KEY, SUPABASE_URL
         html_content = render_builder(
             preset=preset,
             username=str(username) if username else None,
@@ -23,10 +23,9 @@ def get_builder_html(preset, username=None, page=None,
             drawer_content=drawer_content,
             pin_refs=pin_refs,
             is_overlay=True,
-            supabase_url=supabase_url,
-            supabase_key=supabase_key
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_ANON_KEY
         )
-
         b64_html = base64.b64encode(
             html_content.encode("utf-8")
         ).decode("utf-8")

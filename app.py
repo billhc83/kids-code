@@ -27,14 +27,18 @@ from utils.assembly_guide_flask import render_assembly_guide
 from utils.contents_flask import DRAWER_CONTENT
 from utils.block_builder import get_builder_html
 import requests
-
+from utils.code_breaker import serial_monitor
 from utils.project_one import STEPS as p1_steps, CIRCUIT_IMAGE as p1_image, PAGE_TITLE as p1_title
 from utils.project_eleven import STEPS as p11_steps, CIRCUIT_IMAGE as p11_image, PAGE_TITLE as p11_title
 from utils.project_three import STEPS as p3_steps, CIRCUIT_IMAGE as p3_image, PAGE_TITLE as p3_title
 from utils.project_four import STEPS as p4_steps, CIRCUIT_IMAGE as p4_image, PAGE_TITLE as p4_title
 from utils.project_six import STEPS as p6_steps, CIRCUIT_IMAGE as p6_image, PAGE_TITLE as p6_title
-
-
+from utils.project_seven import STEPS as p7_steps, CIRCUIT_IMAGE as p7_image, PAGE_TITLE as p7_title
+from utils.project_eight import STEPS as p8_steps, CIRCUIT_IMAGE as p8_image, PAGE_TITLE as p8_title
+from utils.project_nine import STEPS as p9_steps, CIRCUIT_IMAGE as p9_image, PAGE_TITLE as p9_title
+from utils.project_ten import STEPS as p10_steps, CIRCUIT_IMAGE as p10_image, PAGE_TITLE as p10_title
+from utils.project_twelve import STEPS as p12_steps, CIRCUIT_IMAGE as p12_image, PAGE_TITLE as p12_title, BANNER_IMAGE as p12_banner
+from utils.project_thirteen import STEPS as p13_steps, CIRCUIT_IMAGE as p13_image, PAGE_TITLE as p13_title
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -303,10 +307,6 @@ def lesson(lesson_key):
             extra["assembly_guide_html"] = render_assembly_guide(
                 p1_image, p1_steps, p1_title
             )
-    elif lesson_key in ("project_eleven_part_one", "project_eleven_part_two"):
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p11_image, p11_steps, p11_title
-            )
     elif lesson_key == "project_two":
             extra["assembly_guide_html"] = render_assembly_guide(
                 p1_image, p1_steps, "Project 2: Blinking Beacon!"
@@ -325,6 +325,53 @@ def lesson(lesson_key):
             extra["assembly_guide_html"] = render_assembly_guide(
                 p6_image, p6_steps, p6_title
             )
+    elif lesson_key == "project_seven":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p7_image, p7_steps, p7_title
+            )
+    elif lesson_key == "project_eight":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p8_image, p8_steps, p8_title
+            )
+    elif lesson_key == "project_nine":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p9_image, p9_steps, p9_title
+            )
+    elif lesson_key == "project_ten":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p10_image, p10_steps, p10_title
+            )
+    elif lesson_key == "project_eleven":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p11_image, p11_steps, p11_title
+            )
+    elif lesson_key == "project_twelve":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p12_image, p12_steps, p12_title
+            )
+    elif lesson_key == "project_thirteen":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p13_image, p13_steps, p13_title
+            )
+    elif lesson_key == "project_fourteen_part_one":
+        extra["serial_monitor_html"] = serial_monitor(
+            answer='SPARK',
+            cipher_lines=[
+                'STSTARERT', 'PLSHAREMN', 'BNSHARKOP', 'QWSPARETY', 'ZXSPARKCV',
+                'MKSNAREPL', 'HGSHAKEUI', 'LKDJSFPOIE', 'MNBVCXZAQS', 'POIUYTREWQ'
+            ],
+            message=[
+                "CODE CRACKED", "", "GOOD WORK AGENT.", "",
+                "YOU HAVE SUCCESSFULLY COMPLETED", "THE FIRST TRAINING EXERCISE.",
+                "", "THIS SYSTEM WAS BUILT TO TEST", "YOUR ABILITY TO ANALYZE",
+                "AND BREAK SECRET CODES.", "", "BUT EVERY TRAINING PROGRAM",
+                "NEEDS NEW CHALLENGES.", "", "YOUR NEXT MISSION:",
+                "BUILD A NEW CODE BREAKING TRAINING SYSTEM",
+                "FOR THE NEXT GROUP OF TRAINEES.", "", "TRAINING COMMAND OUT."
+            ]
+        )
+    elif lesson_key == "project_fourteen_part_two":
+            pass
 
     # Block builder — only if explicitly set in registry
     preset = lesson_data.get("block_builder")

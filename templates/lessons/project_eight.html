@@ -1,0 +1,77 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 8: The Dragon's Crystal Alarm — KidsCode{% endblock %}
+
+{% set project_title = "🏰 Project 8 - The Dragon's Crystal Alarm!" %}
+{% set circuit_image = "project_eight_circuit.png" %}
+
+{% block intro %}
+<p>🐉 <strong>Defend the Kingdom!</strong></p>
+<p>You are building a magical security system to protect the Golden Gear.</p>
+<p>If a shadow passes the sensor, the alarm will:</p>
+<p>🚨 Flash the LED<br>🔊 Sound the buzzer</p>
+<p>No thief will escape! ⚔️</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the Circuit</h2>
+<ul class="parts-list">
+    <li>🟦 Arduino UNO</li>
+    <li>〰️ Jumper Wires</li>
+    <li>👁️ Photoresistor</li>
+    <li>💡 LED</li>
+    <li>🔊 Buzzer</li>
+    <li>⚡ 220Ω Resistor</li>
+    <li>⚡ 10kΩ Resistor</li>
+</ul>
+{% endblock %}
+
+{% block code_section %}
+<div class="code-wrap">
+    <div>
+        <h2>📜 The Alarm Logic</h2>
+<pre>int crystalPin = A0;
+int firePin = 13;
+int roarPin = 8;
+
+void setup() {
+  pinMode(firePin, OUTPUT);
+  pinMode(roarPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int lightLevel = analogRead(crystalPin);
+
+  if (lightLevel < 350) {
+    digitalWrite(firePin, HIGH);
+    tone(roarPin, 800);
+    delay(150);
+
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(150);
+  } else {
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(100);
+  }
+}</pre>
+    </div>
+
+    <div class="code-explain">
+        <h3>🧠 How it Works</h3>
+        <p><strong>Sensor detects shadow</strong> → triggers alarm</p>
+        <p><strong>LED flashes</strong> → visual warning</p>
+        <p><strong>Buzzer sounds</strong> → audio warning</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>🧪 Cover the sensor — does the alarm trigger?</p>
+    <p>🧪 Change tone(800) to 500 for a deeper sound</p>
+    <p>🏆 Make it flash faster by lowering delay</p>
+</div>
+{% endblock %}

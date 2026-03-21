@@ -1,0 +1,87 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 13: The Reaction Timer — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/project_fourteen_banner.png') }}"
+     alt="Project 13 Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<div class="lesson-intro">
+    <h2>⏱️ Project 13: The Reaction Timer</h2>
+    <p>🧪 Welcome to the <strong>Arduino Reaction Lab!</strong></p>
+    <p>Today you are going to build a reaction timer. Scientists use timers like this to measure <strong>how fast people react</strong>.</p>
+
+    <hr>
+
+    <h2>🎯 Your Mission</h2>
+    <p>Imagine you are running a <strong>super secret training program for astronauts</strong>. 🚀</p>
+    <p>Build a timer that:</p>
+    <ul>
+        <li>👉 Starts when the button is pressed</li>
+        <li>👉 Stops when the button is pressed again</li>
+        <li>👉 Prints the reaction time to the <strong>Serial Monitor</strong></li>
+    </ul>
+    <p>Can you build a machine that measures human reaction speed? Let's find out! 🚀</p>
+</div>
+
+<hr>
+
+<div class="lesson-tabs">
+    <button class="lesson-tab-btn active" onclick="showTab('overview', this)">
+        📋 Quick Overview
+    </button>
+    <button class="lesson-tab-btn" onclick="showTab('stepbystep', this)">
+        🔧 Step-by-Step
+    </button>
+</div>
+
+<div class="lesson-tab-panel active" id="tab-overview">
+    {{ hover_zoom("static/graphics/reaction_timer_circuit.png",
+                  height=500, key="circuit1")|safe }}
+</div>
+
+<div class="lesson-tab-panel" id="tab-stepbystep">
+    {{ assembly_guide_html|safe }}
+</div>
+
+<hr>
+
+<div class="lesson-section">
+    <h2>🔎 How Our Timer Works</h2>
+    <p>In this project, we are learning how a program can <strong>measure time</strong> using a special function: <code>millis()</code>.</p>
+
+    <h3>⏱️ The Logic</h3>
+    <ul>
+        <li><strong>First Press:</strong> The Arduino remembers the start time: <code>startTime = millis()</code>.</li>
+        <li><strong>Second Press:</strong> It checks the time again and subtracts the start: <code>time = millis() - startTime</code>.</li>
+    </ul>
+
+    <h3>✅ Remember</h3>
+    <p>1000 milliseconds = 1 second. Try to stop your timer at exactly 5000 milliseconds! ⏱️</p>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Part →</button>
+    </form>
+    <p>⬅️ Click here to secure the next mission!</p>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.lesson-tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.querySelectorAll('.lesson-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}

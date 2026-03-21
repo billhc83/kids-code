@@ -1,0 +1,92 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 12: Night Patrol Alarm — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/patrol_alarm.png') }}"
+     alt="Project 12 Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<div class="lesson-intro">
+    <h2>🚓 Welcome to Night Patrol Academy</h2>
+    <p>The sun has gone down. The streets are darker now. 🌃</p>
+    <p>At night, emergency vehicles must be easy to see. That is why they use <strong>light bars</strong>.</p>
+    <p>Tonight, you are training in the <strong>Emergency Systems Lab</strong>. Before a patrol vehicle goes on duty, the light bar must pass inspection. That is your job today.</p>
+
+    <hr>
+
+    <h2>🎯 Your Mission</h2>
+    <p>This patrol vehicle has four parts:</p>
+    <ul>
+        <li>🔘 A <strong>Master Power Button</strong></li>
+        <li>🔴 A <strong>Red Light</strong></li>
+        <li>🔵 A <strong>Blue Light</strong></li>
+        <li>⚪ A <strong>Clear Strobe Light</strong></li>
+    </ul>
+    <p>The system follows simple rules:</p>
+    <ul>
+        <li>If the Master Button is <strong>not pressed</strong> → all lights stay OFF.</li>
+        <li>If the Master Button is <strong>pressed</strong> → the light pattern begins.</li>
+        <li>The lights flash <strong>one at a time</strong> using <strong>150ms</strong> delays.</li>
+    </ul>
+    <p>Your job is to build the system and program the pattern.</p>
+</div>
+
+<hr>
+
+<div class="lesson-tabs">
+    <button class="lesson-tab-btn active" onclick="showTab('overview', this)">
+        📋 Quick Overview
+    </button>
+    <button class="lesson-tab-btn" onclick="showTab('stepbystep', this)">
+        🔧 Step-by-Step
+    </button>
+</div>
+
+<div class="lesson-tab-panel active" id="tab-overview">
+    {{ hover_zoom("static/graphics/project_thirteen_circuit.png",
+                  height=500, key="circuit1")|safe }}
+</div>
+
+<div class="lesson-tab-panel" id="tab-stepbystep">
+    {{ assembly_guide_html|safe }}
+</div>
+
+<hr>
+
+<div class="lesson-section">
+    <h2>🔎 How to Build the Logic</h2>
+    <h3>1️⃣ Create Your Light Variables</h3>
+    <p>Before the lights can flash, the Arduino needs to know which pins control each light. Create variables like <code>buttonPin</code>, <code>redLED</code>, <code>blueLED</code>, and <code>clearLED</code>.</p>
+
+    <h3>2️⃣ Set the PinModes</h3>
+    <p>In the Setup section, tell the Arduino if each pin is an <strong>INPUT_PULLUP</strong> (for the button) or an <strong>OUTPUT</strong> (for the lights).</p>
+
+    <h3>3️⃣ Follow the Pattern</h3>
+    <p>The Academy uses a timing rule: Each flash and each pause must last <strong>150 milliseconds</strong>. Use <code>delay(150)</code> to make the pattern clear!</p>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Part →</button>
+    </form>
+    <p>⬅️ Click here to secure the next mission!</p>
+</div>
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.lesson-tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.querySelectorAll('.lesson-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+
+{% endblock %}
