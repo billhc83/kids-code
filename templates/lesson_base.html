@@ -4,7 +4,55 @@
 
 {% block content %}
 {% block lesson_content %}{% endblock %}
+<script>
+(function() {
+    var startTime = Date.now();
+    var lessonKey = "{{ lesson_key }}";
+    var sent = false;
 
+    function sendLog() {
+        if (sent || !lessonKey) return;
+        sent = true;
+        var duration = Math.round((Date.now() - startTime) / 1000);
+        if (duration < 5) return;
+        navigator.sendBeacon('/api/log-activity',
+            JSON.stringify({
+                lesson_key: lessonKey,
+                duration_seconds: duration
+            })
+        );
+    }
+
+    window.addEventListener('beforeunload', sendLog);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') sendLog();
+    });
+})();
+</script>
+<script>
+(function() {
+    var startTime = Date.now();
+    var lessonKey = "{{ lesson_key }}";
+    var sent = false;
+
+    function sendLog() {
+        if (sent || !lessonKey) return;
+        sent = true;
+        var duration = Math.round((Date.now() - startTime) / 1000);
+        if (duration < 5) return;
+        var blob = new Blob(
+            [JSON.stringify({lesson_key: lessonKey, duration_seconds: duration})],
+            {type: 'application/json'}
+        );
+        navigator.sendBeacon('/api/log-activity', blob);
+    }
+
+    window.addEventListener('beforeunload', sendLog);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') sendLog();
+    });
+})();
+</script>
 {% if block_builder_html is defined and block_builder_html %}
 {{ block_builder_html|safe }}
 {% endif %}

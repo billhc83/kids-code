@@ -1,9 +1,8 @@
 import os
-import hashlib
-import secrets
 import requests
 from config import SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY
-
+import bcrypt
+import hashlib
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -11,13 +10,20 @@ HEADERS = {
 }
 
 def hash_password(password):
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}:{hashed}"
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def check_password(password, stored):
-    salt, hashed = stored.split(":")
-    return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
+    # bcrypt hashes start with $2b$ or $2a$
+    if stored.startswith("$2b$") or stored.startswith("$2a$"):
+        try:
+            return bcrypt.checkpw(password.encode(), stored.encode())
+        except Exception:
+            return False
+    # Legacy sha256 format salt:hash
+    if ":" in stored:
+        salt, hashed = stored.split(":", 1)
+        return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
+    return False
 
 def get_user_by_username(username):
     resp = requests.get(

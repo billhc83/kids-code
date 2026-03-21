@@ -1,0 +1,153 @@
+{% extends "lesson_base.html" %}
+{% block title %}Challenge 1: The Case of the Sleeping LED — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<h1>🕵️‍♂️ Challenge 1 - The Case of the Sleeping LED!</h1>
+<hr>
+
+<!-- Status banner -->
+{% if submission %}
+<div style="margin-bottom:20px;padding:16px;border-radius:12px;
+    {% if submission.status == 'approved' %}background:#dcfce7;border:2px solid #1a7f37;
+    {% elif submission.status == 'rejected' %}background:#ffebe9;border:2px solid #cf222e;
+    {% else %}background:#fff8c5;border:2px solid #d4a72c;{% endif %}">
+    <div style="font-size:15px;font-weight:800;margin-bottom:6px;">
+        {% if submission.status == 'approved' %}✅ Approved!
+        {% elif submission.status == 'rejected' %}❌ Revision Needed
+        {% else %}⏳ Pending Review{% endif %}
+    </div>
+    {% if submission.admin_feedback %}
+    <p style="font-size:14px;color:#24292f;"><strong>Admin Feedback:</strong> {{ submission.admin_feedback }}</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="flash-msg error">{{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="flash-msg" style="background:#dcfce7;color:#1a7f37;border-color:#bbf7d0;">{{ success }}</div>
+{% endif %}
+
+<!-- Mission brief -->
+<div class="lesson-intro">
+    <p>Calling all <strong>Junior Detectives</strong>! 🕵️‍♀️🔍</p>
+    <p>Someone has built a circuit, but the code has gone missing! Your job is to write a script that wakes up the system.</p>
+    <h3>The Mission:</h3>
+    <ol style="margin-left:20px;line-height:2;font-size:15px;">
+        <li>Look at the <strong>Circuit Blueprint</strong> below.</li>
+        <li>Write a code that makes the <strong style="color:#cf222e;">Red Warning Light</strong> (LED) blink on and off like a heartbeat! ❤️⚡</li>
+        <li>Submit your secret code in the box at the bottom for the <strong>Head Detective</strong> to check!</li>
+    </ol>
+</div>
+
+<hr>
+
+<!-- Circuit + Goal -->
+<div class="part-row">
+    <div>
+        <h3>🧱 Mystery Blueprint</h3>
+        <p><em>Follow these coordinates to see the crime scene!</em></p>
+
+        <h4>💡 <span style="color:#cf222e;">Warning Light</span> (LED)</h4>
+        <ul style="margin-left:20px;line-height:1.9;font-size:14px;">
+            <li><strong>Long leg:</strong> row 10, column E</li>
+            <li><strong>Short leg:</strong> row 7, column E</li>
+        </ul>
+
+        <h4>⚡ The Helper (220 Ohm Resistor)</h4>
+        <ul style="margin-left:20px;line-height:1.9;font-size:14px;">
+            <li><strong>Leg 1:</strong> row 7, column C</li>
+            <li><strong>Leg 2:</strong> — rail (Ground Rail)</li>
+        </ul>
+
+        <h4>🧶 The Wires</h4>
+        <ol style="margin-left:20px;line-height:1.9;font-size:14px;">
+            <li><strong>Pin 13</strong> → row 10, column A</li>
+            <li><strong>Pin GND</strong> → — rail / Ground Rail</li>
+        </ol>
+    </div>
+    <div>
+        <div class="info-box">
+            <h2>📝 The Goal</h2>
+            <p>Make the LED turn <strong>ON</strong> for 1 second, then <strong>OFF</strong> for 1 second.</p>
+            <p>It should keep doing this forever so everyone knows the castle is safe! 🏰✨</p>
+        </div>
+        {{ hover_zoom("static/graphics/challenge_one_circuit.png", height=300, key="challenge1")|safe }}
+    </div>
+</div>
+
+<hr>
+
+<!-- Hints -->
+<details style="margin:20px 0;">
+    <summary style="font-size:15px;font-weight:700;color:#0969da;cursor:pointer;padding:10px 0;">
+        🔍 Need a Detective's Hint? (Click to open)
+    </summary>
+    <div class="tips-box" style="margin-top:10px;">
+        <p>💡 <strong>Hint 1:</strong> Remember to use <code>pinMode</code> and <code>OUTPUT</code> in your setup so the light knows it needs to glow!</p>
+        <p>💡 <strong>Hint 2:</strong> Use <code>digitalWrite</code> and <code>HIGH</code> to turn the light on and <code>LOW</code> to turn it off.</p>
+        <p>💡 <strong>Hint 3:</strong> Don't forget a <code>delay(1000);</code> between your commands so the light has time to wake up and sleep! 😴</p>
+    </div>
+</details>
+
+<hr>
+
+<!-- Submit form or approved state -->
+{% if not submission or submission.status == 'rejected' %}
+<div class="dash-card">
+    <div class="dash-card-label">
+        {% if submission and submission.status == 'rejected' %}🔄 Resubmit Your Evidence
+        {% else %}📤 Submit Your Evidence{% endif %}
+    </div>
+    <p style="font-size:14px;color:#57606a;margin-bottom:12px;">
+        Paste your complete Arduino sketch below. Make sure it compiles and uploads to your board before submitting.
+    </p>
+    <form method="POST">
+        <textarea name="sketch_code"
+                  style="width:100%;min-height:300px;padding:14px;
+                         background:#1e1e2e;color:#cdd6f4;
+                         border:2px solid #dbeafe;border-radius:10px;
+                         font-family:monospace;font-size:13px;line-height:1.6;
+                         resize:vertical;outline:none;white-space:pre;tab-size:2;"
+                  placeholder="// Paste your Arduino sketch here..."
+                  spellcheck="false">{% if submission %}{{ submission.sketch_code }}{% else %}void setup() {
+  // put your setup code here, to run once:
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+}{% endif %}</textarea>
+        <button type="submit" class="next-btn" style="margin-top:12px;">
+            🚀 Submit to the Head Detective
+        </button>
+    </form>
+</div>
+
+{% elif submission.status == 'pending' %}
+<div class="dash-card" style="text-align:center;padding:32px;">
+    <div style="font-size:48px;margin-bottom:16px;">🕒</div>
+    <h2 style="color:#9a6700;">Under Review</h2>
+    <p style="color:#57606a;margin-top:8px;">Your evidence has been submitted. The Head Detective is reviewing it now.</p>
+    <details style="margin-top:20px;text-align:left;">
+        <summary style="font-size:13px;font-weight:700;color:#57606a;cursor:pointer;">View submitted code</summary>
+        <pre style="background:#1e1e2e;color:#cdd6f4;padding:16px;border-radius:8px;
+                    font-family:monospace;font-size:12px;line-height:1.6;
+                    overflow-x:auto;margin-top:8px;white-space:pre;">{{ submission.sketch_code }}</pre>
+    </details>
+</div>
+
+{% elif submission.status == 'approved' %}
+<div class="dash-card" style="text-align:center;padding:32px;">
+    <div style="font-size:48px;margin-bottom:16px;">🏆</div>
+    <h2 style="color:#1a7f37;">Case Closed!</h2>
+    <p style="color:#57606a;margin-top:8px;">Your code has been approved. The next set of projects has been unlocked.</p>
+    <a href="{{ url_for('dashboard') }}" class="next-btn"
+       style="display:inline-block;margin-top:16px;text-decoration:none;">
+        Back to Dashboard →
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

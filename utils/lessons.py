@@ -82,6 +82,13 @@ LESSONS = [
         "block_builder": None
     },
     {
+        "key": "challenge_one",
+        "title": "🎯 Challenge",
+        "template": "lessons/challenge_one.html",
+        "part": None,
+        "block_builder": None
+    },
+    {
         "key": "project_eleven",
         "title": "⚙️ Project 11 ",
         "template": "lessons/project_eleven.html",
@@ -115,13 +122,6 @@ LESSONS = [
         "template": "lessons/project_fourteen_part_two.html",
         "part": "14",
         "block_builder": "codebreaker"  # ← update to correct preset
-    },
-    {
-        "key": "challenge_one",
-        "title": "🎯 Challenge",
-        "template": "lessons/challenge_one.html",
-        "part": None,
-        "block_builder": None
     },
 ]
 

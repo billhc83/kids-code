@@ -1,0 +1,933 @@
+{% extends "base.html" %}
+{% block title %}Step Builder — Admin{% endblock %}
+
+{% block content %}
+<div style="max-width:1400px;">
+
+<div class="dash-header">
+    <h1>🔧 Step Builder</h1>
+    <p class="dash-sub">Build wiring steps visually — draw highlights on the circuit image, fill in the component template, then generate Python code ready to paste.</p>
+</div>
+
+<!-- TOP ROW: Image picker + controls -->
+<div class="dash-card" style="margin-bottom:16px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end;">
+        <div>
+            <div class="dash-card-label">📁 Circuit Image</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="file" id="image-upload" accept="image/*"
+                       style="padding:6px;border:2px solid #dbeafe;border-radius:8px;font-family:inherit;font-size:13px;flex:1;">
+                <select id="image-select"
+                        style="padding:8px 12px;border:2px solid #dbeafe;border-radius:8px;font-family:inherit;font-size:13px;flex:1;">
+                    <option value="">— or pick existing graphic —</option>
+                    {% for img in graphics %}
+                    <option value="/static/graphics/{{ img }}">{{ img }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div>
+            <div class="dash-card-label">📐 Canvas Width</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="range" id="canvas-width-slider" min="400" max="1200" value="900"
+                       style="flex:1;" oninput="resizeCanvas(this.value)">
+                <span id="canvas-width-label" style="font-size:13px;font-weight:700;color:#0969da;min-width:50px;">900px</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div style="display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;">
+
+    <!-- LEFT: Canvas -->
+    <div>
+        <!-- Tool bar -->
+        <div class="dash-card" style="margin-bottom:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <button class="tool-btn active" id="tool-rect" onclick="setTool('rect')">⬜ Rect</button>
+                <button class="tool-btn" id="tool-circle" onclick="setTool('circle')">⭕ Circle</button>
+                <button class="tool-btn" id="tool-line" onclick="setTool('line')">〰️ Line</button>
+                <button class="tool-btn" id="tool-label" onclick="setTool('label')">🏷️ Label</button>
+                <div style="width:1px;background:#dbeafe;height:28px;margin:0 4px;"></div>
+
+                <!-- Circle radius -->
+                <label style="font-size:12px;font-weight:700;color:#57606a;">Radius:</label>
+                <input type="number" id="circle-radius" value="60" min="10" max="200" step="5"
+                       style="width:60px;padding:4px 8px;border:2px solid #dbeafe;border-radius:6px;font-size:13px;font-family:inherit;">
+
+                <!-- Line width -->
+                <label style="font-size:12px;font-weight:700;color:#57606a;">Wire W:</label>
+                <input type="number" id="line-width" value="20" min="5" max="60" step="5"
+                       style="width:60px;padding:4px 8px;border:2px solid #dbeafe;border-radius:6px;font-size:13px;font-family:inherit;">
+
+                <div style="width:1px;background:#dbeafe;height:28px;margin:0 4px;"></div>
+                <button class="tool-btn" style="background:#fff8c5;color:#9a6700;border-color:#d4a72c;"
+                        onclick="undoLast()">↩ Undo</button>
+                <button class="tool-btn" style="background:#ffebe9;color:#cf222e;border-color:#cf222e;"
+                        onclick="clearHighlights()">🗑 Clear</button>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:#57606a;" id="tool-hint">
+                Click and drag to place a rectangle highlight.
+            </div>
+        </div>
+
+        <!-- Polyline waypoint controls -->
+        <div id="waypoint-panel" class="dash-card" style="margin-bottom:12px;display:none;">
+            <div class="dash-card-label">🔌 Wire Waypoints</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-size:12px;color:#57606a;">X:</label>
+                <input type="number" id="wp-x" value="0" min="0"
+                       style="width:70px;padding:4px 8px;border:2px solid #dbeafe;border-radius:6px;font-size:13px;">
+                <label style="font-size:12px;color:#57606a;">Y:</label>
+                <input type="number" id="wp-y" value="0" min="0"
+                       style="width:70px;padding:4px 8px;border:2px solid #dbeafe;border-radius:6px;font-size:13px;">
+                <button class="tool-btn" onclick="addWaypoint()">＋ Add Point</button>
+                <button class="tool-btn" style="background:#dcfce7;color:#1a7f37;border-color:#1a7f37;"
+                        onclick="confirmWire()">✅ Confirm Wire</button>
+                <button class="tool-btn" onclick="removeLastWaypoint()">↩ Remove Last</button>
+                <button class="tool-btn" style="background:#ffebe9;color:#cf222e;border-color:#cf222e;"
+                        onclick="clearWaypoints()">🗑 Clear Points</button>
+            </div>
+            <div id="waypoint-display" style="font-size:12px;color:#57606a;margin-top:6px;"></div>
+        </div>
+
+        <div id="label-panel" class="dash-card" style="margin-bottom:12px;display:none;">
+            <div class="dash-card-label">🏷️ Add Label</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                <div class="tpl-field">
+                    <span class="tpl-label">Label Text</span>
+                    <input type="text" id="label-text" class="tpl-input" placeholder="e.g. Long Leg">
+                </div>
+                <div class="tpl-field" style="max-width:80px;">
+                    <span class="tpl-label">Font Size</span>
+                    <input type="number" id="label-fontsize" value="16" min="10" max="32" step="2" class="tpl-input">
+                </div>
+                <button class="tool-btn" style="background:#dcfce7;color:#1a7f37;border-color:#1a7f37;"
+                        onclick="confirmLabel()">+ Add Label</button>
+            </div>
+            <div id="label-position-display" style="font-size:12px;color:#57606a;margin-top:6px;">
+                Click the canvas to set position.
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="dash-card" style="padding:0;overflow:hidden;">
+            <canvas id="canvas" style="display:block;cursor:crosshair;max-width:100%;"></canvas>
+            <div style="padding:6px 16px;font-size:12px;color:#57606a;display:flex;justify-content:space-between;">
+                <span id="coords-display">x: — &nbsp; y: —</span>
+                <span id="image-size-display"></span>
+            </div>
+        </div>
+
+        <!-- Current highlights list -->
+        <div class="dash-card" style="margin-top:12px;">
+            <div class="dash-card-label">🎯 Current Step Highlights</div>
+            <div id="highlights-list">
+                <p style="color:#57606a;font-size:13px;">No highlights yet — draw on the canvas.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Controls -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Step preview -->
+        <div class="dash-card">
+            <div class="dash-card-label">👁️ Step Preview</div>
+            <div id="preview-wrap" style="background:#f4f8ff;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;">
+                <span style="color:#57606a;font-size:13px;">Load an image to see preview</span>
+            </div>
+        </div>
+
+        <!-- Component template -->
+        <div class="dash-card">
+            <div class="dash-card-label">🔩 Component Template</div>
+            <select id="component-select" onchange="updateTemplate()"
+                    style="width:100%;padding:8px 12px;border:2px solid #dbeafe;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:12px;">
+                <option value="manual">— Manual —</option>
+                <option value="led">💡 LED</option>
+                <option value="buzzer">🔊 Buzzer</option>
+                <option value="resistor">⚡ Resistor</option>
+                <option value="button">🔘 Button (4 legs)</option>
+                <option value="switch">🔄 Switch</option>
+                <option value="wire">〰️ Wire</option>
+                <option value="ldr">☀️ LDR / Photoresistor</option>
+            </select>
+
+            <!-- Template fields -->
+            <div id="template-fields"></div>
+
+            <!-- Instruction preview -->
+            <div id="instruction-preview"
+                 style="display:none;background:#f4f8ff;border:1px solid #dbeafe;border-radius:8px;
+                        padding:10px;font-size:13px;color:#24292f;margin-top:8px;line-height:1.6;">
+            </div>
+        </div>
+
+        <!-- Tip -->
+        <div class="dash-card">
+            <div class="dash-card-label">💡 Tip</div>
+            <input type="text" id="tip-input" placeholder="e.g. The long leg is positive — it's called the anode!"
+                   style="width:100%;padding:10px;border:2px solid #dbeafe;border-radius:8px;font-family:inherit;font-size:13px;">
+        </div>
+
+        <!-- Step actions -->
+        <div class="dash-card">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="next-btn" onclick="addStep()" style="width:100%;">+ Add Step</button>
+                <button class="next-btn" onclick="addIntroStep()"
+                        style="width:100%;background:#57606a;">📋 Add as Intro Step</button>
+                <button class="next-btn" onclick="nextStep()"
+                        style="width:100%;background:#1a7f37;">➡ Next Step (save + clear)</button>
+            </div>
+        </div>
+
+        <!-- Steps built -->
+        <div class="dash-card">
+            <div class="dash-card-label">📋 Steps Built (<span id="step-count">0</span>)</div>
+            <div id="steps-list" style="max-height:300px;overflow-y:auto;">
+                <p style="color:#57606a;font-size:13px;">No steps yet.</p>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="next-btn" onclick="generateCode()" style="flex:1;">⚡ Generate Code</button>
+                <button class="next-btn" style="background:#cf222e;flex:1;" onclick="clearAll()">🗑 Reset All</button>
+            </div>
+        </div>
+
+        <!-- Generated code -->
+        <div class="dash-card">
+            <div class="dash-card-label">💻 Generated Code</div>
+            <div style="position:relative;">
+                <button onclick="copyCode()"
+                        style="position:absolute;top:8px;right:8px;padding:5px 12px;
+                               background:#0969da;color:white;border:none;border-radius:6px;
+                               font-size:12px;font-weight:700;cursor:pointer;z-index:1;">📋 Copy</button>
+                <pre id="code-output"
+                     style="background:#1e1e2e;color:#cdd6f4;padding:16px;border-radius:10px;
+                            font-family:monospace;font-size:12px;line-height:1.6;
+                            overflow-x:auto;min-height:80px;white-space:pre-wrap;margin:0;">
+# Generated code appears here
+                </pre>
+            </div>
+            <div id="copy-confirm" style="display:none;color:#1a7f37;font-weight:700;font-size:13px;margin-top:6px;">
+                ✓ Copied!
+            </div>
+        </div>
+
+    </div>
+</div>
+</div>
+
+<style>
+.tool-btn {
+    padding: 6px 14px;
+    border: 2px solid #dbeafe;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0969da;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+.tool-btn.active { background: #0969da; color: white; border-color: #0969da; }
+.tool-btn:hover:not(.active):not(:disabled) { background: #dbeafe; }
+
+.tpl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 60px;
+}
+.tpl-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #57606a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.tpl-input {
+    padding: 6px 8px;
+    border: 2px solid #dbeafe;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.tpl-input:focus { border-color: #0969da; }
+.tpl-select {
+    padding: 6px 8px;
+    border: 2px solid #dbeafe;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    background: white;
+}
+
+.step-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 10px;
+    background: #f4f8ff;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    font-size: 12px;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.step-num { font-weight: 800; color: #0969da; white-space: nowrap; }
+.step-text { flex: 1; color: #24292f; line-height: 1.4; }
+.step-del {
+    background: #ffebe9; color: #cf222e; border: none;
+    border-radius: 4px; padding: 2px 6px; font-size: 11px;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+}
+
+.hl-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    background: #f4f8ff;
+    border: 1px solid #dbeafe;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: monospace;
+    margin-bottom: 4px;
+}
+</style>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var img = new Image();
+var imgW = 0, imgH = 0;
+var canvasW = 900;
+var scale = 1;
+var tool = 'rect';
+var currentHighlights = [];
+var waypoints = [];
+var steps = [];
+var drawing = false;
+var startX, startY;
+var mouseX = 0, mouseY = 0;
+var currentLabels = [];
+var pendingLabelPos = null;
+var currentLabels = [];
+
+// ── Image loading ──────────────────────────────────────────────────
+document.getElementById('image-upload').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) { loadImage(ev.target.result); };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('image-select').addEventListener('change', function() {
+    if (this.value) loadImage(this.value);
+});
+
+function loadImage(src) {
+    img.onload = function() {
+        imgW = img.naturalWidth;
+        imgH = img.naturalHeight;
+        resizeCanvas(canvasW);
+        document.getElementById('image-size-display').textContent =
+            'Image: ' + imgW + ' × ' + imgH + ' px';
+        updatePreview();
+    };
+    img.src = src;
+}
+
+function resizeCanvas(w) {
+    canvasW = parseInt(w);
+    document.getElementById('canvas-width-label').textContent = canvasW + 'px';
+    if (!imgW) return;
+    scale = canvasW / imgW;
+    canvas.width = canvasW;
+    canvas.height = Math.round(imgH * scale);
+    redraw();
+    updatePreview();
+}
+
+// ── Tool selection ─────────────────────────────────────────────────
+function setTool(t) {
+    tool = t;
+    document.querySelectorAll('.tool-btn[id^="tool-"]').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('label-panel').style.display = t === 'label' ? 'block' : 'none';
+    document.getElementById('tool-' + t).classList.add('active');
+    waypoints = [];
+    drawing = false;
+    document.getElementById('waypoint-panel').style.display = t === 'line' ? 'block' : 'none';
+    var hints = {
+        rect: 'Click and drag to place a rectangle highlight.',
+        circle: 'Click to place a circle highlight at that point.',
+        line: 'Add waypoints manually below, or click the canvas. Double-click to finish.',
+        label: 'Click the canvas to set the label position, then enter text below.'
+    };
+    document.getElementById('tool-hint').textContent = hints[t];
+    redraw();
+}
+
+// ── Coordinate helpers ─────────────────────────────────────────────
+function getPos(e) {
+    var r = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / r.width;
+    var scaleY = canvas.height / r.height;
+    return {
+        x: Math.round((e.clientX - r.left) * scaleX / scale),
+        y: Math.round((e.clientY - r.top) * scaleY / scale)
+    };
+}
+
+// ── Canvas events ──────────────────────────────────────────────────
+canvas.addEventListener('mousemove', function(e) {
+    var p = getPos(e);
+    mouseX = p.x; mouseY = p.y;
+    document.getElementById('coords-display').innerHTML = 'x: ' + p.x + ' &nbsp; y: ' + p.y;
+    if (drawing && tool === 'rect') redraw(p);
+    if (tool === 'line' && waypoints.length > 0) redraw(p);
+});
+
+canvas.addEventListener('mousedown', function(e) {
+    var p = getPos(e);
+    if (tool === 'rect') {
+        drawing = true; startX = p.x; startY = p.y;
+    } else if (tool === 'circle') {
+        var r = parseInt(document.getElementById('circle-radius').value) || 60;
+        currentHighlights.push({shape:'circle', pos:[p.x, p.y], radius:r});
+        renderHighlightsList();
+        redraw();
+        updatePreview();
+    } else if (tool === 'line') {
+        var now = Date.now();
+        if (now - (canvas._lastClick||0) < 300 && waypoints.length >= 2) {
+            confirmWire();
+        } else {
+            waypoints.push([p.x, p.y]);
+            updateWaypointDisplay();
+            redraw();
+        }
+        canvas._lastClick = now;
+    }  else if (tool === 'label') {
+            pendingLabelPos = [p.x, p.y];
+            document.getElementById('label-position-display').textContent = 
+                'Position set: (' + p.x + ', ' + p.y + ') — enter text and click Add Label';
+            document.getElementById('label-text').focus();
+        }
+
+});
+
+canvas.addEventListener('mouseup', function(e) {
+    if (tool === 'rect' && drawing) {
+        var p = getPos(e);
+        drawing = false;
+        var x1=Math.min(startX,p.x), y1=Math.min(startY,p.y);
+        var x2=Math.max(startX,p.x), y2=Math.max(startY,p.y);
+        if (Math.abs(x2-x1) > 4 && Math.abs(y2-y1) > 4) {
+            currentHighlights.push({shape:'rect', pos:[x1,y1,x2,y2]});
+            renderHighlightsList();
+            updatePreview();
+        }
+        redraw();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && tool === 'line' && waypoints.length >= 2) confirmWire();
+    if (e.key === 'Escape') { waypoints = []; drawing = false; redraw(); }
+});
+
+// ── Waypoint management ────────────────────────────────────────────
+function addWaypoint() {
+    var x = parseInt(document.getElementById('wp-x').value)||0;
+    var y = parseInt(document.getElementById('wp-y').value)||0;
+    waypoints.push([x, y]);
+    updateWaypointDisplay();
+    redraw();
+}
+
+function removeLastWaypoint() {
+    waypoints.pop();
+    updateWaypointDisplay();
+    redraw();
+}
+
+function clearWaypoints() {
+    waypoints = [];
+    updateWaypointDisplay();
+    redraw();
+}
+
+function confirmWire() {
+    if (waypoints.length < 2) { alert('Need at least 2 points.'); return; }
+    var w = parseInt(document.getElementById('line-width').value)||20;
+    currentHighlights.push({shape:'polyline', pos:waypoints.slice(), width:w});
+    waypoints = [];
+    updateWaypointDisplay();
+    renderHighlightsList();
+    redraw();
+    updatePreview();
+}
+
+function updateWaypointDisplay() {
+    var d = document.getElementById('waypoint-display');
+    if (waypoints.length === 0) {
+        d.textContent = 'No points yet.';
+    } else {
+        d.textContent = 'Points: ' + waypoints.map(function(p){return '('+p[0]+','+p[1]+')';}).join(' → ');
+    }
+}
+
+// ── Redraw canvas ──────────────────────────────────────────────────
+function redraw(mouse) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (img.src && imgW) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    currentHighlights.forEach(function(h) {
+        drawHighlight(h, 'rgba(255,165,0,0.9)', 'rgba(255,165,0,0.15)');
+    });
+
+    // In-progress rect
+    if (drawing && mouse && tool === 'rect') {
+        ctx.strokeStyle = 'rgba(255,165,0,0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5,3]);
+        ctx.strokeRect(startX*scale, startY*scale, (mouse.x-startX)*scale, (mouse.y-startY)*scale);
+        ctx.setLineDash([]);
+    }
+
+    // In-progress line
+    if (tool === 'line' && waypoints.length > 0) {
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(33,150,243,0.8)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5,3]);
+        waypoints.forEach(function(pt, i) {
+            if(i===0) ctx.moveTo(pt[0]*scale, pt[1]*scale);
+            else ctx.lineTo(pt[0]*scale, pt[1]*scale);
+        });
+        if (mouse) ctx.lineTo(mouse.x*scale, mouse.y*scale);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        waypoints.forEach(function(pt, i) {
+            ctx.fillStyle = i===0 ? '#4CAF50' : '#2196F3';
+            ctx.beginPath();
+            ctx.arc(pt[0]*scale, pt[1]*scale, 5, 0, Math.PI*2);
+            ctx.fill();
+        });
+    }
+}
+
+function drawHighlight(h, stroke, fill) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    if (h.shape === 'rect') {
+        ctx.strokeRect(h.pos[0]*scale, h.pos[1]*scale, (h.pos[2]-h.pos[0])*scale, (h.pos[3]-h.pos[1])*scale);
+        ctx.fillStyle = fill;
+        ctx.fillRect(h.pos[0]*scale, h.pos[1]*scale, (h.pos[2]-h.pos[0])*scale, (h.pos[3]-h.pos[1])*scale);
+    } else if (h.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(h.pos[0]*scale, h.pos[1]*scale, h.radius*scale, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.fillStyle = fill;
+        ctx.fill();
+    } else if (h.shape === 'polyline') {
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(33,150,243,0.9)';
+        ctx.lineWidth = Math.max(2, h.width * scale * 0.3);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        h.pos.forEach(function(pt, i) {
+            if(i===0) ctx.moveTo(pt[0]*scale, pt[1]*scale);
+            else ctx.lineTo(pt[0]*scale, pt[1]*scale);
+        });
+        ctx.stroke();
+        h.pos.forEach(function(pt, i) {
+            ctx.fillStyle = i===0 ? '#4CAF50' : '#2196F3';
+            ctx.beginPath();
+            ctx.arc(pt[0]*scale, pt[1]*scale, 4, 0, Math.PI*2);
+            ctx.fill();
+        });
+    }
+}
+
+// ── Preview (server-side render) ───────────────────────────────────
+var previewDebounce = null;
+function updatePreview() {
+    clearTimeout(previewDebounce);
+    previewDebounce = setTimeout(function() {
+        if (!img.src || !imgW) return;
+        var payload = {
+            image_src: img.src,
+            highlights: currentHighlights,
+            labels: currentLabels 
+        };
+        fetch('/admin/step-builder-preview', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        }).then(function(r) { 
+    console.log('Preview status:', r.status);
+            return r.blob(); 
+        })
+        .catch(function(err) { 
+            console.log('Preview error:', err); 
+        })
+        .then(function(blob) {
+            var url = URL.createObjectURL(blob);
+            var pw = document.getElementById('preview-wrap');
+            pw.innerHTML = '<img src="' + url + '" style="width:100%;border-radius:6px;">';
+        }).catch(function() {});
+    }, 300);
+}
+
+// ── Highlights list ────────────────────────────────────────────────
+function renderHighlightsList() {
+    var el = document.getElementById('highlights-list');
+    if (currentHighlights.length === 0) {
+        el.innerHTML = '<p style="color:#57606a;font-size:13px;">No highlights yet — draw on the canvas.</p>';
+        return;
+    }
+    el.innerHTML = currentHighlights.map(function(h, i) {
+        return '<div class="hl-item">' +
+            '<span>' + highlightToCode(h) + '</span>' +
+            '<button onclick="removeHighlight(' + i + ')" style="background:#ffebe9;color:#cf222e;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">✕</button>' +
+            '</div>';
+    }).join('');
+}
+
+function removeHighlight(i) {
+    currentHighlights.splice(i, 1);
+    renderHighlightsList();
+    redraw();
+    updatePreview();
+}
+
+function undoLast() {
+    if (waypoints.length > 0) { waypoints.pop(); updateWaypointDisplay(); redraw(); }
+    else if (currentHighlights.length > 0) { currentHighlights.pop(); renderHighlightsList(); redraw(); updatePreview(); }
+}
+
+function clearHighlights() {
+    currentHighlights = [];
+    waypoints = [];
+    renderHighlightsList();
+    redraw();
+    updatePreview();
+}
+
+// ── Code generation ────────────────────────────────────────────────
+function highlightToCode(h) {
+    if (h.shape === 'rect') return 'rect(' + h.pos.join(', ') + ')';
+    if (h.shape === 'circle') return 'circle(' + h.pos[0] + ', ' + h.pos[1] + ', radius=' + (h.radius||60) + ')';
+    if (h.shape === 'polyline') {
+        var pts = h.pos.map(function(p){ return '(' + p[0] + ', ' + p[1] + ')'; }).join(', ');
+        return 'line(' + pts + ', width=' + (h.width||20) + ')';
+    }
+    return '';
+}
+
+// ── Component templates ────────────────────────────────────────────
+function updateTemplate() {
+    var comp = document.getElementById('component-select').value;
+    var fields = document.getElementById('template-fields');
+
+    var templates = {
+        manual: '',
+        led: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('ll-row','Long leg row','12') + field('ll-col','Long leg col','E') +
+            field('sl-row','Short leg row','11') + field('sl-col','Short leg col','E') +
+            '</div>',
+        buzzer: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('bz-ll-row','Long leg row','14') + field('bz-ll-col','Long leg col','E') +
+            field('bz-sl-row','Short leg row','14') + field('bz-sl-col','Short leg col','F') +
+            '</div>',
+        resistor: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('res-val','Value','220 Ohm') +
+            field('r1-row','Leg 1 row','11') + field('r1-col','Leg 1 col','D') +
+            field('r2-row','Leg 2 row','7') + field('r2-col','Leg 2 col','D') +
+            '</div>',
+        button: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('b1-row','Leg 1 row','18') + field('b1-col','Leg 1 col','E') +
+            field('b2-row','Leg 2 row','18') + field('b2-col','Leg 2 col','F') +
+            field('b3-row','Leg 3 row','20') + field('b3-col','Leg 3 col','E') +
+            field('b4-row','Leg 4 row','20') + field('b4-col','Leg 4 col','F') +
+            '</div>',
+        switch: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('sw-cp-row','Centre pin row','4') + field('sw-cp-col','Centre pin col','H') +
+            field('sw-sp-row','Side pin row','5') + field('sw-sp-col','Side pin col','H') +
+            '</div>',
+        wire: '<div>' +
+            '<div style="margin-bottom:8px;"><div class="tpl-label" style="margin-bottom:4px;">End 1</div>' + endpointFields('w-e1') + '</div>' +
+            '<div><div class="tpl-label" style="margin-bottom:4px;">End 2</div>' + endpointFields('w-e2') + '</div>' +
+            '</div>',
+        ldr: '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            field('ldr-l1-row','Leg 1 row','15') + field('ldr-l1-col','Leg 1 col','F') +
+            field('ldr-l2-row','Leg 2 row','18') + field('ldr-l2-col','Leg 2 col','F') +
+            '</div>',
+    };
+
+    if (comp === 'manual') {
+        fields.innerHTML = '<textarea id="manual-instruction" rows="3" placeholder="Type your instruction here... use &lt;br&gt; for line breaks" ' +
+            'oninput="updateInstructionPreview()" ' +
+            'style="width:100%;padding:8px;border:2px solid #dbeafe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>';
+    } else {
+        fields.innerHTML = templates[comp] || '';
+        // Add change listeners to all template inputs
+        fields.querySelectorAll('input,select').forEach(function(el) {
+            el.addEventListener('input', updateInstructionPreview);
+            el.addEventListener('change', updateInstructionPreview);
+        });
+    }
+    updateInstructionPreview();
+}
+
+function field(id, label, placeholder) {
+    return '<div class="tpl-field">' +
+        '<span class="tpl-label">' + label + '</span>' +
+        '<input type="text" id="' + id + '" class="tpl-input" placeholder="' + placeholder + '" oninput="updateInstructionPreview()">' +
+        '</div>';
+}
+
+function endpointFields(prefix) {
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<div class="tpl-field">' +
+        '<span class="tpl-label">Type</span>' +
+        '<select id="' + prefix + '-type" class="tpl-select" onchange="updateInstructionPreview()">' +
+        '<option value="pin">Arduino Pin</option>' +
+        '<option value="board">Breadboard</option>' +
+        '<option value="rail">Rail</option>' +
+        '</select></div>' +
+        '<div class="tpl-field"><span class="tpl-label">Pin / Row</span>' +
+        '<input type="text" id="' + prefix + '-pin" class="tpl-input" placeholder="e.g. 9 or 14" oninput="updateInstructionPreview()"></div>' +
+        '<div class="tpl-field"><span class="tpl-label">Col / Rail</span>' +
+        '<input type="text" id="' + prefix + '-col" class="tpl-input" placeholder="e.g. E or -" oninput="updateInstructionPreview()"></div>' +
+        '</div>';
+}
+
+function getEndpoint(prefix) {
+    var type = val(prefix + '-type');
+    var pin = val(prefix + '-pin') || '__';
+    var col = val(prefix + '-col') || '__';
+    if (type === 'pin') return 'Arduino Pin ' + pin;
+    if (type === 'board') return 'row ' + pin + ', column ' + col;
+    if (type === 'rail') return col === '-' || col === '' ? 'the negative / - rail' : 'the positive / + rail';
+    return '__';
+}
+
+function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+}
+
+function getInstruction() {
+    var comp = document.getElementById('component-select').value;
+    var v = function(id) { return val(id) || '__'; };
+    var instructions = {
+        manual: val('manual-instruction'),
+        led: 'Place the long leg of the LED in row ' + v('ll-row') + ', column ' + v('ll-col') + '.<br>Place the short leg of the LED in row ' + v('sl-row') + ', column ' + v('sl-col') + '.',
+        buzzer: 'Place the long leg of the buzzer in row ' + v('bz-ll-row') + ', column ' + v('bz-ll-col') + '.<br>Place the short leg of the buzzer in row ' + v('bz-sl-row') + ', column ' + v('bz-sl-col') + '.',
+        resistor: 'Place one leg of the ' + v('res-val') + ' resistor in row ' + v('r1-row') + ', column ' + v('r1-col') + '.<br>Place the other leg in row ' + v('r2-row') + ', column ' + v('r2-col') + '.',
+        button: 'Place the button onto the breadboard.<br>Place the first leg into row ' + v('b1-row') + ', column ' + v('b1-col') + '.<br>Place the second leg into row ' + v('b2-row') + ', column ' + v('b2-col') + '.<br>Place the third leg into row ' + v('b3-row') + ', column ' + v('b3-col') + '.<br>Place the fourth leg into row ' + v('b4-row') + ', column ' + v('b4-col') + '.',
+        switch: 'Place the centre pin of the switch in row ' + v('sw-cp-row') + ', column ' + v('sw-cp-col') + '.<br>Place the side pin of the switch in row ' + v('sw-sp-row') + ', column ' + v('sw-sp-col') + '.',
+        wire: 'Place one end of the wire in ' + getEndpoint('w-e1') + '.<br>Place the other end in ' + getEndpoint('w-e2') + '.',
+        ldr: 'Place one leg of the LDR in row ' + v('ldr-l1-row') + ', column ' + v('ldr-l1-col') + '.<br>Place the other leg in row ' + v('ldr-l2-row') + ', column ' + v('ldr-l2-col') + '.',
+    };
+    return instructions[comp] || '';
+}
+
+function updateInstructionPreview() {
+    var instr = getInstruction();
+    var preview = document.getElementById('instruction-preview');
+    if (instr) {
+        preview.innerHTML = instr.replace(/<br>/g, '<br>');
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// ── Step management ────────────────────────────────────────────────
+function addIntroStep() {
+    var instr = getInstruction();
+    var tip = val('tip-input');
+    if (!instr) { alert('Enter an instruction first.'); return; }
+    steps.push({type:'intro', instruction:instr, tip:tip, highlights:[]});
+    clearForNextStep();
+    renderStepsList();
+}
+
+function addStep() {
+    var instr = getInstruction();
+    var tip = val('tip-input');
+    if (!instr) { alert('Enter an instruction first.'); return; }
+    if (currentHighlights.length === 0 && !confirm('No highlights placed. Add step anyway?')) return;
+    steps.push({type:'build', instruction:instr, tip:tip, highlights:currentHighlights.slice(), labels:currentLabels.slice()});
+    clearForNextStep();
+    renderStepsList();
+}
+
+function nextStep() {
+    var instr = getInstruction();
+    if (instr) {
+        var tip = val('tip-input');
+        steps.push({type:'build', instruction:instr, tip:tip, highlights:currentHighlights.slice()});
+        renderStepsList();
+    }
+    clearForNextStep();
+}
+
+function clearForNextStep() {
+    currentHighlights = [];
+    currentLabels = [];
+    waypoints = [];
+    document.getElementById('tip-input').value = '';
+    // Reset template fields
+    document.getElementById('component-select').value = 'manual';
+    updateTemplate();
+    renderHighlightsList();
+    redraw();
+    updatePreview();
+    updateInstructionPreview();
+}
+
+function removeStep(i) {
+    steps.splice(i, 1);
+    renderStepsList();
+}
+
+function renderStepsList() {
+    document.getElementById('step-count').textContent = steps.length;
+    var el = document.getElementById('steps-list');
+    if (steps.length === 0) {
+        el.innerHTML = '<p style="color:#57606a;font-size:13px;">No steps yet.</p>';
+        return;
+    }
+    el.innerHTML = steps.map(function(s, i) {
+        var label = s.type === 'intro' ? '📋 Intro' : 'Step ' + i;
+        var hl = s.highlights.length > 0 ? s.highlights.length + ' hl' : 'no hl';
+        var text = s.instruction.replace(/<br>/g, ' | ');
+        return '<div class="step-item">' +
+            '<span class="step-num">' + label + '</span>' +
+            '<span class="step-text">' + text.substring(0, 50) + (text.length>50?'...':'') +
+            ' <em style="color:#57606a;">(' + hl + ')</em></span>' +
+            '<button class="step-del" onclick="removeStep(' + i + ')">✕</button>' +
+            '</div>';
+    }).join('');
+}
+
+// ── Code generation ────────────────────────────────────────────────
+function generateCode() {
+    if (steps.length === 0) { alert('No steps to generate.'); return; }
+    var lines = [
+        'from utils.step_builder import build_step, intro_step, rect, circle, line, lbl',
+        '',
+        'PAGE_TITLE = "Project X: Title"',
+        'CIRCUIT_IMAGE = "static/graphics/your_circuit.png"',
+        '',
+        'STEPS = ['
+    ];
+    steps.forEach(function(s) {
+        var instr = s.instruction.replace(/"/g, '\\"');
+        var tip = (s.tip||'').replace(/"/g, '\\"');
+        if (s.type === 'intro') {
+            lines.push('    intro_step(');
+            lines.push('        "' + instr + '",');
+            lines.push('        "' + tip + '",');
+            lines.push('    ),');
+        } else {
+            lines.push('    build_step(');
+            lines.push('        "' + instr + '",');
+            lines.push('        "' + tip + '",');
+            s.highlights.forEach(function(h) { lines.push('        ' + highlightToCode(h) + ','); });
+            if (s.labels && s.labels.length > 0) {
+                var lblParts = s.labels.map(function(lb){ return labelToCode(lb); }).join(', ');
+                lines.push('        labels=[' + lblParts + '],');
+            }
+            lines.push('        greyout=True,');
+            lines.push('    ),');
+        }
+        lines.push('');
+    });
+    lines.push(']');
+    document.getElementById('code-output').textContent = lines.join('\n');
+}
+
+function copyCode() {
+    var code = document.getElementById('code-output').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+        var c = document.getElementById('copy-confirm');
+        c.style.display = 'block';
+        setTimeout(function(){ c.style.display = 'none'; }, 2000);
+    });
+}
+
+function clearAll() {
+    if (!confirm('Reset everything?')) return;
+    steps = [];
+    currentHighlights = [];
+    waypoints = [];
+    renderStepsList();
+    renderHighlightsList();
+    redraw();
+    updatePreview();
+}
+
+function confirmLabel() {
+    var text = document.getElementById('label-text').value.trim();
+    var fs = parseInt(document.getElementById('label-fontsize').value) || 16;
+    if (!text) { alert('Enter label text first.'); return; }
+    if (!pendingLabelPos) { alert('Click the canvas to set position first.'); return; }
+    currentLabels.push({text:text, pos:pendingLabelPos.slice(), font_size:fs});
+    pendingLabelPos = null;
+    document.getElementById('label-text').value = '';
+    document.getElementById('label-position-display').textContent = 'Click the canvas to set position.';
+    renderLabelsList();
+    updatePreview();
+}
+
+function renderLabelsList() {
+    var existing = document.getElementById('highlights-list');
+    // Re-render highlights + labels together
+    var allItems = currentHighlights.map(function(h, i) {
+        return '<div class="hl-item"><span>' + highlightToCode(h) + '</span>' +
+            '<button onclick="removeHighlight(' + i + ')" style="background:#ffebe9;color:#cf222e;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">✕</button></div>';
+    });
+    var labelItems = currentLabels.map(function(lb, i) {
+        return '<div class="hl-item" style="border-color:#d4a72c;"><span style="color:#9a6700;">' + 
+            labelToCode(lb) + '</span>' +
+            '<button onclick="removeLabel(' + i + ')" style="background:#fff8c5;color:#9a6700;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:700;">✕</button></div>';
+    });
+    var all = allItems.concat(labelItems);
+    existing.innerHTML = all.length > 0 ? all.join('') : 
+        '<p style="color:#57606a;font-size:13px;">No highlights yet.</p>';
+}
+
+function labelToCode(lb) {
+    return 'lbl("' + lb.text.replace(/"/g, '\\"') + '", pos=(' + lb.pos[0] + ', ' + lb.pos[1] + '), font_size=' + (lb.font_size||16) + ')';
+}
+
+function removeLabel(i) {
+    currentLabels.splice(i, 1);
+    renderLabelsList();
+    updatePreview();
+}
+
+
+
+// ── Init ───────────────────────────────────────────────────────────
+updateTemplate();
+</script>
+{% endblock %}

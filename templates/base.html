@@ -21,6 +21,18 @@
         {% if session.is_parent %}
             <a href="{{ url_for('parent_dashboard') }}">Parent</a>
         {% endif %}
+        {% if session.user_id and not session.is_parent %}
+            {% for lesson in sidebar_standalone %}
+                {% if 'challenge' in lesson.key and lesson.key in unlocked_lessons %}
+                <a href="{{ url_for('challenge', challenge_key=lesson.key) }}"
+                class="{% if current_endpoint == 'challenge' and request.view_args.challenge_key == lesson.key %}active{% endif %}"
+                style="background:#fff8c5;color:#9a6700;border:2px solid #d4a72c;border-radius:20px;padding:6px 14px;">
+                    🎯 {{ lesson.title }}
+                    
+                </a>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
         <a href="{{ url_for('feedback') }}">Feedback</a>
     </div>
 

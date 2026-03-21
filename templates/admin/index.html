@@ -6,7 +6,7 @@
 
     <div class="dash-header">
         <h1>🛠️ Admin Dashboard</h1>
-        <p class="dash-sub">Manage feedback and users.</p>
+        <p class="dash-sub">Manage users, review submissions, and view usage data.</p>
     </div>
 
     {% with messages = get_flashed_messages() %}
@@ -17,94 +17,337 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Feedback threads -->
-    <div class="dash-card">
-        <div class="dash-card-label">
-            💬 Feedback Threads ({{ threads|length }})
-        </div>
+    <!-- Tabs -->
+    <div class="lesson-tabs" style="margin-bottom:20px;">
+        <button class="lesson-tab-btn active" onclick="showAdminTab('feedback', this)">
+            💬 Feedback
+        </button>
+        <button class="lesson-tab-btn" onclick="showAdminTab('challenges', this)">
+            🎯 Challenges
+        </button>
+        <button class="lesson-tab-btn" onclick="showAdminTab('users', this)">
+            👥 Users
+        </button>
+        <button class="lesson-tab-btn" onclick="showAdminTab('analytics', this)">
+            📊 Analytics
+        </button>
+    </div>
 
-        {% if threads %}
-        <div class="thread-list">
-            {% for thread in threads %}
-            <div class="thread-card">
-                <div class="thread-header">
-                    <div>
-                        <span class="thread-category">{{ thread.category }}</span>
-                        <span class="thread-subject">{{ thread.subject }}</span>
-                        <span style="font-size:12px;color:#57606a;margin-left:8px;">
-                            from {{ thread.username }}
-                        </span>
-                    </div>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        <span class="thread-status {{ thread.status }}">
-                            {{ thread.status }}
-                        </span>
-
-                        <!-- Resolve button -->
-                        {% if thread.status == 'open' %}
-                        <form method="POST" style="margin:0">
-                            <input type="hidden" name="action" value="resolve">
-                            <input type="hidden" name="thread_id" value="{{ thread.id }}">
-                            <button type="submit" class="admin-btn resolve-btn">
-                                ✓ Resolve
-                            </button>
-                        </form>
-                        {% endif %}
-
-                        <!-- Delete button -->
-                        <form method="POST" style="margin:0"
-                              onsubmit="return confirm('Delete this thread?')">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="thread_id" value="{{ thread.id }}">
-                            <button type="submit" class="admin-btn delete-btn">
-                                🗑 Delete
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Messages -->
-                <div class="message-list">
-                    {% for msg in thread.messages %}
-                    <div class="message-bubble
-                         {% if msg.is_admin %}admin-bubble{% else %}user-bubble{% endif %}">
-                        <div class="bubble-header">
-                            <span class="bubble-sender">
-                                {% if msg.is_admin %}
-                                    🛠️ {{ msg.sender_username }} (admin)
-                                {% else %}
-                                    👤 {{ msg.sender_username }}
-                                {% endif %}
-                            </span>
-                            <span class="bubble-time">
-                                {{ msg.created_at[:10] }}
+    <!-- ── FEEDBACK TAB ── -->
+    <div class="admin-tab-panel active" id="tab-feedback">
+        <div class="dash-card">
+            <div class="dash-card-label">
+                💬 Feedback Threads ({{ threads|length }})
+            </div>
+            {% if threads %}
+            <div class="thread-list">
+                {% for thread in threads %}
+                <div class="thread-card">
+                    <div class="thread-header">
+                        <div>
+                            <span class="thread-category">{{ thread.category }}</span>
+                            <span class="thread-subject">{{ thread.subject }}</span>
+                            <span style="font-size:12px;color:#57606a;margin-left:8px;">
+                                from {{ thread.username }}
                             </span>
                         </div>
-                        <div class="bubble-text">{{ msg.message }}</div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <span class="thread-status {{ thread.status }}">{{ thread.status }}</span>
+                            {% if thread.status == 'open' %}
+                            <form method="POST" style="margin:0">
+                                <input type="hidden" name="action" value="resolve">
+                                <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                                <button type="submit" class="admin-btn resolve-btn">✓ Resolve</button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" style="margin:0"
+                                  onsubmit="return confirm('Delete this thread?')">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                                <button type="submit" class="admin-btn delete-btn">🗑 Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    {% endfor %}
+                    <div class="message-list">
+                        {% for msg in thread.messages %}
+                        <div class="message-bubble {% if msg.is_admin %}admin-bubble{% else %}user-bubble{% endif %}">
+                            <div class="bubble-header">
+                                <span class="bubble-sender">
+                                    {% if msg.is_admin %}🛠️ {{ msg.sender_username }} (admin)
+                                    {% else %}👤 {{ msg.sender_username }}{% endif %}
+                                </span>
+                                <span class="bubble-time">{{ msg.created_at[:10] }}</span>
+                            </div>
+                            <div class="bubble-text">{{ msg.message }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <form method="POST" class="reply-form">
+                        <input type="hidden" name="action" value="reply">
+                        <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                        <div class="reply-row">
+                            <textarea name="message" placeholder="Write a reply..." required rows="2"></textarea>
+                            <button type="submit" class="reply-btn">Reply</button>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- Reply form -->
-                <form method="POST" class="reply-form">
-                    <input type="hidden" name="action" value="reply">
-                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
-                    <div class="reply-row">
-                        <textarea name="message"
-                                  placeholder="Write a reply..."
-                                  required rows="2"></textarea>
-                        <button type="submit" class="reply-btn">Reply</button>
-                    </div>
-                </form>
-
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% else %}
+            <p style="color:#57606a;font-size:14px;">No feedback threads yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── CHALLENGES TAB ── -->
+    <div class="admin-tab-panel" id="tab-challenges">
+        <div class="dash-card">
+            <div class="dash-card-label">🎯 Challenge Submissions ({{ submissions|length }})</div>
+            {% if submissions %}
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                {% for sub in submissions %}
+                <div style="border:2px solid
+                    {% if sub.status == 'approved' %}#1a7f37
+                    {% elif sub.status == 'rejected' %}#cf222e
+                    {% else %}#d4a72c{% endif %};
+                    border-radius:12px;padding:16px;background:#f4f8ff;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;">
+                        <div>
+                            <span style="font-weight:800;font-size:15px;">{{ sub.username }}</span>
+                            <span class="thread-category" style="margin-left:8px;">{{ sub.challenge_key }}</span>
+                            <span class="thread-status {{ sub.status }}" style="margin-left:8px;">{{ sub.status }}</span>
+                        </div>
+                        <span style="font-size:12px;color:#57606a;white-space:nowrap;">{{ sub.submitted_at[:10] }}</span>
+                    </div>
+                    <details style="margin-bottom:12px;">
+                        <summary style="font-size:13px;font-weight:700;color:#0969da;cursor:pointer;">
+                            View submitted code
+                        </summary>
+                        <pre style="background:#1e1e2e;color:#cdd6f4;padding:14px;border-radius:8px;
+                                    font-family:monospace;font-size:12px;line-height:1.6;
+                                    overflow-x:auto;margin-top:8px;white-space:pre;">{{ sub.sketch_code }}</pre>
+                    </details>
+                    {% if sub.status == 'pending' %}
+                    <form method="POST">
+                        <input type="hidden" name="action" value="review_challenge">
+                        <input type="hidden" name="submission_id" value="{{ sub.id }}">
+                        <input type="hidden" name="user_id" value="{{ sub.user_id }}">
+                        <input type="hidden" name="challenge_key" value="{{ sub.challenge_key }}">
+                        <textarea name="feedback" placeholder="Leave feedback (optional)..."
+                                  style="width:100%;padding:10px;border:2px solid #dbeafe;
+                                         border-radius:8px;font-family:inherit;font-size:13px;
+                                         resize:vertical;margin-bottom:8px;" rows="3"></textarea>
+                        <div style="display:flex;gap:8px;">
+                            <button type="submit" name="status" value="approved"
+                                    class="admin-btn resolve-btn" style="padding:8px 20px;font-size:13px;">
+                                ✓ Approve
+                            </button>
+                            <button type="submit" name="status" value="rejected"
+                                    class="admin-btn delete-btn" style="padding:8px 20px;font-size:13px;">
+                                ✕ Request Revision
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    {% if sub.admin_feedback %}
+                    <div style="background:white;border-radius:8px;padding:10px;font-size:13px;color:#57606a;">
+                        💬 {{ sub.admin_feedback }}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:#57606a;font-size:14px;">No challenge submissions yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ── USERS TAB ── -->
+    <div class="admin-tab-panel" id="tab-users">
+        <div class="dash-card">
+            <div class="dash-card-label">👥 Users ({{ users|length }})</div>
+
+            <!-- Search -->
+            <input type="text" id="user-search"
+                   placeholder="Search by username or email..."
+                   oninput="filterUsers()"
+                   style="width:100%;max-width:400px;padding:10px 14px;
+                          border:2px solid #dbeafe;border-radius:10px;
+                          font-family:inherit;font-size:14px;margin-bottom:16px;outline:none;">
+
+            <div id="users-table-wrap" style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                    <thead>
+                        <tr style="background:#f4f8ff;border-bottom:2px solid #dbeafe;">
+                            <th style="padding:10px 14px;text-align:left;font-weight:700;">Username</th>
+                            <th style="padding:10px 14px;text-align:left;font-weight:700;">Email</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Verified</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Parent</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Admin</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Progress</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Joined</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        {% for user in users %}
+                        <tr class="user-row" data-username="{{ user.username }}" data-email="{{ user.email }}"
+                            style="border-bottom:1px solid #dbeafe;">
+                            <td style="padding:10px 14px;font-weight:700;">{{ user.username }}</td>
+                            <td style="padding:10px 14px;color:#57606a;font-size:13px;">
+                                {% if not user.email.endswith('@kidscode.internal') %}
+                                    {{ user.email }}
+                                {% else %}
+                                    <em style="color:#b0b8c1;">parent-created</em>
+                                {% endif %}
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;">
+                                {% if user.is_verified %}✅{% else %}❌{% endif %}
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;">
+                                {% if user.is_parent %}👪{% else %}—{% endif %}
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;">
+                                <form method="POST" style="margin:0;display:inline;">
+                                    <input type="hidden" name="action" value="toggle_admin">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <input type="hidden" name="is_admin"
+                                           value="{{ 'false' if user.is_admin else 'true' }}">
+                                    <button type="submit" class="admin-btn"
+                                            style="{% if user.is_admin %}background:#dcfce7;color:#1a7f37;{% endif %}">
+                                        {% if user.is_admin %}✓ Admin{% else %}— {% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;">
+                                <div style="background:#dbeafe;border-radius:10px;
+                                            height:8px;width:80px;margin:0 auto;overflow:hidden;">
+                                    <div style="background:#0969da;height:100%;
+                                                width:{{ user.progress_pct }}%;border-radius:10px;"></div>
+                                </div>
+                                <div style="font-size:11px;color:#57606a;margin-top:3px;">
+                                    {{ user.completed_count }}/{{ user.total_lessons }}
+                                </div>
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;font-size:12px;color:#57606a;">
+                                {{ user.created_at[:10] }}
+                            </td>
+                            <td style="padding:10px 14px;text-align:center;">
+                                <form method="POST" style="margin:0;display:inline;"
+                                      onsubmit="return confirm('Delete {{ user.username }}? This cannot be undone.')">
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <button type="submit" class="admin-btn delete-btn">🗑</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ANALYTICS TAB ── -->
+    <div class="admin-tab-panel" id="tab-analytics">
+
+        <!-- Most active users -->
+        <div class="dash-card" style="margin-bottom:16px;">
+            <div class="dash-card-label">🏆 Most Active Users (total time)</div>
+            {% if active_users %}
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                {% for username, seconds in active_users.items() %}
+                {% set hours = (seconds // 3600) %}
+                {% set mins = ((seconds % 3600) // 60) %}
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:130px;font-size:13px;font-weight:700;color:#24292f;
+                                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        {{ username }}
+                    </div>
+                    <div style="flex:1;background:#dbeafe;border-radius:6px;height:10px;overflow:hidden;">
+                        {% set max_seconds = active_users.values()|list|first %}
+                        <div style="background:#0969da;height:100%;border-radius:6px;
+                                    width:{{ ((seconds / max_seconds) * 100)|int }}%;"></div>
+                    </div>
+                    <div style="font-size:12px;color:#57606a;min-width:80px;text-align:right;">
+                        {% if hours > 0 %}{{ hours }}h {% endif %}{{ mins }}m
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:#57606a;font-size:14px;">No activity logged yet.</p>
+            {% endif %}
         </div>
 
-        {% else %}
-        <p style="color:#57606a;font-size:14px;">No feedback threads yet.</p>
-        {% endif %}
+        <!-- Time per project -->
+        <div class="dash-card">
+            <div class="dash-card-label">📚 Average Time per Project</div>
+            {% if project_time %}
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                {% set max_time = project_time.values()|list|max %}
+                {% for lesson_key, seconds in project_time.items() %}
+                {% set mins = (seconds // 60) %}
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:200px;font-size:12px;color:#24292f;
+                                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        {{ lesson_key.replace('_', ' ').title() }}
+                    </div>
+                    <div style="flex:1;background:#dbeafe;border-radius:6px;height:10px;overflow:hidden;">
+                        <div style="background:#0969da;height:100%;border-radius:6px;
+                                    width:{{ ((seconds / max_time) * 100)|int }}%;"></div>
+                    </div>
+                    <div style="font-size:12px;color:#57606a;min-width:60px;text-align:right;">
+                        {{ mins }}m
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:#57606a;font-size:14px;">No activity data yet.</p>
+            {% endif %}
+        </div>
+
     </div>
 
 </div>
+
+<script>
+function showAdminTab(name, btn) {
+    document.querySelectorAll('.admin-tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+    });
+    document.querySelectorAll('.lesson-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    localStorage.setItem('admin-tab', name);
+}
+
+function filterUsers() {
+    var q = document.getElementById('user-search').value.toLowerCase();
+    document.querySelectorAll('.user-row').forEach(function(row) {
+        var username = row.getAttribute('data-username').toLowerCase();
+        var email = row.getAttribute('data-email').toLowerCase();
+        row.style.display = (username.includes(q) || email.includes(q)) ? '' : 'none';
+    });
+}
+
+// Restore last active tab
+(function() {
+    var saved = localStorage.getItem('admin-tab');
+    if (saved) {
+        var btn = document.querySelector('.lesson-tab-btn[onclick*="' + saved + '"]');
+        if (btn) showAdminTab(saved, btn);
+    }
+})();
+</script>
+
+<style>
+.admin-tab-panel { display: none; }
+.admin-tab-panel.active { display: block; }
+</style>
 {% endblock %}

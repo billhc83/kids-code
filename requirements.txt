@@ -3,3 +3,5 @@ gunicorn
 python-dotenv
 requests
 Pillow
+flask-limiter
+bcrypt
