@@ -62,7 +62,11 @@ def inject_globals():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    if "user_id" in session:
+        if session.get("is_parent"):
+            return redirect(url_for("parent_dashboard"))
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
