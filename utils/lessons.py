@@ -142,8 +142,11 @@ def get_next_lesson(key):
 def get_sidebar_groups(unlocked_keys):
     groups = {}
     standalone = []
+
     for lesson in LESSONS:
         if lesson["key"] not in unlocked_keys:
+            continue
+        if "challenge" in lesson["key"]:
             continue
         if lesson["part"]:
             part = lesson["part"]
@@ -152,4 +155,28 @@ def get_sidebar_groups(unlocked_keys):
             groups[part].append(lesson)
         else:
             standalone.append(lesson)
-    return list(reversed(standalone)), dict(reversed(groups.items()))
+
+    # Build combined list in order then reverse
+    combined = []
+    seen_parts = set()
+    for lesson in LESSONS:
+        if lesson["key"] not in unlocked_keys:
+            continue
+        if "challenge" in lesson["key"]:
+            continue
+        if lesson["part"]:
+            if lesson["part"] not in seen_parts:
+                seen_parts.add(lesson["part"])
+                combined.append({
+                    "type": "group",
+                    "part": lesson["part"],
+                    "steps": groups[lesson["part"]]
+                })
+        else:
+            combined.append({
+                "type": "single",
+                "lesson": lesson
+            })
+
+    combined.reverse()
+    return combined, {}

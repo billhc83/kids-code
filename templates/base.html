@@ -11,10 +11,10 @@
 <body>
 
 <!-- Top bar -->
-<div id="topbar">
-    <a href="{{ url_for('index') }}" class="logo">🧑‍💻 KidsCode</a>
+    <div id="topbar">
+        <a href="{{ url_for('index') }}" class="logo">🧑‍💻 KidsCode</a>
 
-    <div class="top-links">
+        <div class="top-links">
         {% if session.is_admin %}
             <a href="{{ url_for('admin_dashboard') }}">Admin</a>
         {% endif %}
@@ -22,16 +22,13 @@
             <a href="{{ url_for('parent_dashboard') }}">Parent</a>
         {% endif %}
         {% if session.user_id and not session.is_parent %}
-            {% for lesson in sidebar_standalone %}
-                {% if 'challenge' in lesson.key and lesson.key in unlocked_lessons %}
-                <a href="{{ url_for('challenge', challenge_key=lesson.key) }}"
-                class="{% if current_endpoint == 'challenge' and request.view_args.challenge_key == lesson.key %}active{% endif %}"
-                style="background:#fff8c5;color:#9a6700;border:2px solid #d4a72c;border-radius:20px;padding:6px 14px;">
-                    🎯 {{ lesson.title }}
-                    
-                </a>
-                {% endif %}
-            {% endfor %}
+            {% if "challenge_one" in unlocked_lessons %}
+            <a href="{{ url_for('challenge', challenge_key='challenge_one') }}"
+            class="{% if current_endpoint == 'challenge' %}active{% endif %}"
+            style="background:#fff8c5;color:#9a6700;border:2px solid #d4a72c;border-radius:20px;padding:6px 14px;">
+                🎯 Challenge
+            </a>
+            {% endif %}
         {% endif %}
         <a href="{{ url_for('feedback') }}">Feedback</a>
     </div>
@@ -48,57 +45,40 @@
 
 <!-- Sidebar toggle -->
 <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
-
-<!-- Sidebar -->
 <!-- Sidebar -->
 <div id="sidebar">
-    <div class="nav-section">Navigation</div>
-        {% if session.is_parent %}
-            <a href="{{ url_for('parent_dashboard') }}"
-            class="{% if current_endpoint == 'parent_dashboard' %}active{% endif %}">
-                👪 Parent Dashboard
-            </a>
-        {% else %}
-            <a href="{{ url_for('dashboard') }}"
-            class="{% if current_endpoint == 'dashboard' %}active{% endif %}">
-                🏠 Dashboard
-            </a>
-        {% endif %}
+   {% if session.user_id and not session.is_parent %}
+<div class="nav-section">Projects</div>
 
-    {% if session.user_id and not session.is_parent %}
-    <div class="nav-section">Projects</div>
+{% for item in sidebar_standalone %}
+    {% if item.type == "single" %}
+    <a href="{{ url_for('lesson', lesson_key=item.lesson.key) }}"
+       class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == item.lesson.key %}active{% endif %}">
+        {{ item.lesson.title }}
+    </a>
 
-    {% for lesson in sidebar_standalone %}
-        {% if lesson.key != 'challenge_one' %}
-        <a href="{{ url_for('lesson', lesson_key=lesson.key) }}"
-           class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == lesson.key %}active{% endif %}">
-            {{ lesson.title }}
-        </a>
-        {% endif %}
-    {% endfor %}
-
-    {% for part, steps in sidebar_groups.items() %}
+    {% elif item.type == "group" %}
     <div class="sidebar-group">
-        <div class="nav-section">Project {{ part }}</div>
-        {% for step in steps %}
+        <div class="nav-section">Project {{ item.part }}</div>
+        {% for step in item.steps %}
         <a href="{{ url_for('lesson', lesson_key=step.key) }}"
            class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == step.key %}active{% endif %}">
             {{ step.title }}
         </a>
         {% endfor %}
     </div>
-    {% endfor %}
-
-    {% set challenge = sidebar_standalone | selectattr('key', 'equalto', 'challenge_one') | list %}
-    {% if challenge %}
-    <div class="nav-section">Challenges</div>
-    <a href="{{ url_for('lesson', lesson_key='challenge_one') }}"
-       class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == 'challenge_one' %}active{% endif %}">
-        🎯 Challenge
-    </a>
     {% endif %}
+{% endfor %}
 
-    {% endif %}
+{% if "challenge_one" in unlocked_lessons %}
+<div class="nav-section">Challenges</div>
+<a href="{{ url_for('challenge', challenge_key='challenge_one') }}"
+   class="{% if current_endpoint == 'challenge' %}active{% endif %}">
+    🎯 Challenge
+</a>
+{% endif %}
+
+{% endif %}
 </div>
 
 <!-- Main content -->

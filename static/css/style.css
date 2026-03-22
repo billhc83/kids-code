@@ -233,9 +233,12 @@ body {
 }
 
 .part-img img {
-    width: 100%;
+    max-width: 100%;
+    height: auto;
     border-radius: 10px;
     border: 2px solid #dbeafe;
+    display: block;
+    margin: 0 auto;
 }
 
 .part-img .caption {

@@ -83,6 +83,9 @@ def inject_globals():
         "hover_zoom": hover_zoom_html,
         "lesson_by_key": LESSON_BY_KEY
     }
+@app.route("/ping")
+def ping():
+    return "ok", 200
 
 @app.route("/")
 def index():
