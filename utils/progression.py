@@ -62,6 +62,10 @@ def complete_lesson(user_id, lesson_key):
     next_key = get_next_lesson(lesson_key)
     if next_key:
         unlock_lesson(user_id, next_key)
+
+    if lesson_key == "project_ten":
+        unlock_lesson(user_id, "project_eleven")
+
     return next_key
 
 def is_unlocked(user_id, lesson_key):
