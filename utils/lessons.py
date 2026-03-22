@@ -152,4 +152,4 @@ def get_sidebar_groups(unlocked_keys):
             groups[part].append(lesson)
         else:
             standalone.append(lesson)
-    return standalone, groups
+    return list(reversed(standalone)), dict(reversed(groups.items()))
