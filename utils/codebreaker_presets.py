@@ -101,9 +101,9 @@ void loop() {
   //##   likeness = 0;
   //##   for (int i = 0; i < 5; i++) { if (guess[i] == answer[i]) { likeness++; } }
   //?? Print the score label
-  Serial.print("Likeness = ");
+  Serial.println("Likeness = ");
   //?? Print the score value
-  Serial.println(likeness);
+  Serial.print(likeness);
   //## }
 }
 

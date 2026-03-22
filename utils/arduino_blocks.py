@@ -457,7 +457,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             fn_type = m.group(1)
             content = m.group(2).strip()
             ex = process(parse_expr(content))
-            blocks.append({'type':'serialprint','params':[fn_type],'exChildren':[ex]})
+            blocks.append({'type':'serialprint','params':['',fn_type],'exChildren':[ex]})
             continue
         m = re.match(r'(\w+)\s*\+\+\s*;', line)
         if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue
@@ -1335,7 +1335,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "serialprint:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,"
         "  inputs:[{t:'expr',l:'Value',fallback:'\"Hello\"'},{t:'sel',l:'',o:['println','print']}],"
         "  defaults:[{type:'value',params:['\"Hello\"'],children:[]},null],"
-        "  genStmt:function(p,ex){var fn=p[0]==='print'?'Serial.print':'Serial.println';"
+        "  genStmt:function(p,ex){var fn=p[1]==='print'?'Serial.print':'Serial.println';"
         "    return fn+'('+genExpr(ex&&ex[0],null,'\"Hello\"')+');';}},"
         "serialreadstring:{allowed:[],asStatement:false,asExpr:true,"
         "  inputs:[],"
@@ -2501,7 +2501,6 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    return;"
         "  }"
         "  try{"
-        "    saveBlocks();"
         "    var STRUCTURAL=['ifblock','forloop','whileloop'];"
         "    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&b.type!=='codeblock'&&STRUCTURAL.indexOf(b.type)===-1;}),"
         "               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&b.type!=='codeblock'&&STRUCTURAL.indexOf(b.type)===-1;}),"
@@ -2520,6 +2519,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    btn.classList.remove('next-mode');"
         "    clearSelection();render();genCode();"
         "    flash('Step '+(CURRENT_STEP+1)+'!');"
+        "    saveBlocks();"
         "  }catch(e){flash('ERR: '+e.message);console.error(e);}});"
         "document.getElementById('prevbtn').addEventListener('click',function(){"
         "  if(!PROGRESSION_MODE||CURRENT_STEP<=0)return;"

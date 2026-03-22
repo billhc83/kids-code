@@ -81,7 +81,7 @@ Remember: The switch is the boss.
         "tabs": {
             "explain": {
                 "label": "📖 What & Why",
-                "content": "<p>Every agent needs memory for the mission. These memory containers are called variables.</p><p>We prepare three key pieces of memory for the code-breaking device:</p><ul><li>🔐 <b>answer</b> → the secret 5-letter code trainees must find. This is text, so it must be in quotes.</li><li>🔢 <b>likeness</b> → how many letters match the secret code. Start at 0.</li><li>🚪 <b>solved</b> → whether the code has been cracked. Start as false.</li></ul><p>Without these, the system won’t remember anything the trainee does.</p>"
+                "content": "<p>Every agent needs memory for the mission. These memory containers are called variables.</p><br><p>We prepare three key pieces of memory for the code-breaking device:</p><ul><li>🔐 <b>answer</b> → the secret 5-letter code trainees must find. This is text, so it must be in quotes.\"SPARK\"<br><br></li><li>🔢 <b>likeness</b> → how many letters match the secret code. Start at 0 because we haven't had any guesses yet.<br><br></li><li>🚪 <b>solved</b> → has the code has been cracked? Start as false because we haven't had any guesses yet.<br><br></li></ul><p>Without these, the system won’t remember anything the trainee does.</p>"
             },
             "howto": {
                 "label": "🔧 How To",
@@ -104,11 +104,11 @@ Remember: The switch is the boss.
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Go to the setup section, which runs once at the start.</p><p>2. Turn on the communication line with the correct speed: 9600.</p><p>3. Display the code grid and instructions. Include lines that show the letters trainees will analyze, the instructions to guess, and a prompt to enter guesses.</p><p>Make sure this is all in the setup so it only runs once. This lets the trainee see the mission briefing clearly.</p>"
+                "content": "<p>1. Go to the setup section.</p><p>2. Turn on the communication line with the correct speed: 9600.</p><p>3. We have provided the cipher code so you don't need to enter it. The cipher include lines that show the letters trainees will analyze, the instructions to guess, and a prompt to enter guesses.</p><p>This lets the trainee see the mission briefing clearly.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
-                "content": "<p>Without opening this line, your agent stays silent. The trainee won’t see anything, even if all the other parts are working perfectly.</p>"
+                "content": "<p>Without serialbegin(9600), your agent stays silent.  It won't communicate with the termial without starting the connection. The trainee won’t see anything, even if all the other parts are working perfectly.</p>"
             }
         }
     },
@@ -119,15 +119,15 @@ Remember: The switch is the boss.
         "tabs": {
             "explain": {
                 "label": "📖 What & Why",
-                "content": "<p>The device must wait until a trainee types a guess. We don’t want to read nothing.</p><p>Checking if new data is available ensures the system only acts when the trainee is ready.</p>"
+                "content": "<p>The device must wait until a trainee types a guess. We don’t want to read nothing over and over we only want to read when something is entered..</p><p>Checking if new data is available ensures the system only acts when the trainee is ready.</p>"
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Check if the communication line has new data.</p><p>2. Only proceed if there is data waiting — this opens the door for processing the guess.</p><p>This is like checking a secure mailbox: the agent only looks when a message is inside.</p>"
+                "content": "<p>1. We need to create and \"if\" statement.</p><p>2. This means only do this \"if\" the conditions are met.<br><br>In our case we are saying \"if\" serial.available is greater than 0, do somehthing.<br>Serial.available checks to see if there is data waiting.<br>If there was no data waiting Serial.available = 0, because there is nothing there.<br>If there is something there it will be greater than 0, we don't care how much is there we just want to make sure something is there.<br>This opens the door for processing the guess.</p><p>This is like checking a secure mailbox: the agent only looks when a message is inside.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
-                "content": "<p>Think of it as a secure lock. If you try to open it with nothing inside, nothing happens. The agent must wait for the trainee’s input to continue the mission.</p>"
+                "content": "<p>\"if\" statements are part of the decicion making tools in coding.<br>In our system here the program must wait for the trainee’s input to continue the mission.</p>"
             }
         }
     },
@@ -138,11 +138,11 @@ Remember: The switch is the boss.
         "tabs": {
             "explain": {
                 "label": "📖 What & Why",
-                "content": "<p>Once input is detected, we store it in a variable called <b>guess</b>.</p><p>Cleaning the input ensures accuracy:</p><ul><li>✂️ Remove extra spaces at the start and end.</li><li>🔠 Convert all letters to uppercase so they match the secret code format.</li></ul>"
+                "content": "<p>Once input is detected, we store it in a variable called <b>guess</b>.</p><br><p>guess.trim() trims any blank spaces that might be at the beinning or end of the guess.<br>We dont want a bunch of blank spaces at the beginning and end of the guesses that will throw off the system.<br></p><ul><li>guess.trim(); - ✂️ Remove extra spaces at the start and end.</li><br>🔠 guess.toUpperCase() converts all letters to uppercase so they match the secret code format.<br><br>We don't want confustion between \"Spark\" and \"spark\" and \"SPARK\"<br><br><li>guess.toUpperCase(); - Convert all the letters in guess to capital letters</li></ul>"
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Create a container called <b>guess</b>.</p><p>2. Take the trainee’s typed input and store it in <b>guess</b>.</p><p>3. Remove any extra spaces at the beginning or end.</p><p>4. Convert all letters to uppercase so the system can compare fairly with the secret code.</p>"
+                "content": "<p>1. Use the block builder to create a variable called <b>guess</b>.<br>String var - A variable that is a string. Strings are words or text. <br>Numbers can be put into string variables as well, lets look at the difference between a number as a string var, and a number as a int var:<br><li>String var = \"1\"</li><br><li>int var = 1</li><br>You need to put the right type of data into the right kind of variable.</p><p>2. Take the trainees typed input and store it in <b>guess</b>.<br>Serial.read allows us to grab what the user enters.</p><p>3. Remove any extra spaces at the beginning or end.</p><p>4. Convert all letters to uppercase so the system can compare fairly with the secret code.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
@@ -161,11 +161,11 @@ Remember: The switch is the boss.
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Inside the input check, set <b>likeness</b> to 0 before counting matches.</p><p>2. Make sure this happens every time a new guess is entered.</p>"
+                "content": "<p>1. Inside the input check, set <b>likeness</b> to 0 before counting matches.</p><p>We do this each time a new guess is read.  This way we start fresh for every new guess.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
-                "content": "<p>If we forget this, old scores would add to new ones, giving incorrect results. Resetting ensures fairness for each trainee.</p>"
+                "content": "<p>If we forget this, old scores would add to new ones, giving incorrect results.</p>"
             }
         }
     },
@@ -176,7 +176,7 @@ Remember: The switch is the boss.
         "tabs": {
             "explain": {
                 "label": "📖 What & Why",
-                "content": "<p>We compare the guess to the answer letter by letter.</p><p>If a letter is correct and in the right position, it counts as a match. This increases <b>likeness</b>. We have provided this code so when you are ready continue to the next step.</p>"
+                "content": "<p>We compare the guess to the answer letter by letter.</p><p>If a letter is correct and in the right position, it counts as a match. This increases <b>likeness</b>. We have provided this code so when you are ready, continue to the next step.</p>"
             },
             "howto": {
                 "label": "🔧 How To",
@@ -195,11 +195,11 @@ Remember: The switch is the boss.
         "tabs": {
             "explain": {
                 "label": "📖 What & Why",
-                "content": "<p>After counting matches, we must show the trainee the result.</p><p>This gives feedback so the trainee can adjust their next guess.</p>"
+                "content": "<p>After counting matches, we must show the trainee the result.<br>We need to print some information to the terminal to let the know how good or bad their guess was.</p><p>This gives feedback so the trainee can adjust their next guess.</p>"
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Print a label like \"Likeness = \".</p><p>2. Print the value of <b>likeness</b> next to the label.</p><p>3. Make sure this happens for every guess so the trainee can learn from the feedback.</p>"
+                "content": "<p>1. Print a label like \"Likeness = \".<br>This text has to match exactly so if you need to use copy and paste to make sure it is correct.</p><p>2. Print the value of <b>likeness</b> next to the label.</p><p>3. Make sure this happens for every guess so the trainee can learn from the feedback.<br><br>Tip:  We use println if we want to print something on a new line.  We use print if we want to print something else on the same line</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
@@ -218,7 +218,7 @@ Remember: The switch is the boss.
             },
             "howto": {
                 "label": "🔧 How To",
-                "content": "<p>1. Check if <b>likeness</b> equals 5.</p><p>2. If yes:</p><ul><li>Show a success message: \"CODE CRACKED! ACCESS GRANTED.\"</li><li>Set <b>solved</b> to True.</li></ul><p>3. If no:</p><ul><li>Prompt the trainee: 'Try again:'</li></ul><p>This step makes the device behave like a real mission control, giving immediate results for the trainee’s action.</p>"
+                "content": "<p>1. Check if <b>likeness</b> equals 5.</p><p>2. If yes:</p><ul><li>Show a success message: \"CODE CRACKED! ACCESS GRANTED.\"</li><li>Set <b>solved</b> to True.</li></ul><p>3. If no:</p><ul><li>Prompt the trainee: \"Try again:\"</li></ul><p>This step makes the device behave like a real mission control, giving immediate results for the trainee’s action.</p>"
             },
             "logic": {
                 "label": "🧠 Logic",
@@ -241,7 +241,7 @@ Remember: The switch is the boss.
             },
             "logic": {
                 "label": "🕵️ Final Message",
-                "content": "<p>📡 Incoming transmission…</p><p>Agent, your system is now active and ready for the next trainees.</p><p>They will try to break the code you created. Stay sharp — you may need to improve or outsmart your own design in future missions.</p>"
+                "content": "<p>Copy your code and run it in the Arduino IDE<br>📡 Incoming transmission…</p><p>Agent, your system is now active and ready for the next trainees.</p><p>They will try to break the code you created. Stay sharp — you may need to improve or outsmart your own design in future missions.</p>"
             }
         }
     }
