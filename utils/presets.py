@@ -1,6 +1,6 @@
 # ── Preset sketches ───────────────────────────────────────────────────
 from utils.codebreaker_presets import CODEBREAKER_PRESETS
-
+from utils.backup_alarm_presets import BACKUP_ALARM_PRESETS
 PRESETS = {
     'engine_start': {
         'sketch': """
@@ -123,6 +123,7 @@ void loop() {
 }
 
 PRESETS.update(CODEBREAKER_PRESETS)
+PRESETS.update(BACKUP_ALARM_PRESETS)
 
 # ── Pin reference lists ───────────────────────────────────────────────
 # Add your own project keys and component lists here.

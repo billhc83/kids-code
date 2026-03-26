@@ -123,6 +123,34 @@ LESSONS = [
         "part": "Code Breaker",
         "block_builder": "codebreaker"  # ← update to correct preset
     },
+    {
+        "key": "project_fourteen_part_three",
+        "title": "🏆 Code Breaker Part 3",
+        "template": "lessons/project_fourteen_part_three.html",
+        "part": "Code Breaker",
+        "block_builder": None  # ← update to correct preset
+    },
+    {
+        "key": "project_fifteen_part_one",
+        "title": "🏆 Backup Alarm Part 1",
+        "template": "lessons/project_fifteen_part_one.html",
+        "part": "Backup Alarm",
+        "block_builder": "backup_alarm"  # ← update to correct preset
+    },
+    {
+        "key": "project_fifteen_part_two",
+        "title": "🏆 Backup Alarm Part 2",
+        "template": "lessons/project_fifteen_part_two.html",
+        "part": "Backup Alarm",
+        "block_builder": "backup_alarm"  # ← update to correct preset
+    },
+    {
+        "key": "project_fifteen_part_three",
+        "title": "🏆 Backup Alarm Part 3",
+        "template": "lessons/project_fifteen_part_three.html",
+        "part": "Backup Alarm",
+        "block_builder": "backup_alarm"  # ← update to correct preset
+    },
 ]
 
 # Quick lookups

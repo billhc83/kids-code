@@ -450,6 +450,11 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             ex = process(parse_expr(m.group(1)))
             blocks.append({'type':'delay','params':[''],'exChildren':[ex]})
             continue
+        m = re.match(r'delayMicroseconds\s*\(\s*(.+?)\s*\)\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(1)))
+            blocks.append({'type':'delaymicroseconds','params':[''],'exChildren':[ex]})
+            continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'serialbegin','params':[m.group(1)]}); continue
         m = re.match(r'Serial\.(print|println)\s*\(\s*(.+?)\s*\)\s*;', line)
@@ -1124,6 +1129,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "<button class='block-btn' data-type='tone'>tone</button>"
         "<button class='block-btn' data-type='notone'>noTone</button>"
         "<button class='block-btn' data-type='delay'>delay</button>"
+        "<button class='block-btn' data-type='delaymicroseconds'>delayMicroseconds</button>"
         "<button class='block-btn' data-type='serialbegin'>Serial.begin</button>"
         "<button class='block-btn' data-type='serialprint'>Serial.print</button>"
         "<button class='block-btn' data-type='ifblock'>if</button>"
@@ -1298,6 +1304,10 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "delay:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
         "  inputs:[{t:'expr',l:'ms',fallback:'1000'}],"
         "  genStmt:function(p,ex){return 'delay('+genExpr(ex&&ex[0],p[0],'1000')+');';}},"
+        "delaymicroseconds:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,"
+        "  inputs:[{t:'expr',l:'us',fallback:'100'}],"
+        "  defaults:[{type:'value',params:['100'],children:[]}],"
+        "  genStmt:function(p,ex){return 'delayMicroseconds('+genExpr(ex&&ex[0],p[0],'100')+');';}},"
         "millis:{allowed:['loop','if','for','while'],asStatement:false,asExpr:true,"
         "  inputs:[],"
         "  genExpr:function(p){return 'millis()';}},"
@@ -2520,6 +2530,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    clearSelection();render();genCode();"
         "    flash('Step '+(CURRENT_STEP+1)+'!');"
         "    saveBlocks();"
+        "    if(!drawerOpen){drawerOpen=true;document.getElementById('drawer-panel').classList.add('open');}"
         "  }catch(e){flash('ERR: '+e.message);console.error(e);}});"
         "document.getElementById('prevbtn').addEventListener('click',function(){"
         "  if(!PROGRESSION_MODE||CURRENT_STEP<=0)return;"

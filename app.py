@@ -38,7 +38,8 @@ from utils.project_eight import STEPS as p8_steps, CIRCUIT_IMAGE as p8_image, PA
 from utils.project_nine import STEPS as p9_steps, CIRCUIT_IMAGE as p9_image, PAGE_TITLE as p9_title
 from utils.project_ten import STEPS as p10_steps, CIRCUIT_IMAGE as p10_image, PAGE_TITLE as p10_title
 from utils.project_twelve import STEPS as p12_steps, CIRCUIT_IMAGE as p12_image, PAGE_TITLE as p12_title, BANNER_IMAGE as p12_banner
-from utils.project_thirteen import STEPS as p13_steps, CIRCUIT_IMAGE as p13_image, PAGE_TITLE as p13_title
+from utils.project_fifteen import STEPS as p15_steps, CIRCUIT_IMAGE as p15_image, PAGE_TITLE as p15_title
+
 
 # Map challenge keys to what they unlock on approval
 CHALLENGE_UNLOCKS = {
@@ -183,6 +184,8 @@ def dashboard():
     from utils.lessons import LESSONS
     for lesson in LESSONS:
         if lesson["key"] in unlocked and lesson["key"] not in completed:
+            if "challenge" in lesson["key"]:
+                continue
             current_lesson = lesson
             break
 
@@ -461,9 +464,8 @@ def lesson(lesson_key):
                 p12_image, p12_steps, p12_title
             )
     elif lesson_key == "project_thirteen":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p13_image, p13_steps, p13_title
-            )
+            pass
+            
     elif lesson_key == "project_fourteen_part_one":
         extra["serial_monitor_html"] = serial_monitor(
             answer='SPARK',
@@ -483,7 +485,24 @@ def lesson(lesson_key):
         )
     elif lesson_key == "project_fourteen_part_two":
             pass
+    
+    elif lesson_key == "project_fourteen_part_three":
+            pass
 
+    
+    elif lesson_key == "project_fifteen_part_one":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p15_image, p15_steps, p15_title
+            )
+
+    elif lesson_key == "project_fifteen_part_two":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p15_image, p15_steps, p15_title
+            )
+    elif lesson_key == "project_fifteen_part_three":
+            extra["assembly_guide_html"] = render_assembly_guide(
+                p15_image, p15_steps, p15_title
+            )
     # Block builder — only if explicitly set in registry
     preset = lesson_data.get("block_builder")
     if preset:

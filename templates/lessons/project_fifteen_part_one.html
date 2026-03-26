@@ -1,0 +1,37 @@
+{% extends "lesson_base.html" %}
+{% block title %}Project 15: Smart Backup Alarm — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/backup_alarm_banner.png') }}"
+     alt="Backup Alarm Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+
+<div class="lesson-intro">
+    <h2>🚗 Project: Smart Backup Alarm</h2>
+    <p>Welcome to the Junior Engineer Training Program!</p>
+    <p>One day, your parent accidentally backs into your shiny new bike… or maybe even the neighbor’s car 😱. You realize something must be done.</p>
+    <p>As the innovative engineer you are, you decide to design a **smart backup alarm system** that warns when a car is too close to obstacles.</p>
+
+    <div class="mission-box" style="background: #f8f9fa; padding: 20px; border-left: 5px solid #333; border-radius: 8px; margin: 20px 0;">
+        <p>Your system will use a <strong>distance sensor</strong> to detect objects behind the car and alert the driver using LEDs and a buzzer.</p>
+        <p>The closer the object, the louder or faster the alert — just like a real car backup system!</p>
+    </div>
+
+    <h3>🛠 What You Will Learn</h3>
+    <ul>
+        <li>How to read sensor data using an HC-SR04 ultrasonic sensor</li>
+        <li>How to control LEDs and a buzzer based on input</li>
+        <li>How to structure your code using conditional logic</li>
+        <li>How to work with loops to continuously check sensor input</li>
+    </ul>
+</div>
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Step →</button>
+    </form>
+    <p>⬅️ Click here to start building your alarm!</p>
+</div>
+
+{% endblock %}
