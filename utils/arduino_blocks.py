@@ -88,11 +88,17 @@ def parse_expr(s):
     # Precedence: + - (lowest), then * / %
     for ops in (['+', '-'], ['*', '/', '%']):
         depth = 0
+        in_quotes = False
         # Scan right-to-left so left-associativity is preserved
         for i in range(len(s) - 1, -1, -1):
             ch = s[i]
-            if ch in ')': depth += 1
-            elif ch in '(': depth -= 1
+            if ch == '"': in_quotes = not in_quotes
+            if in_quotes:
+                continue
+            if ch == ')':
+                depth += 1
+            elif ch == '(':
+                depth -= 1
             elif depth == 0 and ch in ops:
                 # Make sure it's not a unary minus at start
                 if ch == '-' and i == 0:
@@ -320,6 +326,12 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             end = code.find('*/', i)
             i = end+2 if end != -1 else len(code)
             continue
+        if code[i] == '#':
+            end = code.find('\n', i)
+            line = code[i:end].strip() if end != -1 else code[i:].strip()
+            blocks.append({'type': 'codeblock', 'params': [line]})
+            i = end + 1 if end != -1 else len(code)
+            continue
         if re.match(r'if\s*\(', code[i:]):
             paren_start = code.index('(', i)
             cond_str, after_paren = extract_condition(code, paren_start)
@@ -431,15 +443,15 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'pinmode','params':['',m.group(2)]}); continue
+        if m: blocks.append({'type':'pinmode','params':[m.group(1),m.group(2)]}); continue
         m = re.match(r'digitalWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'digitalwrite','params':['',m.group(2)]}); continue
+        if m: blocks.append({'type':'digitalwrite','params':[m.group(1),m.group(2)]}); continue
         m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'analogwrite','params':['','']}); continue
+        if m: blocks.append({'type':'analogwrite','params':[m.group(1),''],'exChildren':[process(parse_expr(m.group(2)))]}); continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':['','','']}); continue
+        if m: blocks.append({'type':'tone','params':[m.group(1),'',m.group(3)],'exChildren':[process(parse_expr(m.group(2)))]}); continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':['','','']}); continue
+        if m: blocks.append({'type':'tone','params':[m.group(1),'',None],'exChildren':[process(parse_expr(m.group(2)))]}); continue
         m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
             ex = process(parse_expr(m.group(1)))
@@ -477,6 +489,9 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             ex = process(parse_expr(m.group(2)))
             blocks.append({'type':'setvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
+
+        # Fallback for unrecognized statements ending in semicolon
+        blocks.append({'type': 'codeblock', 'params': [line]})
     return blocks
 
 
@@ -514,7 +529,7 @@ def parse_progression(sketch_code):
     """
     Parse a multi-step progression sketch into a list of steps.
 
-    Step boundaries are marked with //>> label | mode
+    Step boundaries are marked with //>> label | guidance | view
     Phantom blocks are marked with //?? hint followed by the real line.
     Locked blocks are marked with //## as usual.
 
@@ -522,7 +537,8 @@ def parse_progression(sketch_code):
     [
         {
             'label': 'Step 1 — The Variables',
-            'mode': 'guided',        # or 'open'
+            'guidance': 'guided',    # or 'open'
+            'view': 'blocks',        # or 'editor'
             'global': [...],
             'setup':  [...],
             'loop':   [...],
@@ -547,15 +563,19 @@ def parse_progression(sketch_code):
         # Exclude the //>> line itself
         chunk_start = sketch_code.find('\n', start)
         chunk = sketch_code[chunk_start:end] if chunk_start != -1 else ''
-        # Parse label and mode
-        if '|' in header:
-            parts = header.split('|', 1)
-            label = parts[0].strip()
-            mode  = parts[1].strip().lower()
-        else:
-            label = header.strip()
-            mode  = 'guided'
-        raw_steps.append({'label': label, 'mode': mode, 'chunk': chunk})
+
+        # Parse label, guidance, and view
+        parts = [p.strip() for p in header.split('|')]
+        label = parts[0]
+        guidance = parts[1].lower() if len(parts) > 1 else 'guided'
+        view = parts[2].lower() if len(parts) > 2 else 'blocks'
+
+        raw_steps.append({
+            'label': label,
+            'guidance': guidance or 'guided',
+            'view': view or 'blocks',
+            'chunk': chunk
+        })
 
     # Parse each step — collecting cumulative locked blocks
     # Only global section accumulates phantom_resolved markers.
@@ -593,7 +613,8 @@ def parse_progression(sketch_code):
         
         steps.append({
             'label':  step['label'],
-            'mode':   step['mode'],
+            'guidance': step['guidance'],
+            'view':   step['view'],
             'active_section': active_section,
             'global': full['global'],
             'setup':  full['setup'],
@@ -648,18 +669,49 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         preset = height
         height = 550
 
+    dv = 'blocks'
+    p = None
+
     # Build initial block state from preset if provided
-    if preset and preset in PRESETS:
-        p = PRESETS[preset]
+    if preset:
+        from utils.project_registry import PROJECTS
+        if preset in PROJECTS:
+            p = PROJECTS[preset].get("presets", {}).get("default")
+        elif preset in PRESETS:
+            p = PRESETS[preset]
+        else:
+            # Search for the preset name inside all projects
+            for proj in PROJECTS.values():
+                if "presets" in proj and preset in proj["presets"]:
+                    p = proj["presets"][preset]
+                    break
+
+    if p:
+        if isinstance(p, dict): dv = p.get('default_view', 'blocks')
         sketch_code = p['sketch'] if isinstance(p, dict) else p
-        fc = fill_conditions if fill_conditions is not None else (p.get('fill_conditions', False) if isinstance(p, dict) else False)
-        fv = fill_values     if fill_values     is not None else (p.get('fill_values',     False) if isinstance(p, dict) else False)
+
+        # Determine fill_conditions and fill_values for parse_sketch
+        # If not explicitly provided, and it's a non-progression sketch with default_view 'editor',
+        # then we want to fill values.
+        _fill_conditions = fill_conditions if fill_conditions is not None else (p.get('fill_conditions') if isinstance(p, dict) else None)
+        _fill_values = fill_values if fill_values is not None else (p.get('fill_values') if isinstance(p, dict) else None)
 
         # Detect progression sketch early — skip parse_sketch entirely
         is_progression = '//>>' in sketch_code
 
+        if not is_progression and dv == 'editor' and _fill_conditions is None and _fill_values is None:
+            # This is the specific mode the user described:
+            # non-progression sketch AND default view is 'editor'.
+            # In this case, we want to preserve values when parsing the sketch.
+            _fill_conditions = True
+            _fill_values = True
+
+        # Final fallback to False if still not set
+        if _fill_conditions is None: _fill_conditions = False
+        if _fill_values is None: _fill_values = False
+
         if not is_progression:
-            blocks = parse_sketch(sketch_code, fill_conditions=fc, fill_values=fv)
+            blocks = parse_sketch(sketch_code, fill_conditions=_fill_conditions, fill_values=_fill_values)
             # Build palette allowed set: always auto from sketch, then apply amendments
             base_types = collect_types(
                 blocks['global'] + blocks['setup'] + blocks['loop']
@@ -791,9 +843,10 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                 sb = '[' + ','.join(block_to_js(b) for b in step['setup'])  + ']'
                 lb = '[' + ','.join(block_to_js(b) for b in step['loop'])   + ']'
                 label   = step['label'].replace("'", "\\'")
-                mode    = step['mode']
+                guidance = step['guidance']
+                view     = step['view']
                 active  = step.get('active_section', 'loop')
-                return ("{label:'" + label + "',mode:'" + mode + "',"
+                return ("{label:'" + label + "',guidance:'" + guidance + "',view:'" + view + "',"
                         "active:'" + active + "',"
                         "global:" + gb + ",setup:" + sb + ",loop:" + lb + "}")
             steps_js = '[' + ','.join(step_to_js(s) for s in steps) + ']'
@@ -813,27 +866,27 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         initial_js = ""
         palette_js = 'var PALETTE_ALLOWED=null;'
     css = (
-        "* { box-sizing:border-box; margin:0; padding:0; }"
-        "html, body { width:100%; height:" + str(height) + "px; overflow:hidden;"
+        "#block-builder-ui * { box-sizing:border-box; margin:0; padding:0; }"
+        "#block-builder-ui { width:100%; height:100%; overflow:hidden; position:relative; display:flex; flex-direction:column;"
         "  background:#f6f8fa; font-family: 'Nunito', 'Quicksand', system-ui, sans-serif; background: #f4f8ff; color:#24292f; }"
-        "#palette { width:110px; flex-shrink:0; background:#ffffff;"
+        "#block-builder-ui #palette { width:110px; flex-shrink:0; background:#ffffff;"
         "  border-right:1px solid #d0d7de; display:flex; flex-direction:column;"
         "  padding:6px; gap:4px; overflow-y:auto; }"
-        "#palette::-webkit-scrollbar { width:3px; }"
-        "#palette::-webkit-scrollbar-thumb { background:#d0d7de; }"
+        "#block-builder-ui #palette::-webkit-scrollbar { width:3px; }"
+        "#block-builder-ui #palette::-webkit-scrollbar-thumb { background:#d0d7de; }"
         ".pal-title { font-size:9px; color:#57606a; text-transform:uppercase;"
         "  letter-spacing:.06em; padding:2px 0 4px 0; border-bottom:1px solid #d0d7de; margin-bottom:2px; }"
         ".block-btn { width:100%; padding:5px 6px; border-radius:14px; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.08);"
         "  background:#f6f8fa; cursor:pointer; font-size:14px; font-weight:600; color:#24292f;"
         "  font-family:inherit; text-align:left; }"
         ".block-btn:hover { border-color:#0969da; color:#0969da; background:#ddf4ff; }"
-        "#workspace { flex:1; display:flex; flex-direction:column; gap:4px;"
+        "#block-builder-ui #workspace { flex:1; display:flex; flex-direction:column; gap:4px;"
         "  padding:6px 6px 10px 6px; overflow:hidden; min-width:0; justify-content:flex-start; }"
         ".section { flex:0 0 36px; border:2px solid #dbeafe; border-radius:14px;"
         "  box-shadow:0 4px 12px rgba(0,0,0,0.06); background:#ffffff;"
         "  display:flex; flex-direction:column; overflow:hidden;"
         "  transition:flex 0.3s ease, box-shadow 0.2s ease; min-height:0; }"
-        ".section.expanded { flex:1 1 0; box-shadow:0 8px 24px rgba(0,0,0,0.1); min-height:0; max-height:calc(100% - 100px); }"
+        ".section.expanded { flex:1 1 0; box-shadow:0 8px 24px rgba(0,0,0,0.1); min-height:0; max-height:none; }"
         ".section::-webkit-scrollbar { width:3px; }"
         ".section::-webkit-scrollbar-thumb { background:#d0d7de; }"
         ".s-global.active { border-color:#0969da; }"
@@ -854,8 +907,9 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         ".blk-name { font-size:16px; font-weight:800; color:#0969da; min-width:60px; }"
         ".blk-field { display:flex; flex-direction:column; font-size:8px; }"
         ".blk-field label { color:#57606a; margin-bottom:1px; }"
-        ".blk-input { font-size:14px; padding:6px 8px; width:120px; background:#ffffff;"
-        "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
+        ".blk-input { font-size:14px; padding:6px 8px; width:80px; max-width:80px;"
+        "  align-self:flex-start;"
+        "  background:#ffffff; color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
         ".blk-input:focus { outline:none; border-color:#0969da; }"
         ".act { background:none; border:1px solid #d0d7de; color:#57606a; cursor:pointer;"
         "  font-size:9px; padding:1px 3px; border-radius:3px; }"
@@ -885,7 +939,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         ".if-keyword { font-size:14px; font-weight:bold; color:#cf222e; }"
         ".cond-field { display:flex; flex-direction:column; font-size:8px; }"
         ".cond-field label { color:#57606a; margin-bottom:1px; }"
-        ".cond-input  { font-size:14px; padding:6px 8px; width:120px; background:#ffffff;"
+        ".cond-input  { font-size:14px; padding:6px 8px; width:55px; background:#ffffff;"
         "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
         ".cond-select { font-size:14px; padding:6px 8px; width:80px; background:#ffffff;"
         "  color:#24292f; border:2px solid #e5e7eb; border-radius:10px; font-family:inherit; }"
@@ -902,25 +956,25 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         ".if-block.ancestor > .elseif-header { border-color:#84c7fb !important; background:#eaf6ff !important; }"
         ".if-block.ancestor > .else-header { border-color:#84c7fb !important; background:#eaf6ff !important; }"
         ".body-hint { font-size:8px; color:#bbb; pointer-events:none; padding:2px 0; }"
-        "#statusbar { font-size:9px; color:#57606a; padding:3px 7px; flex-shrink:0;"
+        "#block-builder-ui #statusbar { font-size:9px; color:#57606a; padding:3px 7px; flex-shrink:0;"
         "  background:#ffffff; border-bottom:1px solid #d0d7de; }"
-        "#statusbar span { color:#0969da; }"
-        "#codepanel { width:250px; flex-shrink:0; border-left:1px solid #d0d7de;"
-        "  display:flex; flex-direction:column; padding:6px, 30px, 6px, 6px; gap:5px; }"
+        "#block-builder-ui #statusbar span { color:#0969da; }"
+        "#block-builder-ui #codepanel { width:250px; flex-shrink:0; border-left:1px solid #d0d7de;"
+        "  display:flex; flex-direction:column; padding:6px 30px 6px 6px; gap:5px; }"
         "#code-btns { display:flex; gap:5px; flex-shrink:0; padding-right: 28px; padding-top:10px; padding-left: 5px;}"
         "#nav-btns { display:flex; gap:5px; flex-shrink:0; padding-right: 28px; padding-left: 5px;}"
-        "#msg { font-size:9px; color:#cf222e; opacity:0; transition:opacity 0.3s; flex-shrink:0; min-height:14px; }"
-        "#msg.show { opacity:1; }"
-        "#codeout { flex:1; background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px;"
+        "#block-builder-ui #msg { font-size:9px; color:#cf222e; opacity:0; transition:opacity 0.3s; flex-shrink:0; min-height:14px; }"
+        "#block-builder-ui #msg.show { opacity:1; }"
+        "#block-builder-ui #codeout { flex:1; background:#f6f8fa; border:1px solid #d0d7de; border-radius:6px;"
         "  padding:6px 7px; font-size:9px; white-space:pre; overflow-y:auto;"
         "  color:#0550ae; line-height:1.5; min-height:0; }"
-        "#codeout::-webkit-scrollbar { width:3px; }"
-        "#codeout::-webkit-scrollbar-thumb { background:#d0d7de; }"
+        "#block-builder-ui #codeout::-webkit-scrollbar { width:3px; }"
+        "#block-builder-ui #codeout::-webkit-scrollbar-thumb { background:#d0d7de; }"
         ".cbtn { flex:1; padding:4px; border-radius:5px; border:1px solid #d0d7de;"
         "  background:#f6f8fa; color:#24292f; cursor:pointer; font-family:inherit; font-size:9px; }"
         ".cbtn:hover { background:#e6ebf1; }"
-        "#app { display:flex; flex-direction:row; width:100%; height:" + str(height) + "px; position:relative; }"
-        "#drawer-tab { position:absolute; right:0; top:0; height:" + str(height) + "px; width:24px;"
+        "#block-builder-ui #app { display:flex; flex-direction:row; width:100%; flex:1; position:relative; min-height:0; }"
+        "#drawer-tab { position:absolute; right:0; top:0; height:100%; width:24px;"
         "  background:#e53935; border-left:1px solid #d0d7de;"
         "  display:flex; align-items:center; justify-content:center;"
         "  cursor:pointer; z-index:10; user-select:none; transition:background 0.15s; }"
@@ -929,7 +983,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  font-size:14px; letter-spacing:.1em; color:#ffffff;"
         "  text-transform:uppercase; transform:rotate(180deg); }"
         "#drawer-tab:hover span { color:#0969da; }"
-        "#drawer-panel { position:absolute; right:18px; top:0; height:" + str(height) + "px; width:0;"
+        "#drawer-panel { position:absolute; right:18px; top:0; height:100%; width:0;"
         "  background:#ffffff; border-left:1px solid #d0d7de;"
         "  overflow:hidden; z-index:9; transition:width 0.25s ease; display:flex; flex-direction:column; }"
         "#drawer-panel.open { width:600px; }"
@@ -1032,87 +1086,10 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "#pal-expr-section { display:flex; flex-direction:column; gap:4px; }"
     )
 
-    # ── Build drawer inner HTML ───────────────────────────────────────────
-    if drawer_content is None:
-        drawer_content = {
-            "title": "&#128214; Reference",
-            "tip": "Select a section, then click a block in the palette to add it.",
-            "tabs": {
-                "start": {
-                    "label": "&#128161; Quick Start",
-                    "content": "Select Global, setup(), or loop() first.\nThen click any block in the palette to add it to that section."
-                }
-            }
-        }
-
-    # ── Handle dynamic drawer steps ───────────────────────────────────────
-    # If drawer_content has a "steps" key, we use that for progression.
-    # Otherwise we use drawer_content as the static content.
-    if isinstance(drawer_content, list):
-        drawer_steps = drawer_content
-    elif isinstance(drawer_content, dict):
-        drawer_steps = drawer_content.get("steps")
-    else:
-        drawer_steps = None
-
-    if drawer_steps and isinstance(drawer_steps, list) and len(drawer_steps) > 0:
-        initial_drawer = drawer_steps[0] or {}
-    else:
-        initial_drawer = drawer_content if isinstance(drawer_content, dict) else {}
-        drawer_steps = None
-
-    # Build tab buttons and panels
-    tabs = initial_drawer.get("tabs", {})
-    tab_keys = list(tabs.keys())
-
-    tab_buttons_html = ""
-    tab_panels_html = ""
-    for i, key in enumerate(tab_keys):
-        tab = tabs[key]
-        active_class = " active" if i == 0 else ""
-        tab_buttons_html += (
-            "<button class='drawer-tab-btn" + active_class + "' "
-            "onclick='switchTab(this,\"dtab-" + key + "\")'>"
-            + tab.get("label", key) +
-            "</button>"
-        )
-        # Handle image_b64 separately from content
-        image_html = ""
-        if "image_b64" in tab:
-            image_html = (
-                "<div style='width:100%;margin-top:10px;overflow:hidden;"
-                "border-radius:8px;border:1px solid #dbeafe;'>"
-                "<img src='" + tab["image_b64"] + "' style='width:100%;display:block;' />"
-                "</div>"
-            )
-        elif "image" in tab:
-            image_html = "<img src='" + tab["image"] + "' alt=''/>"
-        
-        tab_panels_html += (
-            "<div class='drawer-tab-panel" + active_class + "' id='dtab-" + key + "'>"
-            "<div>" + tab.get("content", "") + "</div>"
-            + image_html +
-            "</div>"
-        )
-
-    tip_html = "<div class='drawer-tip'>" + initial_drawer.get("tip", "") + "</div>" if "tip" in initial_drawer else ""
-
-    drawer_html = (
-        "<div id='drawer-panel'>"
-        "<div id='drawer-inner'>"
-        "<div class='drawer-title'>" + initial_drawer.get("title", "Info") + "</div>"
-        + tip_html +
-        "<div class='drawer-tabs'>" + tab_buttons_html + "</div>"
-        "<div class='drawer-tab-panels'>" + tab_panels_html + "</div>"
-        "</div></div>"
-        "<div id='drawer-tab'><span>&#128214; Info</span></div>"
-    )
-
     extra_buttons = ""
 
     body = (
         "<div id='statusbar'>click a section or if body to select it</div>"
-        "<div style='padding-bottom:400px;'>"
         "<div id='app'>"
         "<div id='palette'>"
         "<div id='pal-context'>select a section</div>"
@@ -1183,9 +1160,6 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "<div id='msg'></div>"
         "<div id='codeout'>// sketch&#10;// appears&#10;// here</div>"
         "</div>"
-        + drawer_html +
-        "</div>"
-        "</div>"
     )
 
     # Resolve the active pin reference list from the pin_refs parameter.
@@ -1198,7 +1172,6 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         active_refs = []
     items_js = "[" + ",".join('"' + i.replace('\\', '\\\\').replace('"', '\\"') + '"' for i in active_refs) + "]"
     pin_refs_js = "var PIN_REFS=" + items_js + ";"
-    drawer_steps_js = "var DRAWER_STEPS=" + (json.dumps(drawer_steps).replace("</", "<\\/") if drawer_steps else "null") + ";"
     
     overlay_js = ""
     if is_overlay:
@@ -1216,45 +1189,10 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "var PAGE=" + (("'" + str(page) + "'") if page else "null") + ";"
         f"var SUPABASE_URL='{supabase_url or ''}';"
         f"var SUPABASE_KEY='{supabase_key or ''}';"
+        f"var DEFAULT_VIEW='{dv}';"
         "var SAVE_DEBOUNCE=null;"
-        + drawer_steps_js
         + pin_refs_js +
-        "function switchTab(btn,panelId){"
-        "  var inner=document.getElementById('drawer-inner');"
-        "  inner.querySelectorAll('.drawer-tab-btn').forEach(function(b){b.classList.remove('active');});"
-        "  inner.querySelectorAll('.drawer-tab-panel').forEach(function(p){p.classList.remove('active');});"
-        "  btn.classList.add('active');"
-        "  document.getElementById(panelId).classList.add('active');}"
-        "function updateDrawer(stepIdx){"
-        "  if(!DRAWER_STEPS||!DRAWER_STEPS[stepIdx])return;"
-        "  var c=DRAWER_STEPS[stepIdx];"
-        "  var inner=document.getElementById('drawer-inner');"
-        "  if(!inner)return;"
-        "  var tEl=inner.querySelector('.drawer-title');if(tEl)tEl.textContent=c.title||'Info';"
-        "  var tipEl=inner.querySelector('.drawer-tip');"
-        "  if(c.tip){"
-        "    if(!tipEl){tipEl=document.createElement('div');tipEl.className='drawer-tip';"
-        "      if(tEl&&tEl.nextSibling)inner.insertBefore(tipEl,tEl.nextSibling);else inner.appendChild(tipEl);}"
-        "    tipEl.innerHTML=c.tip;"
-        "  }else if(tipEl){tipEl.remove();}"
-        "  var tabsC=inner.querySelector('.drawer-tabs');"
-        "  var pansC=inner.querySelector('.drawer-tab-panels');"
-        "  if(tabsC)tabsC.innerHTML='';if(pansC)pansC.innerHTML='';"
-        "  var tabs=c.tabs||{};"
-        "  Object.keys(tabs).forEach(function(k,i){"
-        "    var tab=tabs[k];var act=i===0?' active':'';"
-        "    var btn=document.createElement('button');btn.className='drawer-tab-btn'+act;"
-        "    btn.textContent=tab.label||k;"
-        "    btn.setAttribute('onclick','switchTab(this,\"dtab-'+k+'\")');"
-        "    if(tabsC)tabsC.appendChild(btn);"
-        "    var p=document.createElement('div');p.className='drawer-tab-panel'+act;p.id='dtab-'+k;"
-        "    var h='<p>'+(tab.content||'')+'</p>';"
-        "    if(tab.image)h+='<img src=\"'+tab.image+'\" alt=\"\"/>';"
-        "    p.innerHTML=h;"
-        "    if(pansC)pansC.appendChild(p);"
-        "  });"
-        "}"
-        "document.addEventListener('DOMContentLoaded',function(){"
+        "(function(){"
         "var UNO_DIGITAL_PINS=['0','1','2','3','4','5','6','7','8','9','10','11','12','13'];"
         "var UNO_ANALOG_PINS=['A0','A1','A2','A3','A4','A5'];"
         "var UNO_DIGITAL_IO_PINS=UNO_DIGITAL_PINS.concat(UNO_ANALOG_PINS);"
@@ -1542,7 +1480,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    ctx.textContent=exprSel.isSubSlot?'fill sub-slot:':'fill value slot:';"
         "    blockSec.style.display='none';"
         "    exprTitle.style.display='';"
-        "    var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].mode==='guided';"
+        "    var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';"
         "    var expectedType=null;"
         "    if(exprSel.condObj){"
         "      var ec=exprSel.condObj._expectedCond;"
@@ -1563,7 +1501,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  if(activePhantoml){"
         "    var ph=activePhantoml.phantom;"
         "    var step=PROGRESSION_MODE&&STEPS?STEPS[CURRENT_STEP]:null;"
-        "    var guided=step?step.mode==='guided':false;"
+        "    var guided=step?step.guidance==='guided':false;"
         "    ctx.className='has-sel';"
         "    ctx.textContent='place: '+ph.hint;"
         "    blockSec.style.display='flex';"
@@ -1656,7 +1594,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "      var idx=activePhantoml.idx;"
         "      var newBlock;"
         "      if(type==='ifblock'){"
-        "        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].mode==='guided';"
+        "        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';"
         "        var cond={leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};"
         "        if(ph.condition&&guided){"
         "          cond.op=ph.condition.op||'==';"
@@ -1679,7 +1617,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "          forinit:'int i = 0',forcond:'i < 10',forincr:'i++',"
         "          body:b};"
         "      }else if(type==='whileloop'){"
-        "        var guidedW=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].mode==='guided';"
+        "        var guidedW=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';"
         "        var wcond={leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};"
         "        if(ph.condition&&guidedW){"
         "          wcond.op=ph.condition.op||'!=';"
@@ -1690,7 +1628,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "        var b=guided&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];"
         "        newBlock={id:Date.now(),type:'whileloop',condition:wcond,body:b};"
         "      }else{"
-        "        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].mode==='guided';"
+        "        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';"
         "        var params=def.inputs.map(function(inp){"
         "          if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';});"
         "        var exch=guided"
@@ -2182,6 +2120,15 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    +(gv?gv+'\\n\\n':'')"
         "    +'void setup() {\\n'+(sc?sc+'\\n':'')+'}'+"
         "    '\\n\\nvoid loop() {\\n'+(lc?lc+'\\n':'')+'}';checkStepComplete();}"
+        "window.getGeneratedCode = function() { return document.getElementById('codeout').textContent; };"
+        "window.isProgressionMode = function() { return PROGRESSION_MODE; };"
+        "window.setBlockData = function(data) {"
+        "  if (!data) return;"
+        "  SECTIONS.global = data.global || [];"
+        "  SECTIONS.setup = data.setup || [];"
+        "  SECTIONS.loop = data.loop || [];"
+        "  clearSelection(); render();"
+        "};"
         "function flash(txt){"
         "  var mb=document.getElementById('msg');mb.textContent=txt;mb.classList.add('show');"
         "  setTimeout(function(){mb.classList.remove('show');},2500);}"
@@ -2197,11 +2144,6 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  document.body.removeChild(ta);}"
         "document.getElementById('clrbtn').addEventListener('click',function(){"
         "  SECTIONS.global=[];SECTIONS.setup=[];SECTIONS.loop=[];clearSelection();});"
-        "var drawerOpen=false;"
-        "document.getElementById('drawer-tab').addEventListener('click',function(e){"
-        "  e.stopPropagation();"
-        "  drawerOpen=!drawerOpen;"
-        "  document.getElementById('drawer-panel').classList.toggle('open',drawerOpen);});"
         "function saveBlocks(){"
         "  if(!USERNAME||!PAGE)return;"
         "  var state;"
@@ -2216,6 +2158,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "       'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},"
         "     body:JSON.stringify({username:USERNAME,page:PAGE,blocks_json:JSON.stringify(state),updated_at:new Date().toISOString()})"
         "    }).then(function(r){if(r.ok)flash('Saved!');else flash('Save failed');});}"
+        "window.saveBlocks = saveBlocks;"
         "function loadBlocks(){"
         "  if(!USERNAME||!PAGE)return;"
         "  fetch(SUPABASE_URL+'/rest/v1/block_saves?username=eq.'+USERNAME+'&page=eq.'+PAGE,"
@@ -2485,20 +2428,38 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  var bar=document.getElementById('step-bar');"
         "  if(lbl)lbl.textContent=step.label;"
         "  if(bar)bar.style.display='flex';"
+        "  window.CURRENT_STEP_META = {guidance: step.guidance, view: step.view};"
+        "  window.dispatchEvent(new CustomEvent('stepchange', {detail: window.CURRENT_STEP_META}));"
         "  var activeId='ls';"
         "  if(step.active==='global')activeId='gs';"
         "  else if(step.active==='setup')activeId='ss';"
         "  expandSection(activeId);"
         "  var nbtn=document.getElementById('nextbtn');"
-        "  if(nbtn)nbtn.style.display=stepIdx<STEPS.length-1?'':'none';"
+        "  if(nbtn)nbtn.style.display=(step.guidance==='open'||stepIdx>=STEPS.length-1)?'none':'';"
         "  var pbtn=document.getElementById('prevbtn');"
         "  if(pbtn)pbtn.style.display=stepIdx>0?'':'none';"
-        "  updateDrawer(stepIdx);"
+        "  if(window.updateDrawer) window.updateDrawer(stepIdx);"
         "  checkStepComplete();}"
         "document.getElementById('nextbtn').addEventListener('click',function(){"
         "  if(!document.getElementById('nextbtn').classList.contains('ready'))return;"
         "  var btn=document.getElementById('nextbtn');"
+        "  var meta=window.CURRENT_STEP_META || {};"
         "  if(btn.classList.contains('check-mode')){"
+        "    if(meta.view==='editor'){"
+        "      btn.textContent='Compiling...'; btn.disabled=true;"
+        "      var code=window.getEditorCode?window.getEditorCode():'';"
+        "      fetch('http://127.0.0.1:3210/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})"
+        "      .then(function(r){return r.json();})"
+        "      .then(function(data){"
+        "        btn.disabled=false;"
+        "        if(data.success){"
+        "          btn.textContent='Next Step \\u2192'; btn.classList.remove('check-mode'); btn.classList.add('next-mode'); flash('Correct!');"
+        "        }else{"
+        "          btn.textContent='Check Code'; flash('Compile failed: '+(data.message||'check your code syntax'));"
+        "        }"
+        "      }).catch(function(){ btn.disabled=false; btn.textContent='Check Code'; flash('Compiler Agent offline'); });"
+        "      return;"
+        "    }"
         "    if(validateStep()){"
         "      btn.textContent='Next Step \\u2192';"
         "      btn.classList.remove('check-mode');"
@@ -2512,9 +2473,9 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  }"
         "  try{"
         "    var STRUCTURAL=['ifblock','forloop','whileloop'];"
-        "    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&b.type!=='codeblock'&&STRUCTURAL.indexOf(b.type)===-1;}),"
-        "               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&b.type!=='codeblock'&&STRUCTURAL.indexOf(b.type)===-1;}),"
-        "               loop:SECTIONS.loop.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&b.type!=='codeblock'&&STRUCTURAL.indexOf(b.type)===-1;}) };"
+        "    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}),"
+        "               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}),"
+        "               loop:SECTIONS.loop.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}) };"
         "    STUDENT_SAVES.push(JSON.parse(JSON.stringify(saves)));"
         "    CURRENT_STEP++;"
         "    flash('advancing to step '+CURRENT_STEP);"
@@ -2530,7 +2491,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    clearSelection();render();genCode();"
         "    flash('Step '+(CURRENT_STEP+1)+'!');"
         "    saveBlocks();"
-        "    if(!drawerOpen){drawerOpen=true;document.getElementById('drawer-panel').classList.add('open');}"
+        "    if(window.openDrawer) window.openDrawer();"
         "  }catch(e){flash('ERR: '+e.message);console.error(e);}});"
         "document.getElementById('prevbtn').addEventListener('click',function(){"
         "  if(!PROGRESSION_MODE||CURRENT_STEP<=0)return;"
@@ -2548,17 +2509,16 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "render();"
         "if(PROGRESSION_MODE)checkStepComplete();"
         + overlay_js +
-        "});"
+        "})();"
     )
 
     html = (
-        "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+        "<div id='block-builder-ui'>"
         "<link href='https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap' rel='stylesheet'>"
         "<style>" + css + "</style>"
-        "</head><body>"
         + body +
         "<script>" + js + "</script>"
-        "</body></html>"
+        "</div>"
     )
 
     if return_html:

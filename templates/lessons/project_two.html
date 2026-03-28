@@ -47,34 +47,6 @@ LOW = Electricity stops! (Light OFF)</p>
 </ul>
 {% endblock %}
 
-{% block code_section %}
-<div class="code-wrap">
-    <div>
-        <h2>Code</h2>
-        <div class="code-block">
-            <pre>void setup() {
-  pinMode(8, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(8, HIGH);
-  delay(500);
-
-  digitalWrite(8, LOW);
-  delay(500);
-}</pre>
-        </div>
-    </div>
-    <div class="code-explain">
-        <h3>🌟 Pro-Tips!</h3>
-        <p><strong>delay()</strong><br>
-        In Arduino land, 1,000 equals 1 second. If you want the light to stay off for 5 seconds, what number would you use?</p>
-        <p><strong>The Semicolon 🧐</strong><br>
-        Don't forget the <strong>;</strong> at the end of your code lines! It tells the brain to move on to the next thought!</p>
-    </div>
-</div>
-{% endblock %}
-
 {% block tips %}
 <div class="tips-box">
     <p>Remember — use the copy button to grab your code and Ctrl+V to put it in the Arduino IDE.</p>

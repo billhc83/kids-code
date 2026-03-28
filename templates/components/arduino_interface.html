@@ -39,9 +39,9 @@
     font-size: 13px;
   }
 
-  select {
-    min-width: 200px;
-  }
+  #top-bar select {
+  min-width: 200px;
+}
 
   button {
     transition: all 0.2s ease;
@@ -77,14 +77,50 @@
     background: #2563eb;
   }
 
-  /* EDITOR */
+  /* WORKSPACE — fills all space between top-bar and serial monitor */
+  #workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* BLOCKS VIEW — fills workspace */
+  #blocks-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Stretch whatever the block builder injects (iframe, div, etc.) */
+  #blocks-view > * {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* EDITOR VIEW — fills workspace */
+  #editor-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* EDITOR — fills editor-view */
   #editor {
     flex: 1;
+    min-height: 0;
   }
 
   /* SERIAL MONITOR */
   #serial-monitor {
-    height: 180px;
+    height: 80px;
     background: #020617;
     border-top: 1px solid #1e293b;
     padding: 10px;
@@ -110,6 +146,35 @@
   .status-online { color: #22c55e; }
   .status-offline { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
   
+  /* GLOBAL DRAWER */
+  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:24px;
+    background:#e53935; border-left:1px solid #1e293b;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:100; user-select:none; transition:background 0.15s; }
+  #drawer-tab span { writing-mode:vertical-rl; text-orientation:mixed;
+    font-size:14px; letter-spacing:.1em; color:#ffffff;
+    text-transform:uppercase; transform:rotate(180deg); }
+  #drawer-panel { position:absolute; right:18px; top:48px; bottom:0; width:0;
+    background:#ffffff; border-left:1px solid #d0d7de;
+    overflow:hidden; z-index:99; transition:width 0.25s ease; display:flex; flex-direction:column; }
+  #drawer-panel.open { width:600px; }
+  #drawer-inner { width:600px; height:100%; display:flex; flex-direction:column; flex-shrink:0; }
+  .drawer-title { font-size:13px; font-weight:700; color:#0969da;
+    text-transform:uppercase; letter-spacing:.08em; flex-shrink:0;
+    border-bottom:1px solid #d0d7de; padding:12px 14px 8px 14px; }
+  .drawer-tip { background:#ddf4ff; border-bottom:1px solid #84c7fb;
+    padding:8px 14px; font-size:11px; color:#0969da; line-height:1.7; flex-shrink:0; }
+  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #d0d7de; }
+  .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
+    background:none; border:none; border-bottom:2px solid transparent;
+    color:#57606a; cursor:pointer; text-align:center; transition:color 0.15s; }
+  .drawer-tab-btn.active { color:#0969da; border-bottom-color:#0969da; }
+  .drawer-tab-panels { flex:1; overflow-y:auto; }
+  .drawer-tab-panel { display:none; padding:14px; color:#24292f; }
+  .drawer-tab-panel.active { display:block; }
+  .drawer-tab-panel p { font-size:16px; line-height:1.8; white-space:pre-wrap; margin-bottom:8px; }
+  .drawer-tab-panel img { width:100%; border-radius:5px; border:1px solid #d0d7de; margin-top:8px; }
+
 </style>
 
 <!-- Monaco -->
@@ -125,16 +190,120 @@
   <button id="compile-btn">Compile</button>
   <button id="upload-btn">Upload</button>
   <button id="clear-serial-btn">Clear</button>
+  <div class="mode-btn-group">
+    <button id="mode-blocks-btn" class="mode-btn active" onclick="setMode('blocks')">Blocks</button>
+    <button id="mode-editor-btn" class="mode-btn" onclick="setMode('editor')">Editor</button>
+  </div>
   <div id="agent-status" class="status-offline">Checking Agent...</div>
 </div>
 
-<div id="editor"></div>
-<div id="serial-monitor"></div>
+<div id="main-content-wrapper" style="flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="workspace">
+    <div id="blocks-view"></div>
+    <div id="editor-view" style="display: none;">
+      <div id="editor"></div>
+    </div>
+  </div>
+  <div id="serial-monitor"></div>
+
+  <!-- GLOBAL DRAWER -->
+  <div id="drawer-panel" class="open">
+    <div id="drawer-inner">
+      <div class="drawer-title">Info</div>
+      <div class="drawer-tabs"></div>
+      <div class="drawer-tab-panels"></div>
+    </div>
+  </div>
+  <div id="drawer-tab"><span>📖 Info</span></div>
+</div>
 
 <script>
 let editor;
 let ws;
 let connectedPort;
+let currentMode = 'blocks';
+let drawerOpen = true;
+const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
+
+function switchTab(btn, panelId) {
+  const inner = document.getElementById('drawer-inner');
+  inner.querySelectorAll('.drawer-tab-btn').forEach(b => b.classList.remove('active'));
+  inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+window.flash = function(txt) {
+  const mEl = document.getElementById('msg');
+  if (mEl) {
+     mEl.textContent = txt; mEl.classList.add('show');
+     setTimeout(() => mEl.classList.remove('show'), 2500);
+  }
+  logToSerial(txt);
+};
+
+// Handle view changes from the block builder (e.g. on step change)
+window.addEventListener('stepchange', function(e) {
+  if (e.detail && e.detail.view) {
+    setMode(e.detail.view);
+  }
+});
+
+window.openDrawer = function() {
+  drawerOpen = true;
+  document.getElementById('drawer-panel').classList.add('open');
+};
+
+window.updateDrawer = function(stepIdx) {
+  if (!DRAWER_STEPS || !DRAWER_STEPS[stepIdx]) return;
+  const c = DRAWER_STEPS[stepIdx];
+  const inner = document.getElementById('drawer-inner');
+  
+  inner.querySelector('.drawer-title').textContent = c.title || 'Info';
+  
+  let tipEl = inner.querySelector('.drawer-tip');
+  if (c.tip) {
+    if (!tipEl) {
+      tipEl = document.createElement('div'); tipEl.className = 'drawer-tip';
+      inner.querySelector('.drawer-title').after(tipEl);
+    }
+    tipEl.innerHTML = c.tip;
+  } else if (tipEl) tipEl.remove();
+
+  const tabsC = inner.querySelector('.drawer-tabs');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  tabsC.innerHTML = ''; pansC.innerHTML = '';
+
+  const tabs = c.tabs || {};
+  Object.keys(tabs).forEach((k, i) => {
+    const tab = tabs[k];
+    const btn = document.createElement('button');
+    btn.className = 'drawer-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = tab.label || k;
+    btn.onclick = () => switchTab(btn, `dtab-${k}`);
+    tabsC.appendChild(btn);
+
+    const p = document.createElement('div');
+    p.className = 'drawer-tab-panel' + (i === 0 ? ' active' : '');
+    p.id = `dtab-${k}`;
+    p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
+    pansC.appendChild(p);
+  });
+};
+
+document.getElementById('drawer-tab').onclick = () => {
+  drawerOpen = !drawerOpen;
+  document.getElementById('drawer-panel').classList.toggle('open', drawerOpen);
+};
+
+// Listen for FAB save requests
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'bb_save_request') {
+    if (window.saveBlocks) window.saveBlocks();
+    // Give it a moment to complete the fetch then tell parent to close
+    setTimeout(() => window.parent.postMessage({type: 'bb_close'}, '*'), 500);
+  }
+});
 
 // Monaco
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
@@ -144,9 +313,61 @@ require(['vs/editor/editor.main'], function() {
     language: 'cpp',
     theme: 'vs-dark',
     fontSize: 14,
-    minimap: { enabled: false }
+    minimap: { enabled: false },
+    automaticLayout: true
   });
 });
+
+async function setMode(mode) {
+  if (mode === currentMode) return;
+  
+  const blocksEl = document.getElementById('blocks-view');
+  const editorEl = document.getElementById('editor-view');
+  const blocksBtn = document.getElementById('mode-blocks-btn');
+  const editorBtn = document.getElementById('mode-editor-btn');
+
+  if (mode === 'blocks') {
+    // Sync Editor -> Blocks
+    // Only attempt sync if NOT in progression mode to preserve phantom structure
+    const isProgression = window.isProgressionMode && window.isProgressionMode();
+    if (!isProgression) {
+      const code = editor.getValue();
+      try {
+        const res = await fetch('/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (window.setBlockData) window.setBlockData(data);
+      } catch (e) {
+        console.error("Failed to parse code into blocks:", e);
+      }
+    }
+    blocksEl.style.display = 'block';
+    editorEl.style.display = 'none';
+    blocksBtn.classList.add('active');
+    editorBtn.classList.remove('active');
+  } else {
+    // Sync Blocks -> Editor
+    if (window.getGeneratedCode) {
+      const code = window.getGeneratedCode();
+      editor.setValue(code);
+    }
+    blocksEl.style.display = 'none';
+    editorEl.style.display = 'flex';
+    editorBtn.classList.add('active');
+    blocksBtn.classList.remove('active');
+    // Trigger Monaco resize
+    if (editor) {
+      // Trigger layout multiple times to ensure we catch the final container size 
+      // after the browser finishes the flexbox reflow.
+      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
+    }
+  }
+  
+  currentMode = mode;
+}
 
 // UI helpers
 function logToSerial(msg, isError = false) {
@@ -222,6 +443,11 @@ async function connectSerial() {
 
 // Compile
 async function compileSketch() {
+  // Ensure editor is up to date if we are currently in blocks mode
+  if (currentMode === 'blocks' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
   const code = editor.getValue();
 
   const res = await fetch('http://127.0.0.1:3210/compile', {
@@ -237,6 +463,11 @@ async function compileSketch() {
 
 // Upload
 async function uploadSketch() {
+  // Ensure editor is up to date if we are currently in blocks mode
+  if (currentMode === 'blocks' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
   const port = document.getElementById('port-select').value;
   const code = editor.getValue();
 
@@ -255,6 +486,38 @@ async function uploadSketch() {
   logToSerial(data.success ? "Upload success" : "Upload failed", !data.success);
 }
 
+async function loadBlockBuilder() {
+  const blocksView = document.getElementById('blocks-view');
+  try {
+    // Extract preset from the URL path e.g. /standalone_ide/engine_start -> engine_start
+    const pathParts = window.location.pathname.split('/');
+    const preset = pathParts[pathParts.length - 1] || 'codebreaker';
+
+    const response = await fetch('/builder?preset=' + preset);
+    if (!response.ok) throw new Error('Failed to fetch block builder');
+    const html = await response.text();
+
+    const range = document.createRange();
+    const fragment = range.createContextualFragment(html);
+    blocksView.innerHTML = '';
+    blocksView.appendChild(fragment);
+
+    // Handle initial view and button visibility
+    if (typeof DEFAULT_VIEW !== 'undefined') {
+      setTimeout(() => setMode(DEFAULT_VIEW), 100);
+    }
+    
+    const isProg = window.PROGRESSION_MODE || (window.isProgressionMode && window.isProgressionMode());
+    const modeGroup = document.querySelector('.mode-btn-group');
+    if (modeGroup) {
+      modeGroup.style.display = isProg ? 'none' : 'flex';
+    }
+  } catch (err) {
+    console.error('Block Builder Load Error:', err);
+    blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';
+  }
+}
+
 // Events
 document.getElementById('refresh-ports-btn').onclick = fetchPorts;
 document.getElementById('connect-btn').onclick = connectSerial;
@@ -268,6 +531,8 @@ document.getElementById('clear-serial-btn').onclick = () => {
 checkAgentStatus();
 setInterval(checkAgentStatus, 5000); // Poll every 5 seconds
 fetchPorts();
+loadBlockBuilder();
+if (DRAWER_STEPS) updateDrawer(0);
 </script>
 
 </body>

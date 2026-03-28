@@ -24,56 +24,6 @@
 </ul>
 {% endblock %}
 
-{% block code_section %}
-<div class="info-box" style="margin-bottom:16px;">
-    <p>🧠 <strong>Spy Logic Secret:</strong> We use Variables to store a "Status." <code>boltA = 0</code> means stuck; <code>boltA = 1</code> means open! 🔓</p>
-</div>
-
-<div class="code-wrap">
-    <div>
-        <h2>📜 The Security Script</h2>
-        <div class="code-block">
-            <pre>
-// 🔐 Our Security Lock Variables
-int LockA = 0; 
-int LockB = 0;
-
-void setup() {
-  pinMode(2, INPUT_PULLUP);
-  pinMode(3, INPUT_PULLUP);
-  pinMode(8, OUTPUT);
-  Serial.begin(9600);
-  Serial.println("--- VAULT SYSTEM ARMED ---");
-}
-
-void loop() {
-  LockA = digitalRead(2);
-  LockB = digitalRead(3);
-
-  if (LockA == 1 && LockB == 1) {
-    digitalWrite(8, HIGH);
-    Serial.println("🔓 ACCESS GRANTED: Vault Open!");
-  } 
-  else {
-    digitalWrite(8, LOW);
-    Serial.println("🔒 ACCESS DENIED: Locks Engaged.");
-  }
-  delay(500); 
-}</pre>
-        </div>
-    </div>
-    <div class="code-explain">
-        <h3>🧬 How the Spy Logic Works</h3>
-        <p><strong>The "&&" Code</strong><br>
-        This means <strong>"AND."</strong> The computer asks: "Is Lock A open AND is Lock B open?" 🤝</p>
-        <p><strong>Variables as Memory</strong><br>
-        Variables "remember" the switch state while the computer checks other things. 🧩</p>
-        <p><strong>Decision Making</strong><br>
-        Engineers use variables to help computers make complex choices! 🧠</p>
-    </div>
-</div>
-{% endblock %}
-
 {% block tips %}
 <div class="tips-box">
     <p>🔎 <strong>Vault Monitor</strong><br>

@@ -1,14 +1,18 @@
+
 from utils.step_builder import build_step, intro_step, rect, circle
 
-PAGE_TITLE = "Project 8: The Dragon's Crystal Alarm"
-CIRCUIT_IMAGE = "static/graphics/project_eight_circuit.png"
+META = {
+    'title': 'Project 8: The Dragon\'s Crystal Alarm',
+    'circuit_image': 'static/graphics/project_eight_circuit.png',
+    'banner_image': None,
+}
 
 STEPS = [
     intro_step(
-        "Protect the Dragon Crystal!",
+        "Let's build our eighth project",
         "Press the next button for a step by step guide",
     ),
-
+    
     build_step(
         "Place the LED long leg in row 6, column E.<br>"
         "Place the LED short leg in row 5, column E",
@@ -132,3 +136,200 @@ STEPS = [
         greyout=True,
     ),
 ]
+
+DRAWER_CONTENT = {
+
+    "project_eight": {
+    "title": "🏰 Dragon's Crystal Alarm",
+    "tip": "Use a light sensor to trigger both a light and sound alarm system.",
+    "tabs": {
+        "story": {
+            "label": "🐉 Mission",
+            "content": """
+<h3>Defend the Kingdom! 🏰</h3>
+
+<p>
+A powerful treasure — the <b>Golden Gear</b> — must be protected! ⚙️✨
+</p>
+
+<p>
+You are the royal engineer 🧙‍♂️
+</p>
+
+<p>
+Your task is to build a magical alarm system using a crystal sensor.
+</p>
+
+<p>
+If a shadow passes over the crystal...
+</p>
+
+<p>
+🚨 The alarm activates!<br>
+💡 The light flashes like dragon fire<br>
+🔊 The dragon ROARS!
+</p>
+
+<p>
+No thief will escape! ⚔️🐉
+</p>
+"""
+        },
+        "code": {
+            "label": "💻 Code",
+            "content": """
+<h3>The Alarm Spell</h3>
+
+<pre>
+int crystalPin = A0;
+int firePin = 13;
+int roarPin = 8;
+
+void setup() {
+  pinMode(firePin, OUTPUT);
+  pinMode(roarPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int lightLevel = analogRead(crystalPin);
+
+  if (lightLevel < 350) {
+    digitalWrite(firePin, HIGH);
+    tone(roarPin, 800);
+    delay(150);
+
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(150);
+  } else {
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(100);
+  }
+}
+</pre>
+
+<p>
+This program watches for shadows and activates an alarm system.
+</p>
+"""
+        },
+        "logic": {
+            "label": "🧩 Logic",
+            "content": """
+<h3>How the Alarm Thinks</h3>
+
+<p>
+The system constantly:
+</p>
+
+<p>
+👁️ Reads light from the crystal<br>
+🌑 Detects if it suddenly gets dark<br>
+🚨 Activates the alarm<br>
+🔁 Repeats
+</p>
+
+<p>
+If shadow detected → FLASH + SOUND ⚡<br>
+If clear → Stay quiet 😴
+</p>
+"""
+        },
+        "translation": {
+            "label": "🧠 Translation",
+            "content": """
+<h3>Spell Breakdown</h3>
+
+<p>
+<b>analogRead(crystalPin)</b><br>
+Reads the crystal's light 🔮<br>
+Lower number = darker (shadow!)
+</p>
+
+<p>
+<b>if (lightLevel &lt; 350)</b><br>
+Shadow detected → trigger alarm ⚠️
+</p>
+
+<p>
+<b>digitalWrite(firePin, HIGH/LOW)</b><br>
+Turns the LED ON and OFF 💡<br>
+Creates a flashing effect
+</p>
+
+<p>
+<b>tone(roarPin, 800)</b><br>
+Makes the buzzer roar at 800 Hz 🔊🐉
+</p>
+
+<p>
+<b>noTone(roarPin)</b><br>
+Stops the sound
+</p>
+
+<p>
+<b>delay(150)</b><br>
+Controls how fast the alarm flashes ⏱️
+</p>
+
+<p>
+<b>System Behavior</b><br>
+Sensor → Decision → Light + Sound → Repeat 🔁
+</p>
+"""
+        }
+    }
+    }
+}
+SKETCH_PRESET = {
+    'sketch': """int crystalPin = A0;
+int firePin = 13;
+int roarPin = 8;
+
+void setup() {
+  pinMode(firePin, OUTPUT);
+  pinMode(roarPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int lightLevel = analogRead(crystalPin);
+
+  if (lightLevel < 350) {
+    digitalWrite(firePin, HIGH);
+    tone(roarPin, 800);
+    delay(150);
+
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(150);
+  } else {
+    digitalWrite(firePin, LOW);
+    noTone(roarPin);
+    delay(100);
+  }
+}""",
+    'default_view': 'editor'
+}
+
+CHALLENGE_PRESET = {
+    'sketch': '...',
+    'default_view': 'editor',
+}
+
+# Optional — progression sketch for guided block builder projects
+PROGRESSION_PRESET = {
+    'sketch': '...',  # contains //>> markers
+}
+PROJECT = {
+    "meta": META,
+    "steps": STEPS,
+    "drawer": DRAWER_CONTENT,
+    "presets": {
+        "default": SKETCH_PRESET,
+        "challenge": CHALLENGE_PRESET,
+        "progression": PROGRESSION_PRESET,
+    }
+}

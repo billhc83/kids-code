@@ -35,45 +35,6 @@ Press means ON. Release means OFF.</p>
 </ul>
 {% endblock %}
 
-{% block code_section %}
-<div class="code-wrap">
-    <div>
-        <h2>💻 Secret Lab Code</h2>
-        <div class="code-block">
-            <pre>void setup() {
-  pinMode(8, OUTPUT);
-  pinMode(2, INPUT_PULLUP);
-}
-
-void loop() {
-  if (digitalRead(2) == LOW) {
-    digitalWrite(8, HIGH);
-  } else {
-    digitalWrite(8, LOW);
-  }
-}</pre>
-        </div>
-    </div>
-    <div class="code-explain">
-        <h3>🧬 Code Translation (Scientist Edition)</h3>
-        <p><strong>pinMode(8, OUTPUT);</strong><br>
-        Door 8 sends electricity to the crystal 💡</p>
-        <p><strong>pinMode(2, INPUT_PULLUP);</strong><br>
-        Door 2 listens for the button 🔘</p>
-        <p><strong>digitalRead(2)</strong><br>
-        Is the button being pressed?<br>
-        LOW = pressed 😄 / HIGH = not pressed 😴</p>
-        <p><strong>digitalWrite(8, HIGH);</strong><br>
-        Turn the crystal ON! 💥</p>
-        <p><strong>digitalWrite(8, LOW);</strong><br>
-        Turn the crystal OFF. 🌑</p>
-        <p><strong>The loop</strong><br>
-        Runs forever like a bubbling experiment 🧪♻️<br>
-        Check → Decide → Glow → Repeat!</p>
-    </div>
-</div>
-{% endblock %}
-
 {% block tips %}
 <div class="tips-box">
     <p>💡 <strong>Tip 1: Follow the electricity path!</strong><br>

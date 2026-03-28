@@ -1,13 +1,18 @@
+
 from utils.step_builder import build_step, intro_step, rect, circle, line
 
-PAGE_TITLE = "Project 11: Engine System Start"
-CIRCUIT_IMAGE = "static/graphics/project_twelve_circuit.png"
+META = {
+    'title': 'Project 11: Engine System Start',
+    'circuit_image': 'static/graphics/project_twelve_circuit.png',
+    'banner_image': None,
+}
 
 STEPS = [
     intro_step(
-        "Engage Engines!!!!",
+        "Let's build our eleventh project",
         "Press the next button for a step by step guide",
     ),
+    
     build_step(
         "Place the center pin of the switch in row 4, column H.<br>"
         "Place the side pin of the switch in row 5, column H",
@@ -106,3 +111,118 @@ STEPS = [
         line((915, 331), (922, 106)),
     ),
 ]
+
+import base64
+from pathlib import Path
+
+def img_to_b64(path):
+    data = Path(path).read_bytes()
+    b64 = base64.b64encode(data).decode()
+    ext = Path(path).suffix.lstrip(".")
+    return f"data:image/{ext};base64,{b64}"
+
+engine_circuit_b64 = img_to_b64("static/graphics/project_twelve_circuit.png")
+
+DRAWER_CONTENT = {
+
+    "project_eleven": {
+        "title": "📘 Engine Start Guide",
+        "tip": "Build the rules that control when the engine is allowed to run.",
+        "tabs": {
+            "mission": {
+                "label": "🧠 Mission",
+                "content": """
+<h3>You are building an engine system with rules:</h3>
+<p>
+- The switch controls the whole system.<br>
+- The button starts the engine.<br>
+- The engine keeps running until the switch turns OFF.<br>
+- If the switch is OFF, nothing runs.<br>
+- The "If" blocks are filled in already, no need to change them.
+</p>
+<p>Your job is to build these rules using blocks.</p>
+""",
+                "image_b64": engine_circuit_b64
+            },
+            "wiring": {
+                "label": "🔌 Wiring",
+                "content": """
+<b>Match each part to its pin:</b><br><br>
+🔘 Arm Switch → Pin 9<br>
+🔴 Engage Button → Pin 7<br>
+💡 Engine Light → Pin 2<br>
+🔊 Engine Buzzer → Pin 5<br><br>
+Find the part in the diagram.<br>
+Follow the wire.<br>
+Match it to the pin.
+"""
+            },
+            "logic": {
+                "label": "🧩 Logic",
+                "content": """
+<b>🔘 Important Button Rule</b><br><br>
+Look at the wiring diagram.<br><br>
+If the button connects to GND, choose:<br>
+<b>INPUT_PULLUP</b><br><br>
+That's how this wiring style works.<br><br>
+<b>Understanding The "If" statements:</b><br><br>
+The Arduino sees <b>HIGH</b> when the switch is <b>off</b> or the button is <b>not pressed</b><br>
+The Arduino sees <b>LOW</b> when the switch is <b>on</b> or the button is <b>pressed</b><br><br>
+<b>Think about the flow:</b><br><br>
+IF switch is ON<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Light ON<br>
+&nbsp;&nbsp;&nbsp;&nbsp;IF button pressed<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;engine ON<br><br>
+IF switch is OFF (else)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;everything OFF<br><br>
+Remember: The switch is the boss.
+"""
+            }
+        }
+    },
+}
+SKETCH_PRESET = {
+    'sketch': """
+void setup() {
+  pinMode(9, INPUT_PULLUP);   // Arm switch
+  pinMode(7, INPUT_PULLUP);   // Engage button
+  pinMode(2, OUTPUT);         // Engine light
+  pinMode(5, OUTPUT);         // Engine buzzer
+}
+
+void loop() {
+  if (digitalRead(9) == LOW) {   // Switch ON
+    digitalWrite(2, HIGH);       // Light ON (armed)
+
+    if (digitalRead(7) == LOW) {
+      digitalWrite(5, HIGH);     // Start engine
+    } else {
+      digitalWrite(5, LOW);
+    }
+  } else {                        // Switch OFF
+    digitalWrite(2, LOW);         // Light OFF
+    digitalWrite(5, LOW);         // Engine OFF
+  }
+}""",
+    'default_view': 'editor'
+}
+
+CHALLENGE_PRESET = {
+    'sketch': '...',
+    'default_view': 'editor',
+}
+
+# Optional — progression sketch for guided block builder projects
+PROGRESSION_PRESET = {
+    'sketch': '...',  # contains //>> markers
+}
+PROJECT = {
+    "meta": META,
+    "steps": STEPS,
+    "drawer": DRAWER_CONTENT,
+    "presets": {
+        "default": SKETCH_PRESET,
+        "challenge": CHALLENGE_PRESET,
+        "progression": PROGRESSION_PRESET,
+    }
+}

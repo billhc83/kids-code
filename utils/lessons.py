@@ -16,70 +16,70 @@ LESSONS = [
         "title": "💡 Lights On",
         "template": "lessons/project_one.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_one"
     },
     {
         "key": "project_two",
         "title": "🚦 Blinking Beacon",
         "template": "lessons/project_two.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_two"
     },
     {
         "key": "project_three",
-        "title": "🎚️ Fading Light",
+        "title": "🎚️ Mad Scientist Button",
         "template": "lessons/project_three.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_three"
     },
     {
         "key": "project_four",
         "title": "🎨 Launch Button",
         "template": "lessons/project_four.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_four"
     },
     {
         "key": "project_five",
         "title": "🎶 Spy Data",
         "template": "lessons/project_five.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_five"
     },
     {
         "key": "project_six",
         "title": "🌊 Deep Sea Explorer",
         "template": "lessons/project_six.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_six"
     },
     {
         "key": "project_seven",
         "title": "🚨 Automatic Night Light",
         "template": "lessons/project_seven.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_seven"
     },
     {
         "key": "project_eight",
         "title": "🎱 Dragon Alarm",
         "template": "lessons/project_eight.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_eight"
     },
     {
         "key": "project_nine",
         "title": "🔐 Universal Power Slot",
         "template": "lessons/project_nine.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_nine"
     },
     {
         "key": "project_ten",
         "title": "⚡️ Spy Vault",
         "template": "lessons/project_ten.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "project_ten"
     },
     {
         "key": "challenge_one",
@@ -90,24 +90,24 @@ LESSONS = [
     },
     {
         "key": "project_eleven",
-        "title": "⚙️ Jet Engine Start ",
+        "title": "⚙️ Jet Engine Start",
         "template": "lessons/project_eleven.html",
         "part": None,
-        "block_builder": "engine_start"    
+        "block_builder": "project_eleven"    
     },
     {
         "key": "project_twelve",
         "title": "🚨 Night Patrol Academy",
         "template": "lessons/project_twelve.html",
         "part": None,
-        "block_builder": "patrol_alarm"
+        "block_builder": "project_twelve"
     },
     {
         "key": "project_thirteen",
         "title": "🔍 Reaction Timer",
         "template": "lessons/project_thirteen.html",
         "part": None,
-        "block_builder": "reaction_timer"
+        "block_builder": "project_thirteen"
     },
     {
         "key": "project_fourteen_part_one",
@@ -121,7 +121,7 @@ LESSONS = [
         "title": "🏆 Code Breaker Part 2",
         "template": "lessons/project_fourteen_part_two.html",
         "part": "Code Breaker",
-        "block_builder": "codebreaker"  # ← update to correct preset
+        "block_builder": "project_fourteen"  # ← update to correct preset
     },
     {
         "key": "project_fourteen_part_three",
@@ -135,21 +135,21 @@ LESSONS = [
         "title": "🏆 Backup Alarm Part 1",
         "template": "lessons/project_fifteen_part_one.html",
         "part": "Backup Alarm",
-        "block_builder": "backup_alarm"  # ← update to correct preset
+        "block_builder": None # ← update to correct preset
     },
     {
         "key": "project_fifteen_part_two",
         "title": "🏆 Backup Alarm Part 2",
         "template": "lessons/project_fifteen_part_two.html",
         "part": "Backup Alarm",
-        "block_builder": "backup_alarm"  # ← update to correct preset
+        "block_builder": "project_fifteen"  # ← update to correct preset
     },
     {
         "key": "project_fifteen_part_three",
         "title": "🏆 Backup Alarm Part 3",
         "template": "lessons/project_fifteen_part_three.html",
         "part": "Backup Alarm",
-        "block_builder": "backup_alarm"  # ← update to correct preset
+        "block_builder": "project_fifteen"  # ← update to correct preset
     },
 ]
 

@@ -32,38 +32,6 @@ The computer wakes up and starts the launch sequence.</p>
 </ul>
 {% endblock %}
 
-{% block code_section %}
-<div class="code-wrap">
-    <div>
-        <h2>💻 Rocket Control Code</h2>
-        <div class="code-block">
-            <pre>void setup() {
-  pinMode(8, OUTPUT);
-  pinMode(2, INPUT_PULLUP);
-}
-
-void loop() {
-  if (digitalRead(2) == LOW) {
-    digitalWrite(8, HIGH);
-  } else {
-    digitalWrite(8, LOW);
-  }
-}</pre>
-        </div>
-    </div>
-    <div class="code-explain">
-        <h3>🧬 Code Translation (Space Edition)</h3>
-        <p><strong>setup()</strong><br>
-        Pin 8 powers the rocket buzzer 🔊🚀<br>
-        Pin 2 listens for your launch button 👆</p>
-        <p><strong>loop()</strong><br>
-        Check the button 👀<br>
-        Pressed → Buzzer ON (engine roaring!) 🛸<br>
-        Not pressed → Buzzer OFF (rocket rests) 😴</p>
-    </div>
-</div>
-{% endblock %}
-
 {% block tips %}
 <div class="tips-box">
     <p>💡 <strong>Tip 1:</strong> Make sure the buzzer's + and – are in the correct holes!</p>

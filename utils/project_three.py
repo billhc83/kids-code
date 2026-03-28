@@ -1,11 +1,14 @@
 from utils.step_builder import build_step, intro_step, rect, circle
 
-PAGE_TITLE = "Project 3: Mad Scientist Button Machine"
-CIRCUIT_IMAGE = "static/graphics/project_three_circuit.png"
+META = {
+    'title': 'Project 3: Mad Scientist Button Machine',
+    'circuit_image': 'static/graphics/project_three_circuit.png',
+    'banner_image': None,
+}
 
 STEPS = [
     intro_step(
-        "Let's light the energy crystal",
+        "Let's build our third project",
         "Press the next button for a step by step guide",
     ),
     build_step(
@@ -70,3 +73,171 @@ STEPS = [
         greyout=True,
     ),
 ]
+
+DRAWER_CONTENT = {
+
+    "project_three": {
+    "title": "🧪 Mad Scientist Lab",
+    "tip": "Use a button to control your light like a powerful energy experiment.",
+    "tabs": {
+        "story": {
+            "label": "🧠 Story",
+            "content": """
+<h3>Welcome to the Mad Scientist Laboratory! 🧠⚡</h3>
+
+<p>
+Strange machines are buzzing… wires are glowing… and something amazing is about to happen!
+</p>
+
+<p>
+In this experiment, <b>YOU</b> are the mad scientist 😈
+</p>
+
+<p>
+Your mission:
+</p>
+
+<p>
+👉 Press the button — The crystal wakes up and the light turns ON 💡<br>
+✋ Let go — The crystal goes back to sleep 😴
+</p>
+
+<p>
+You are teaching the machine to <b>listen to you</b>.
+</p>
+
+<p>
+Press = ON<br>
+Release = OFF
+</p>
+
+<p>
+Mwahahaha! You are in control of the experiment! 🧪⚡
+</p>
+"""
+        },
+        "code": {
+            "label": "🖥️ Code",
+            "content": """
+<h3>The Experiment Code</h3>
+
+<pre>
+void setup() {
+  pinMode(8, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+}
+
+void loop() {
+  if (digitalRead(2) == LOW) {
+    digitalWrite(8, HIGH);
+  } else {
+    digitalWrite(8, LOW);
+  }
+}
+</pre>
+
+<p>
+This is the rule book your machine follows.
+</p>
+"""
+        },
+        "logic": {
+            "label": "🧩 Logic",
+            "content": """
+<h3>How the Machine Thinks</h3>
+
+<p>
+The Arduino is constantly asking:
+</p>
+
+<p>
+❓ "Is the button pressed?"
+</p>
+
+<p>
+If YES → Turn the light ON 💡<br>
+If NO → Turn the light OFF 🌑
+</p>
+
+<p>
+This decision happens over and over again, super fast!
+</p>
+"""
+        },
+        "translation": {
+            "label": "🧬 Translation",
+            "content": """
+<h3>Scientist Code Translation</h3>
+
+<p>
+<b>pinMode(8, OUTPUT);</b><br>
+Door 8 sends electricity to the crystal 💡
+</p>
+
+<p>
+<b>pinMode(2, INPUT_PULLUP);</b><br>
+Door 2 listens for the button 🔘
+</p>
+
+<p>
+<b>digitalRead(2)</b><br>
+Is the button pressed?<br>
+LOW = pressed 😄<br>
+HIGH = not pressed 😴
+</p>
+
+<p>
+<b>digitalWrite(8, HIGH);</b><br>
+Turn the crystal ON! 💥
+</p>
+
+<p>
+<b>digitalWrite(8, LOW);</b><br>
+Turn the crystal OFF 🌑
+</p>
+
+<p>
+<b>The loop</b><br>
+Runs forever like a bubbling experiment 🧪♻️<br>
+Check → Decide → Glow → Repeat!
+</p>
+"""
+        }
+    }
+},
+}
+SKETCH_PRESET = {
+    'sketch': """void setup() {
+  pinMode(8, OUTPUT);
+  pinMode(2, INPUT_PULLUP);
+}
+
+void loop() {
+  if (digitalRead(2) == LOW) {
+    digitalWrite(8, HIGH);
+  } else {
+    digitalWrite(8, LOW);
+  }
+}""",
+    'default_view': 'editor'
+}
+
+CHALLENGE_PRESET = {
+    'sketch': '...',
+    'default_view': 'editor',
+}
+
+# Optional — progression sketch for guided block builder projects
+PROGRESSION_PRESET = {
+    'sketch': '...',  # contains //>> markers
+}
+PROJECT = {
+    "meta": META,
+    "steps": STEPS,
+    "drawer": DRAWER_CONTENT,
+    "presets": {
+        "default": SKETCH_PRESET,
+        "challenge": CHALLENGE_PRESET,
+        "progression": PROGRESSION_PRESET,
+    }
+}

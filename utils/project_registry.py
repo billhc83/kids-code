@@ -1,0 +1,21 @@
+import importlib
+import pkgutil
+import utils
+
+PROJECTS = {}
+
+for _, module_name, _ in pkgutil.iter_modules(utils.__path__):
+    if module_name.startswith("project_"):
+        try:
+            module = importlib.import_module(f"utils.{module_name}")
+            # Look for the new unified PROJECT dictionary
+            if hasattr(module, "PROJECT"):
+                PROJECTS[module_name] = module.PROJECT
+            # Fallback for old style modules while they are being converted
+            elif hasattr(module, "META") and hasattr(module, "STEPS"):
+                PROJECTS[module_name] = {
+                    "meta": module.META,
+                    "steps": module.STEPS,
+                }
+        except Exception as e:
+            print(f"Error loading module {module_name}: {e}")

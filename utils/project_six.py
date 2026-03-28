@@ -1,11 +1,14 @@
 from utils.step_builder import build_step, intro_step, rect, circle
 
-PAGE_TITLE = "Project 6: Deep Sea Explorer"
-CIRCUIT_IMAGE = "static/graphics/project_six_circuit.png"
+META = {
+    'title': 'Project 6: Deep Sea Explorer',
+    'circuit_image': 'static/graphics/project_six_circuit.png',
+    'banner_image': None,
+}
 
 STEPS = [
     intro_step(
-        "Activate the submarine sensor!",
+        "Let's build our fourth project",
         "Press the next button for a step by step guide",
     ),
     build_step(
@@ -52,3 +55,186 @@ STEPS = [
         greyout=True,
     ),
 ]
+
+DRAWER_CONTENT = {
+
+    "project_six": {
+    "title": "🤿 Deep Sea Explorer",
+    "tip": "Use a light sensor to detect brightness and send data to your computer.",
+    "tabs": {
+        "story": {
+            "label": "🚢 Mission",
+            "content": """
+<h3>🚢 Welcome aboard the S.S. Arduino! ⚓</h3>
+
+<p>
+Crew, today we dive deep into the ocean 🌊
+</p>
+
+<p>
+We are entering the <b>Midnight Zone</b> — a place where sunlight cannot reach 🌑
+</p>
+
+<p>
+As we descend:
+</p>
+
+<p>
+☀️ Bright = Near the surface<br>
+🌑 Dark = Deep ocean… maybe near a Giant Squid! 🦑✨
+</p>
+
+<p>
+Your submarine has a special sensor 👁️‍🗨️<br>
+It can detect how bright or dark it is.
+</p>
+
+<p>
+Your mission:
+</p>
+
+<p>
+🔍 Watch the light levels<br>
+💻 Read the data on your screen<br>
+🌊 Discover how deep you've gone!
+</p>
+
+<p>
+Lights on, crew… Let's dive! 🤿⚓
+</p>
+"""
+        },
+        "code": {
+            "label": "📜 Code",
+            "content": """
+<h3>The Navigation Script</h3>
+
+<pre>
+void setup() {
+  Serial.begin(9600);
+  Serial.println("--- SUBMARINE POWER ON ---");
+}
+
+void loop() {
+  int oceanLight = analogRead(A0);
+
+  Serial.print("Light Level: ");
+  Serial.println(oceanLight);
+
+  if (oceanLight > 400) {
+    Serial.println("☀️ SURFACE: I see dolphins! 🐬");
+  } else {
+    Serial.println("🐙 MIDNIGHT ZONE: Watch for tentacles! ✨");
+  }
+
+  delay(600);
+}
+</pre>
+
+<p>
+This program reads the ocean light and reports your depth.
+</p>
+"""
+        },
+        "logic": {
+            "label": "🧩 Logic",
+            "content": """
+<h3>How the Submarine Thinks</h3>
+
+<p>
+The system constantly:
+</p>
+
+<p>
+🔢 Reads the light level<br>
+💬 Sends the number to the screen<br>
+🤔 Decides if it's bright or dark<br>
+📡 Sends a message about where you are<br>
+🔁 Repeats
+</p>
+
+<p>
+It's like a real submarine checking its surroundings!
+</p>
+"""
+        },
+        "translation": {
+            "label": "🧬 Translation",
+            "content": """
+<h3>Sonar System Breakdown</h3>
+
+<p>
+<b>analogRead(A0)</b><br>
+Reads the ocean light 🌊<br>
+0 = Pitch black 🌑<br>
+1023 = Very bright ☀️
+</p>
+
+<p>
+<b>if (oceanLight > 400)</b><br>
+If it's bright → You are near the surface 🐬<br>
+If it's dark → You are deep underwater 🐙
+</p>
+
+<p>
+<b>Serial.print / println</b><br>
+Sends messages to your computer 🖥️📡
+</p>
+
+<p>
+<b>delay(600)</b><br>
+Wait a short time before checking again ⏱️
+</p>
+
+<p>
+<b>The loop</b><br>
+Runs forever 🔁<br>
+Read → Decide → Report → Repeat
+</p>
+"""
+        }
+    }
+},
+}
+SKETCH_PRESET = {
+    'sketch': """void setup() {
+  Serial.begin(9600);
+  Serial.println("--- SUBMARINE POWER ON ---");
+}
+
+void loop() {
+  int oceanLight = analogRead(A0);
+
+  Serial.print("Light Level: ");
+  Serial.println(oceanLight);
+
+  if (oceanLight > 400) {
+    Serial.println("☀️ SURFACE: I see dolphins! 🐬");
+  } else {
+    Serial.println("🐙 MIDNIGHT ZONE: Watch for tentacles! ✨");
+  }
+
+  delay(600);
+}""",
+    'default_view': 'editor'
+}
+
+CHALLENGE_PRESET = {
+    'sketch': '...',
+    'default_view': 'editor',
+}
+
+# Optional — progression sketch for guided block builder projects
+PROGRESSION_PRESET = {
+    'sketch': '...',  # contains //>> markers
+}
+PROJECT = {
+    "meta": META,
+    "steps": STEPS,
+    "drawer": DRAWER_CONTENT,
+    "presets": {
+        "default": SKETCH_PRESET,
+        "challenge": CHALLENGE_PRESET,
+        "progression": PROGRESSION_PRESET,
+    }
+}

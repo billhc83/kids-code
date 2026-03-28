@@ -28,18 +28,7 @@ from utils.contents_flask import DRAWER_CONTENT
 from utils.block_builder import get_builder_html
 import requests
 from utils.code_breaker import serial_monitor
-from utils.project_one import STEPS as p1_steps, CIRCUIT_IMAGE as p1_image, PAGE_TITLE as p1_title
-from utils.project_eleven import STEPS as p11_steps, CIRCUIT_IMAGE as p11_image, PAGE_TITLE as p11_title
-from utils.project_three import STEPS as p3_steps, CIRCUIT_IMAGE as p3_image, PAGE_TITLE as p3_title
-from utils.project_four import STEPS as p4_steps, CIRCUIT_IMAGE as p4_image, PAGE_TITLE as p4_title
-from utils.project_six import STEPS as p6_steps, CIRCUIT_IMAGE as p6_image, PAGE_TITLE as p6_title
-from utils.project_seven import STEPS as p7_steps, CIRCUIT_IMAGE as p7_image, PAGE_TITLE as p7_title
-from utils.project_eight import STEPS as p8_steps, CIRCUIT_IMAGE as p8_image, PAGE_TITLE as p8_title
-from utils.project_nine import STEPS as p9_steps, CIRCUIT_IMAGE as p9_image, PAGE_TITLE as p9_title
-from utils.project_ten import STEPS as p10_steps, CIRCUIT_IMAGE as p10_image, PAGE_TITLE as p10_title
-from utils.project_twelve import STEPS as p12_steps, CIRCUIT_IMAGE as p12_image, PAGE_TITLE as p12_title, BANNER_IMAGE as p12_banner
-from utils.project_fifteen import STEPS as p15_steps, CIRCUIT_IMAGE as p15_image, PAGE_TITLE as p15_title
-
+from utils.project_registry import PROJECTS
 
 # Map challenge keys to what they unlock on approval
 CHALLENGE_UNLOCKS = {
@@ -61,6 +50,7 @@ from flask_limiter.util import get_remote_address
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(days=30)
+app.json.sort_keys = False
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -407,65 +397,35 @@ from utils.assembly_guide_flask import render_assembly_guide
 @app.route("/lessons/<lesson_key>")
 @login_required
 def lesson(lesson_key):
+    # Fetch lesson data
     lesson_data = get_lesson(lesson_key)
     if not lesson_data:
         abort(404)
+
+    # Check if lesson is unlocked for user
     if not is_unlocked(session["user_id"], lesson_key):
         flash("Complete the previous project to unlock this one")
         return redirect(url_for("dashboard"))
 
     extra = {}
 
-    # Assembly guide — only if lesson has step data
-    if lesson_key == "project_one":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p1_image, p1_steps, p1_title
-            )
-    elif lesson_key == "project_two":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p1_image, p1_steps, "Project 2: Blinking Beacon!"
-            )
-    elif lesson_key == "project_three":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p3_image, p3_steps, p3_title
-            )
-    elif lesson_key == "project_four":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p4_image, p4_steps, p4_title
-            )
-    elif lesson_key == "project_five":
-            pass  # no assembly guide for this project
-    elif lesson_key == "project_six":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p6_image, p6_steps, p6_title
-            )
-    elif lesson_key == "project_seven":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p7_image, p7_steps, p7_title
-            )
-    elif lesson_key == "project_eight":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p8_image, p8_steps, p8_title
-            )
-    elif lesson_key == "project_nine":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p9_image, p9_steps, p9_title
-            )
-    elif lesson_key == "project_ten":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p10_image, p10_steps, p10_title
-            )
-    elif lesson_key == "project_eleven":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p11_image, p11_steps, p11_title
-            )
-    elif lesson_key == "project_twelve":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p12_image, p12_steps, p12_title
-            )
+    # --- Assembly guides handled dynamically via PROJECTS dict ---
+    project_data = PROJECTS.get(lesson_key)
+    if project_data:
+        meta = project_data.get("meta", {})
+        img = meta.get("circuit_image") or project_data.get("image")
+        steps = project_data.get("steps", [])
+        title = meta.get("title") or project_data.get("title")
+        if img and steps:
+            extra["assembly_guide_html"] = render_assembly_guide(img, steps, title)
+
+    # --- Special cases ---
+    if lesson_key == "project_five":
+        pass  # no assembly guide
+
     elif lesson_key == "project_thirteen":
-            pass
-            
+        pass  # no assembly guide
+
     elif lesson_key == "project_fourteen_part_one":
         extra["serial_monitor_html"] = serial_monitor(
             answer='SPARK',
@@ -483,41 +443,51 @@ def lesson(lesson_key):
                 "FOR THE NEXT GROUP OF TRAINEES.", "", "TRAINING COMMAND OUT."
             ]
         )
-    elif lesson_key == "project_fourteen_part_two":
-            pass
-    
-    elif lesson_key == "project_fourteen_part_three":
-            pass
 
-    
-    elif lesson_key == "project_fifteen_part_one":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p15_image, p15_steps, p15_title
-            )
-
-    elif lesson_key == "project_fifteen_part_two":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p15_image, p15_steps, p15_title
-            )
-    elif lesson_key == "project_fifteen_part_three":
-            extra["assembly_guide_html"] = render_assembly_guide(
-                p15_image, p15_steps, p15_title
-            )
+    elif lesson_key in ["project_fourteen_part_two", "project_fourteen_part_three"]:
+        pass  # special cases with no guide yet
     # Block builder — only if explicitly set in registry
     preset = lesson_data.get("block_builder")
     if preset:
         from utils.block_builder import get_builder_html
         from utils.contents_flask import DRAWER_CONTENT
         from config import SUPABASE_URL, SUPABASE_KEY
+
+        # Update FAB to point to the standalone IDE instead of just the blocks
+        base_url = request.host_url.rstrip('/')
+        ide_url = f"{base_url}/standalone_ide/{preset}?preset={preset}&page={lesson_key}"
+
+        # Find drawer content: check project file first, then fallback to global
+        drawer_content = None
+        if project_data and "drawer" in project_data:
+            d = project_data["drawer"]
+            if isinstance(d, dict):
+                drawer_content = d.get(preset) or d.get("default") or (d if "title" in d or "tabs" in d else None)
+            else:
+                drawer_content = d
+        
+        if not drawer_content:
+            drawer_content = DRAWER_CONTENT.get(preset)
+
+        # Ensure tab order is preserved for drawer content (check for dict to avoid list conversion error)
+        if drawer_content and isinstance(drawer_content, dict) and isinstance(drawer_content.get("tabs"), dict):
+            drawer_content = drawer_content.copy()
+            drawer_content["tabs"] = list(drawer_content["tabs"].values())
+
         extra["block_builder_html"] = get_builder_html(
             preset=preset,
-            drawer_content=DRAWER_CONTENT.get(preset),
             username=session.get("user_id"),
             page=lesson_key,
-            pin_refs=preset,
-            supabase_url=SUPABASE_URL,
-            supabase_key=SUPABASE_KEY
+            is_overlay=True,
+            builder_url=ide_url
         )
+        
+        # Provide drawer data to the interface
+        if drawer_content:
+            if isinstance(drawer_content, list):
+                extra["drawer_steps"] = drawer_content
+            elif isinstance(drawer_content, dict):
+                extra["drawer_steps"] = drawer_content.get("steps") or [drawer_content]
 
     return render_template(
         lesson_data["template"],
@@ -771,5 +741,167 @@ def feedback():
             threads=threads,
             categories=CATEGORIES
         )
+
+@app.route("/parse", methods=["POST"])
+def parse():
+    from utils.arduino_blocks import parse_sketch
+    data = request.get_json()
+    code = data.get("code", "")
+    return parse_sketch(code, fill_conditions=True, fill_values=True)
+
+@app.route("/builder")
+@login_required
+def builder_endpoint():
+    from utils.block_builder import get_builder_html
+    preset = request.args.get("preset", "codebreaker")
+    page = request.args.get("page")
+
+    from utils.project_registry import PROJECTS
+    from utils.contents_flask import DRAWER_CONTENT
+    
+    drawer = None
+    # Check project registry for drawer override
+    if page in PROJECTS:
+        d = PROJECTS[page].get("drawer")
+        if d:
+            if isinstance(d, dict):
+                drawer = d.get(preset) or d.get("default") or (d if "title" in d or "tabs" in d else None)
+            else:
+                drawer = d
+    
+    if not drawer:
+        for p in PROJECTS.values():
+            if "drawer" in p and isinstance(p["drawer"], dict) and preset in p["drawer"]:
+                drawer = p["drawer"][preset]
+                break
+
+    if not drawer:
+        drawer = DRAWER_CONTENT.get(preset)
+
+    return get_builder_html(
+        preset=preset,
+        drawer_content=drawer,
+        username=session.get("user_id"),
+        page=page,
+        pin_refs=preset,
+        supabase_url=SUPABASE_URL,
+        supabase_key=SUPABASE_KEY, # Pass height here
+        is_overlay=False,
+        height=500
+    )
+
+@app.route("/preset/<name>")
+@login_required
+def get_preset(name):
+    from utils.arduino_blocks import parse_progression
+    from utils.project_registry import PROJECTS
+    from utils.presets import PRESETS
+    from utils.contents_flask import DRAWER_CONTENT
+
+    sketch_code = None
+    drawer_content = None
+    default_view = "blocks"
+
+    # Try new registry format first
+    if name in PROJECTS:
+        p = PROJECTS[name]
+        preset_obj = p.get("presets", {}).get("default", {})
+        if isinstance(preset_obj, dict):
+            sketch_code = preset_obj.get("sketch")
+            default_view = preset_obj.get("default_view", "blocks")
+        else:
+            sketch_code = preset_obj
+
+        d = p.get("drawer")
+        if d:
+            if isinstance(d, dict):
+                drawer_content = d.get(name) or d.get("default") or (d if "title" in d or "tabs" in d else None)
+            else:
+                drawer_content = d
+    else:
+        for p in PROJECTS.values():
+            if "presets" in p and name in p["presets"]:
+                preset_obj = p["presets"][name]
+                sketch_code = preset_obj.get("sketch") if isinstance(preset_obj, dict) else preset_obj
+                default_view = preset_obj.get("default_view", "blocks") if isinstance(preset_obj, dict) else "blocks"
+                d = p.get("drawer")
+                if d:
+                    if isinstance(d, dict):
+                        drawer_content = d.get(name) or d.get("default") or (d if "title" in d or "tabs" in d else None)
+                    else:
+                        drawer_content = d
+                break
+
+    # Fallback to legacy global dicts
+    if not sketch_code:
+        preset = PRESETS.get(name)
+        if not preset: abort(404)
+        sketch_code = preset['sketch'] if isinstance(preset, dict) else preset
+        default_view = preset.get('default_view', 'blocks') if isinstance(preset, dict) else 'blocks'
+        drawer_content = DRAWER_CONTENT.get(name)
+
+    progression_data = parse_progression(sketch_code) if '//>>' in sketch_code else None
+
+    return {
+        "sketch": sketch_code,
+        "drawer_content": drawer_content,
+        "default_view": default_view,
+        "progression_data": progression_data
+    }
+
+@app.route("/standalone_ide/<preset>")
+@login_required
+def standalone_ide(preset):
+    from utils.project_registry import PROJECTS
+    from utils.contents_flask import DRAWER_CONTENT
+
+    page = request.args.get("page")
+    drawer_content = None
+    default_view = "blocks"
+
+    # 1. Try project specified by 'page'
+    if page in PROJECTS:
+        proj = PROJECTS[page]
+        d = proj.get("drawer")
+        if d:
+            if isinstance(d, dict):
+                drawer_content = d.get(preset) or d.get("default") or (d if "title" in d or "tabs" in d else None)
+            else:
+                drawer_content = d
+        
+        # Look for default_view in the project presets
+        p_data = proj.get("presets", {}).get(preset) or proj.get("presets", {}).get("default")
+        if isinstance(p_data, dict):
+            default_view = p_data.get("default_view", "blocks")
+    
+    # 2. Try searching all projects for this preset's drawer
+    if not drawer_content:
+        for p in PROJECTS.values():
+            if "drawer" in p and isinstance(p["drawer"], dict) and preset in p["drawer"]:
+                drawer_content = p["drawer"][preset]
+                break
+
+    # 3. Fallback to global drawer
+    if not drawer_content:
+        drawer_content = DRAWER_CONTENT.get(preset)
+
+    # Ensure tab order is preserved for drawer content (check for dict to avoid list conversion error)
+    if drawer_content and isinstance(drawer_content, dict) and isinstance(drawer_content.get("tabs"), dict):
+        drawer_content = drawer_content.copy()
+        drawer_content["tabs"] = list(drawer_content["tabs"].values())
+
+    drawer_steps = []
+    if isinstance(drawer_content, list):
+        drawer_steps = drawer_content
+    elif isinstance(drawer_content, dict):
+        drawer_steps = drawer_content.get("steps") or [drawer_content]
+        
+    return render_template(
+        "components/arduino_interface.html",
+        drawer_steps=drawer_steps,
+        preset=preset,
+        default_view=default_view
+    )
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
