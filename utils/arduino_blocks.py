@@ -1,5 +1,6 @@
 import re
 import json
+import random
 
 from utils.presets import PRESETS, PIN_REFS
 
@@ -66,6 +67,7 @@ def parse_expr(s):
     Returns a node dict: {type, params, children} matching JS makeExNode output.
     Falls back to a value node for anything unrecognised.
     """
+    if not s: return {'type': 'value', 'params': [''], 'children': []}
     s = s.strip()
 
     # Strip outer parens: (expr) -> parse inside
@@ -412,46 +414,67 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         if semi == -1: break
         line = code[i:semi+1].strip()
         i = semi + 1
-        m = re.match(r'int\s+(\w+)\s*=\s*(.+?)\s*;', line)
+        m = re.match(r'int\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
         if m:
-            ex = process(parse_expr(m.group(2)))
+            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
             blocks.append({'type':'intvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'long\s+(\w+)\s*=\s*(.+?)\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(2)))
-            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'unsigned\s+long\s+(\w+)\s*=\s*(.+?)\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(2)))
-            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'long\s+r\s*=\s*random\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'randomdelay','params':['','']}); continue
-        m = re.match(r'bool\s+(\w+)\s*=\s*(true|false)\s*;', line)
-        if m: blocks.append({'type':'boolvar','params':[m.group(1),m.group(2)]}); continue
+        m = re.match(r'long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
+            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
+        m = re.match(r'unsigned\s+long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
+        if m:
+            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
+            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
+            continue
+        m = re.match(r'bool\s+(\w+)(?:\s*=\s*(true|false))?\s*;', line)
+        if m:
+            val = (m.group(2) if fill_values else '') if m.group(2) else ''
+            blocks.append({'type':'boolvar','params':[m.group(1), val]})
+            continue
         m = re.match(r'String\s+(\w+)\s*=\s*Serial\.readString\s*\(\s*\)\s*;', line)
         if m:
             ex = {'type': 'serialreadstring', 'params': [], 'children': []}
             blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
-        m = re.match(r'String\s+(\w+)\s*=\s*"([^"]*)"\s*;', line)
+        m = re.match(r'String\s+(\w+)(?:\s*=\s*"([^"]*)")?\s*;', line)
         if m:
-            val = m.group(2) if fill_values else ''
+            val = (m.group(2) if fill_values else '') if m.group(2) else ''
             ex = {'type': 'value', 'params': ['"' + val + '"' if val else ''], 'children': []}
             blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'pinmode','params':[m.group(1),m.group(2)]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            p1 = m.group(2) if fill_values else ''
+            blocks.append({'type':'pinmode','params':[p0, p1]})
+            continue
         m = re.match(r'digitalWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'digitalwrite','params':[m.group(1),m.group(2)]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            p1 = m.group(2) if fill_values else ''
+            blocks.append({'type':'digitalwrite','params':[p0, p1]})
+            continue
         m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'analogwrite','params':[m.group(1),''],'exChildren':[process(parse_expr(m.group(2)))]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            blocks.append({'type':'analogwrite','params':[p0,''],'exChildren':[process(parse_expr(m.group(2)))]})
+            continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':[m.group(1),'',m.group(3)],'exChildren':[process(parse_expr(m.group(2)))]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            p2 = m.group(3) if fill_values else ''
+            blocks.append({'type':'tone','params':[p0,'', p2],'exChildren':[process(parse_expr(m.group(2)))]})
+            continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'tone','params':[m.group(1),'',None],'exChildren':[process(parse_expr(m.group(2)))]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            blocks.append({'type':'tone','params':[p0,'',None],'exChildren':[process(parse_expr(m.group(2)))]})
+            continue
         m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
             ex = process(parse_expr(m.group(1)))
@@ -468,7 +491,10 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             blocks.append({'type':'delaymicroseconds','params':[''],'exChildren':[ex]})
             continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'serialbegin','params':[m.group(1)]}); continue
+        if m:
+            p0 = m.group(1) if fill_values else ''
+            blocks.append({'type':'serialbegin','params':[p0]})
+            continue
         m = re.match(r'Serial\.(print|println)\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
             fn_type = m.group(1)
@@ -481,9 +507,15 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         m = re.match(r'(\w+)\s*--\s*;', line)
         if m: blocks.append({'type':'increment','params':[m.group(1),'--','1']}); continue
         m = re.match(r'(\w+)\s*\+=\s*(.+?)\s*;', line)
-        if m: blocks.append({'type':'increment','params':[m.group(1),'+=',m.group(2)]}); continue
+        if m:
+            val = m.group(2) if fill_values else ''
+            blocks.append({'type':'increment','params':[m.group(1),'+=', val]})
+            continue
         m = re.match(r'(\w+)\s*-=\s*(.+?)\s*;', line)
-        if m: blocks.append({'type':'increment','params':[m.group(1),'-=',m.group(2)]}); continue
+        if m:
+            val = m.group(2) if fill_values else ''
+            blocks.append({'type':'increment','params':[m.group(1),'-=', val]})
+            continue
         m = re.match(r'(\w+)\s*=\s*(.+?)\s*;', line)
         if m and not re.match(r'(int|long|float|bool|byte|char|String|unsigned)\s', line):
             ex = process(parse_expr(m.group(2)))
@@ -492,15 +524,19 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
 
         # Fallback for unrecognized statements ending in semicolon
         blocks.append({'type': 'codeblock', 'params': [line]})
+
+    for b in blocks:
+        if 'id' not in b:
+            b['id'] = str(random.random() * 1000000000000000)
     return blocks
 
 
 def parse_sketch(sketch_code, fill_conditions=False, fill_values=False):
     result = {'global': [], 'setup': [], 'loop': []}
-    setup_start = re.search(r'void\s+setup\s*\(', sketch_code)
+    setup_start = re.search(r'void\s+setup\s*\(.*?\)', sketch_code)
     global_code = sketch_code[:setup_start.start()].strip() if setup_start else ''
-    setup_m = re.search(r'void\s+setup\s*\(\s*\)\s*\{', sketch_code)
-    loop_m  = re.search(r'void\s+loop\s*\(\s*\)\s*\{', sketch_code)
+    setup_m = re.search(r'void\s+setup\s*\(.*?\)\s*\{', sketch_code)
+    loop_m  = re.search(r'void\s+loop\s*\(.*?\)\s*\{', sketch_code)
     setup_code = extract_brace_body(sketch_code, setup_m.end()-1)[0] if setup_m else ''
     loop_code  = extract_brace_body(sketch_code, loop_m.end()-1)[0]  if loop_m  else ''
     result['global'] = parse_blocks(global_code, fill_conditions, fill_values)
@@ -537,7 +573,7 @@ def parse_progression(sketch_code):
     [
         {
             'label': 'Step 1 — The Variables',
-            'guidance': 'guided',    # or 'open'
+            'guidance': 'guided',    # or 'open' or 'free'
             'view': 'blocks',        # or 'editor'
             'global': [...],
             'setup':  [...],
@@ -569,11 +605,13 @@ def parse_progression(sketch_code):
         label = parts[0]
         guidance = parts[1].lower() if len(parts) > 1 else 'guided'
         view = parts[2].lower() if len(parts) > 2 else 'blocks'
+        palette_filter = parts[3].lower() if len(parts) > 3 else 'nofilter'
 
         raw_steps.append({
             'label': label,
             'guidance': guidance or 'guided',
             'view': view or 'blocks',
+            'palette_filter': palette_filter or 'nofilter',
             'chunk': chunk
         })
 
@@ -588,6 +626,14 @@ def parse_progression(sketch_code):
     for step in raw_steps:
         # Parse this step's chunk as a sketch
         parsed = parse_sketch(step['chunk'], fill_conditions=True, fill_values=True)
+
+        if step['palette_filter'] == 'filter':
+            step_types = collect_types(
+                parsed['global'] + parsed['setup'] + parsed['loop']
+            )
+            step['palette'] = list(step_types)
+        else:
+            step['palette'] = None
 
         # Determine active section based on where new blocks (phantoms) are located
         active_section = 'loop'
@@ -615,6 +661,7 @@ def parse_progression(sketch_code):
             'label':  step['label'],
             'guidance': step['guidance'],
             'view':   step['view'],
+            'palette': step['palette'],
             'active_section': active_section,
             'global': full['global'],
             'setup':  full['setup'],
@@ -624,7 +671,7 @@ def parse_progression(sketch_code):
         # Update cumulative global — only non-structural phantoms become phantom_resolved
         STRUCTURAL = ('ifblock', 'forloop', 'whileloop')
         for b in parsed['global']:
-            if b['type'] == 'phantom' and b['expects'] not in STRUCTURAL:
+            if b['type'] == 'phantom':
                 cumulative_global.append({
                     'type': 'phantom_resolved',
                     'expects': b['expects'],
@@ -636,7 +683,7 @@ def parse_progression(sketch_code):
         if parsed['setup']:
             cumulative_setup = []
         for b in parsed['setup']:
-            if b['type'] == 'phantom' and b['expects'] not in STRUCTURAL:
+            if b['type'] == 'phantom':
                 cumulative_setup.append({
                     'type': 'phantom_resolved', # This becomes a slot for student work
                     'expects': b['expects'],
@@ -648,7 +695,7 @@ def parse_progression(sketch_code):
         if parsed['loop']:
             cumulative_loop = []
         for b in parsed['loop']:
-            if b['type'] == 'phantom' and b['expects'] not in STRUCTURAL:
+            if b['type'] == 'phantom':
                 cumulative_loop.append({
                     'type': 'phantom_resolved', # This becomes a slot for student work
                     'expects': b['expects'],
@@ -662,21 +709,28 @@ def parse_progression(sketch_code):
 
 # ── Component ─────────────────────────────────────────────────────────
 
-def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None, fill_conditions=None, fill_values=None, return_html=True, is_overlay=False, supabase_url=None, supabase_key=None):
+def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, username=None, page=None, fill_conditions=None, fill_values=None, return_html=True, is_overlay=False, supabase_url=None, supabase_key=None, lock_mode=None):
 
     # Guard: if a string is passed positionally treat it as preset
+    master_sketch_js = 'var MASTER_SKETCH=null;'
     if isinstance(height, str):
         preset = height
         height = 550
 
     dv = 'blocks'
+    lv = False
+    rv = False
+    lm = lock_mode if lock_mode is not None else False
     p = None
 
     # Build initial block state from preset if provided
     if preset:
         from utils.project_registry import PROJECTS
         if preset in PROJECTS:
-            p = PROJECTS[preset].get("presets", {}).get("default")
+            proj = PROJECTS[preset]
+            p = proj.get("presets", {}).get("default")
+            if p is None and 'sketch' in proj:
+                p = proj  # project itself is the preset
         elif preset in PRESETS:
             p = PRESETS[preset]
         else:
@@ -687,7 +741,12 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                     break
 
     if p:
-        if isinstance(p, dict): dv = p.get('default_view', 'blocks')
+        if isinstance(p, dict):
+            dv = p.get('default_view', 'blocks')
+            lv = p.get('lock_view', False)
+            rv = p.get('read_only', False) if isinstance(p, dict) else False
+            if lock_mode is None:
+                lm = p.get('lock_mode', False)
         sketch_code = p['sketch'] if isinstance(p, dict) else p
 
         # Determine fill_conditions and fill_values for parse_sketch
@@ -712,6 +771,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
 
         if not is_progression:
             blocks = parse_sketch(sketch_code, fill_conditions=_fill_conditions, fill_values=_fill_values)
+            master_blocks = parse_sketch(sketch_code, fill_conditions=True, fill_values=True)
             # Build palette allowed set: always auto from sketch, then apply amendments
             base_types = collect_types(
                 blocks['global'] + blocks['setup'] + blocks['loop']
@@ -745,6 +805,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                     "children:" + children_js + "}")
 
         def json_list(lst):
+            if lst is None: return '[]'
             items = []
             for v in lst:
                 if v is None:
@@ -757,6 +818,8 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
             return '[' + ','.join(items) + ']'
 
         def block_to_js(b):
+            bid = b.get('id') or str(random.random() * 1000000000000000)
+            bid_js = f"'{bid}'"
             if b['type'] == 'ifblock':
                 ifbody_js  = '[' + ','.join(block_to_js(x) for x in b['ifbody']) + ']'
                 elseifs_js = '[' + ','.join(
@@ -766,7 +829,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                 ) + ']'
                 else_js = ('null' if b['elsebody'] is None
                            else '[' + ','.join(block_to_js(x) for x in b['elsebody']) + ']')
-                return ('{id:Date.now()+Math.random(),type:\'ifblock\','
+                return ('{id:' + bid_js + ',type:\'ifblock\','
                         'condition:' + cond_to_js(b['condition']) + ','
                         'ifbody:' + ifbody_js + ','
                         'elseifs:' + elseifs_js + ','
@@ -776,18 +839,18 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                 fi = b.get('forinit','int i = 0').replace("'","\\'")
                 fc = b.get('forcond','i < 10').replace("'","\\'")
                 fr = b.get('forincr','i++').replace("'","\\'")
-                return ("{id:Date.now()+Math.random(),type:'forloop',"
+                return ("{id:" + bid_js + ",type:'forloop',"
                         "forinit:'" + fi + "',forcond:'" + fc + "',forincr:'" + fr + "',"
                         "body:" + body_js + "}")
             if b['type'] == 'whileloop':
                 body_js = '[' + ','.join(block_to_js(x) for x in b.get('body', [])) + ']'
                 cond = b.get('condition') or {'leftExpr': None, 'op': '!=', 'rightExpr': None, 'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None}
-                return ("{id:Date.now()+Math.random(),type:'whileloop',"
+                return ("{id:" + bid_js + ",type:'whileloop',"
                         "condition:" + cond_to_js(cond) + ","
                         "body:" + body_js + "}")
             if b['type'] == 'codeblock':
                 escaped = b['params'][0].replace('\\', '\\\\').replace("'", "\\'")
-                return "{id:Date.now()+Math.random(),type:'codeblock',params:['" + escaped + "']}"
+                return "{id:" + bid_js + ",type:'codeblock',params:['" + escaped + "']}"
             if b['type'] == 'phantom':
                 hint    = b.get('hint','').replace("'", "\\'")
                 expects = b.get('expects','')
@@ -810,7 +873,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                 elsebody_js = ('null' if b.get('elsebody') is None else '[' + ','.join(block_to_js(x) for x in b['elsebody']) + ']')
                 body_js = '[' + ','.join(block_to_js(x) for x in b.get('body', [])) + ']'
 
-                return ("{id:Date.now()+Math.random(),type:'phantom',"
+                return ("{id:" + bid_js + ",type:'phantom',"
                         "hint:'" + hint + "',"
                         "expects:'" + expects + "',"
                         "params:" + params_js + ","
@@ -823,16 +886,22 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
             if b['type'] == 'phantom_resolved':
                 hint    = b.get('hint','').replace("'", "\\'")
                 expects = b.get('expects','')
-                return ("{id:Date.now()+Math.random(),type:'phantom_resolved',"
+                return ("{id:" + bid_js + ",type:'phantom_resolved',"
                         "hint:'" + hint + "',"
                         "expects:'" + expects + "'}")
             # General case — serialise params and exChildren
             params_js = json_list(b.get('params', []))
             ex = b.get('exChildren') or []
             ex_js = '[' + ','.join(ex_node_to_js(n) for n in ex) + ']'
-            return ("{id:Date.now()+Math.random(),type:'" + b['type'] + "',"
+            return ("{id:" + bid_js + ",type:'" + b['type'] + "',"
                     "params:" + params_js + ","
                     "exChildren:" + ex_js + "}")
+
+        if not is_progression:
+            mg = '[' + ','.join(block_to_js(b) for b in master_blocks['global']) + ']'
+            ms = '[' + ','.join(block_to_js(b) for b in master_blocks['setup'])  + ']'
+            ml = '[' + ','.join(block_to_js(b) for b in master_blocks['loop'])   + ']'
+            master_sketch_js = "var MASTER_SKETCH={global:" + mg + ",setup:" + ms + ",loop:" + ml + "};"
 
         # Check if this is a progression sketch
         steps = parse_progression(sketch_code) if is_progression else None
@@ -846,7 +915,10 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
                 guidance = step['guidance']
                 view     = step['view']
                 active  = step.get('active_section', 'loop')
+                palette = step.get('palette')
+                step_palette_js = 'null' if palette is None else str(palette).replace("'", '"')
                 return ("{label:'" + label + "',guidance:'" + guidance + "',view:'" + view + "',"
+                        "palette:" + step_palette_js + ","
                         "active:'" + active + "',"
                         "global:" + gb + ",setup:" + sb + ",loop:" + lb + "}")
             steps_js = '[' + ','.join(step_to_js(s) for s in steps) + ']'
@@ -861,7 +933,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
             gb = '[' + ','.join(block_to_js(b) for b in blocks['global']) + ']'
             sb = '[' + ','.join(block_to_js(b) for b in blocks['setup'])  + ']'
             lb = '[' + ','.join(block_to_js(b) for b in blocks['loop'])   + ']'
-            initial_js = "SECTIONS.global=" + gb + ";SECTIONS.setup=" + sb + ";SECTIONS.loop=" + lb + ";"
+            initial_js = "SECTIONS.global=" + gb + ";SECTIONS.setup=" + sb + ";SECTIONS.loop=" + lb + ";genCode();render();"
     else:
         initial_js = ""
         palette_js = 'var PALETTE_ALLOWED=null;'
@@ -895,9 +967,12 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         ".s-setup.active  .section-header { background:linear-gradient(135deg,#1a7f37,#4ac26b); }"
         ".s-loop.active   { border-color:#9a6700; }"
         ".s-loop.active   .section-header { background:linear-gradient(135deg,#9a6700,#d4a72c); }"
-        ".ws-block.error-block { border: 2px solid #cf222e !important; background: #ffebe9 !important; }"
-        ".block-hint { display:none; width:100%; font-size:11px; color:#cf222e; margin-top:4px; font-weight:700; white-space:normal; }"
-        ".ws-block.error-block .block-hint { display:block; }"
+        ".error-block { border: 2.5px solid #ff4d4f !important; background: #fff1f0 !important; box-shadow: 0 0 12px rgba(255, 77, 79, 0.6) !important; }"
+        ".if-block.error-block > .if-header, .if-block.error-block > .elseif-header, .if-block.error-block > .else-header { background: #ffccc7 !important; border-color: #ff4d4f !important; flex-direction: column; align-items: flex-start !important; }"
+        ".for-block.error-block > .for-header, .while-block.error-block > .while-header { background: #ffccc7 !important; border-color: #ff4d4f !important; flex-direction: column; align-items: flex-start !important; }"
+        ".error-block .blk-name, .error-block .if-keyword, .error-block .for-keyword, .error-block .while-keyword { color: #820014 !important; }"
+        ".block-hint { display:none; width:100%; font-size:12px; color:#cf222e; margin-top:6px; font-weight:800; white-space:normal; padding: 4px 8px; background: rgba(255,255,255,0.5); border-radius: 6px; }"
+        ".error-block > .block-hint, .error-block > .if-header > .block-hint, .error-block > .for-header > .block-hint, .error-block > .while-header > .block-hint { display:block; }"
         ".ws-block { display:flex; align-items:center; flex-wrap:wrap; gap:4px;"
         "  background:#f6f8fa; border: none; border-radius:18px;"
         "  padding:14px 16px; margin-bottom:3px; box-shadow:0 6px 14px rgba(0,0,0,0.08); }"
@@ -1147,11 +1222,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "</div>"
         "<div id='codepanel'>"
         "<div id='code-btns'>"
-        "<button class='cbtn' id='copybtn'>&#128203; Copy</button>"
         + extra_buttons +
-        "<button class='cbtn' id='clrbtn'>&#128465; Clear</button>"
-        "<button class='cbtn' id='savebtn'>&#128190; Save</button>"
-        "<button class='cbtn' id='resetbtn'>&#8617;&#65039; Reset</button>"
         "</div>"
         "<div id='nav-btns'>"
         "<button class='cbtn' id='prevbtn' style='display:none'>&#8592; Prev</button>"
@@ -1186,12 +1257,16 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
 
     js = (
         "var USERNAME=" + (("'" + username + "'") if username else "null") + ";"
-        "var PAGE=" + (("'" + str(page) + "'") if page else "null") + ";"
+        "var PAGE=" + (("'" + str(page) + "'") if (page is not None and str(page) != "") else "null") + ";"
         f"var SUPABASE_URL='{supabase_url or ''}';"
         f"var SUPABASE_KEY='{supabase_key or ''}';"
         f"var DEFAULT_VIEW='{dv}';"
-        "var SAVE_DEBOUNCE=null;"
-        + pin_refs_js +
+        f"var LOCK_VIEW={'true' if lv else 'false'};"
+        f"var READONLY_MODE={'true' if rv else 'false'};"
+        f"var LOCK_MODE={'true' if lm else 'false'};"
+        "var SAVE_DEBOUNCE=null;" +
+        master_sketch_js + 
+        pin_refs_js + 
         "(function(){"
         "var UNO_DIGITAL_PINS=['0','1','2','3','4','5','6','7','8','9','10','11','12','13'];"
         "var UNO_ANALOG_PINS=['A0','A1','A2','A3','A4','A5'];"
@@ -1381,6 +1456,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    }else if(inp.t==='sel'){"
         "      var es=document.createElement('select');es.className='expr-sel';"
         "      var opts=inp.o;if(typeof opts==='string')opts=getOptions(opts);"
+        "      if(!exNode.params[ji]){var op=document.createElement('option');op.value='';op.textContent='\\u2014';es.appendChild(op);}"
         "      opts.forEach(function(opt){var o=document.createElement('option');"
         "        if(typeof opt==='object'){o.value=opt.v;o.textContent=opt.lb;}else{o.value=opt;o.textContent=opt;}"
         "        es.appendChild(o);});es.value=exNode.params[ji]||'';"
@@ -1467,6 +1543,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "var CURRENT_STEP=0;"
         "var STUDENT_SAVES=[];"
         "var CHECK_FAIL_COUNT=0;"
+        "var SKETCH_ERROR_PATHS=[];"
         + palette_js
         + initial_js +
         "function updatePalette(){"
@@ -1550,7 +1627,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  render();}"
         "document.addEventListener('click',function(e){"
         "  if(!e.target.closest('.section')&&!e.target.closest('.if-body')&&"
-        "     !e.target.closest('.block-btn')&&!e.target.closest('#codepanel')&&"
+        "     !e.target.closest('.block-btn')&&!e.target.closest('#codepanel')&&!e.target.closest('button')&&"
         "     !e.target.closest('.expr-slot')&&!e.target.closest('.expr-block-inline')){"
         "    clearSelection();}});"
         "function expandSection(elId){"
@@ -1609,11 +1686,11 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "        var ib=guided&&ph.ifbody?JSON.parse(JSON.stringify(ph.ifbody)):[];"
         "        var eifs=guided&&ph.elseifs?JSON.parse(JSON.stringify(ph.elseifs)):[];"
         "        var eb=guided&&ph.elsebody?JSON.parse(JSON.stringify(ph.elsebody)):null;"
-        "        newBlock={id:Date.now(),type:'ifblock',"
+        "        newBlock={id:(Date.now()+Math.random()).toString(),type:'ifblock',"
         "          condition:cond,ifbody:ib,elseifs:eifs,elsebody:eb};"
         "      }else if(type==='forloop'){"
         "        var b=guided&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];"
-        "        newBlock={id:Date.now(),type:'forloop',"
+        "        newBlock={id:(Date.now()+Math.random()).toString(),type:'forloop',"
         "          forinit:'int i = 0',forcond:'i < 10',forincr:'i++',"
         "          body:b};"
         "      }else if(type==='whileloop'){"
@@ -1626,7 +1703,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "            right:ph.condition.rightExpr?ph.condition.rightExpr.type:null"
         "          };}"
         "        var b=guided&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];"
-        "        newBlock={id:Date.now(),type:'whileloop',condition:wcond,body:b};"
+        "        newBlock={id:(Date.now()+Math.random()).toString(),type:'whileloop',condition:wcond,body:b};"
         "      }else{"
         "        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';"
         "        var params=def.inputs.map(function(inp){"
@@ -1637,7 +1714,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "        var expectedExpr=guided&&ph.exChildren"
         "          ?ph.exChildren.map(function(e){return e?e.type:null;})"
         "          :null;"
-        "        newBlock={id:Date.now(),type:type,params:params,exChildren:exch};"
+        "        newBlock={id:(Date.now()+Math.random()).toString(),type:type,params:params,exChildren:exch};"
         "        if(expectedExpr)newBlock._expectedExpr=expectedExpr;"
         "      }"
         "      arr.splice(idx,1,newBlock);"
@@ -1652,23 +1729,24 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    else{if(def.allowed.indexOf(sel.section)===-1){flash('Goes in: '+def.allowed.filter(function(a){return a!=='if'&&a!=='for'&&a!=='while';}).join(' or '));return;}}"
         "    var block;"
         "    if(type==='ifblock'){"
-        "      block={id:Date.now(),type:'ifblock',"
+        "      block={id:(Date.now()+Math.random()).toString(),type:'ifblock',"
         "        condition:{leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},"
         "        ifbody:[],elseifs:[],elsebody:null};"
         "    }else if(type==='forloop'){"
-        "      block={id:Date.now(),type:'forloop',forinit:'int i = 0',forcond:'i < 10',forincr:'i++',body:[]};"
+        "      block={id:(Date.now()+Math.random()).toString(),type:'forloop',forinit:'int i = 0',forcond:'i < 10',forincr:'i++',body:[]};"
         "    }else if(type==='whileloop'){"
-        "      block={id:Date.now(),type:'whileloop',"
+        "      block={id:(Date.now()+Math.random()).toString(),type:'whileloop',"
         "        condition:{leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},"
         "        body:[]};"
         "    }else{"
         "      var params=def.inputs.map(function(inp){"
         "        if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';});"
         "      var exChildren=def.defaults?def.defaults.map(function(d){return d?JSON.parse(JSON.stringify(d)):null;}):[];"
-        "      block={id:Date.now(),type:type,params:params,exChildren:exChildren};"
+        "      block={id:(Date.now()+Math.random()).toString(),type:type,params:params,exChildren:exChildren};"
         "    }"
         "    sel.targetArr.push(block);render();});});"
         "function render(){"
+        "  console.log('render called', new Error().stack);"
         "  var anc=collectAncestorArrays();"
         "  renderSection('gs','global',anc);renderSection('ss','setup',anc);renderSection('ls','loop',anc);"
         "  ['gs','ss','ls'].forEach(function(id){"
@@ -1678,7 +1756,22 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    var isExpanded=el.classList.contains('expanded');"
         "    el.className=(sel&&sel.targetArr===SECTIONS[sn])?base+' active':base;"
         "    if(isExpanded)el.classList.add('expanded');});"
-        "  genCode();}"
+        "  console.log('[DEBUG] render() finishing. Re-applying highlights.'); genCode(); applySketchHighlights();"
+        "  if (typeof READONLY_MODE !== 'undefined' && READONLY_MODE) {"
+        "    document.querySelectorAll('.blk-input,.cond-input,.vartext-input,.cond-select,.cond-joiner').forEach(function(el) {"
+        "      el.setAttribute('disabled', true);"
+        "    });"
+        "    document.querySelectorAll('.act').forEach(function(el) {"
+        "      el.style.display = 'none';"
+        "    });"
+        "    document.querySelectorAll('.ws-block,.if-body,.for-body,.while-body,.if-block,.for-block,.while-block').forEach(function(el) {"
+        "      el.style.pointerEvents = 'none';"
+        "    });"
+        "    document.querySelectorAll('.palette-block,.palette-item').forEach(function(el) {"
+        "      el.style.display = 'none';"
+        "    });"
+        "  }"
+        "}"
         "function collectAncestorArrays(){"
         "  var anc=[];if(!sel)return anc;"
         "  function walk(arr){for(var i=0;i<arr.length;i++){var b=arr[i];"
@@ -1817,6 +1910,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    var el;"
         "    if(inp.t==='sel'){el=document.createElement('select');"
         "      var opts=inp.o; if(typeof opts==='string'){opts=getOptions(opts);}"
+        "      if(!block.params[j]){var op=document.createElement('option');op.value='';op.textContent='\\u2014';el.appendChild(op);}"
         "      opts.forEach(function(opt){var o=document.createElement('option');"
         "        if(typeof opt==='object'){o.value=opt.v;o.textContent=opt.lb;}else{o.value=opt;o.textContent=opt;}"
         "        el.appendChild(o);});el.value=block.params[j];"
@@ -2120,6 +2214,21 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    +(gv?gv+'\\n\\n':'')"
         "    +'void setup() {\\n'+(sc?sc+'\\n':'')+'}'+"
         "    '\\n\\nvoid loop() {\\n'+(lc?lc+'\\n':'')+'}';checkStepComplete();}"
+        "function findBlockById(id){"
+        "  var found=null;"
+        "  function walk(arr){"
+        "    if(!arr)return;"
+        "    for(var i=0;i<arr.length;i++){"
+        "      if(arr[i].id==id){found=arr[i];return;}"
+        "      if(arr[i].ifbody)walk(arr[i].ifbody);"
+        "      if(arr[i].elseifs)arr[i].elseifs.forEach(function(ei){walk(ei.body);});"
+        "      if(arr[i].elsebody)walk(arr[i].elsebody);"
+        "      if(arr[i].body)walk(arr[i].body);}}"
+        "  ['global','setup','loop'].forEach(function(s){walk(SECTIONS[s]);});"
+        "  return found;}"
+        "window.getBlockCode=function(id){"
+        "  var b=findBlockById(id);if(!b)return null;"
+        "  var code=genBlock(b,0);return code.split('\\n')[0].trim();};"
         "window.getGeneratedCode = function() { return document.getElementById('codeout').textContent; };"
         "window.isProgressionMode = function() { return PROGRESSION_MODE; };"
         "window.setBlockData = function(data) {"
@@ -2127,7 +2236,8 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  SECTIONS.global = data.global || [];"
         "  SECTIONS.setup = data.setup || [];"
         "  SECTIONS.loop = data.loop || [];"
-        "  clearSelection(); render();"
+        "  clearSelection();"
+        "  if (typeof MASTER_SKETCH !== 'undefined' && MASTER_SKETCH) validateSketch();"
         "};"
         "function flash(txt){"
         "  var mb=document.getElementById('msg');mb.textContent=txt;mb.classList.add('show');"
@@ -2137,6 +2247,11 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  if(navigator.clipboard&&navigator.clipboard.writeText)"
         "    navigator.clipboard.writeText(txt).then(function(){flash('Copied!');}).catch(function(){fbCopy(txt);});"
         "  else fbCopy(txt);});"
+        "window.copyCode = function(){"
+        "  var txt=document.getElementById('codeout').textContent;"
+        "  if(navigator.clipboard&&navigator.clipboard.writeText)"
+        "    navigator.clipboard.writeText(txt).then(function(){flash('Copied!');}).catch(function(){fbCopy(txt);});"
+        "  else fbCopy(txt);};"
         "function fbCopy(txt){"
         "  var ta=document.createElement('textarea');ta.value=txt;"
         "  ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
@@ -2160,7 +2275,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    }).then(function(r){if(r.ok)flash('Saved!');else flash('Save failed');});}"
         "window.saveBlocks = saveBlocks;"
         "function loadBlocks(){"
-        "  if(!USERNAME||!PAGE)return;"
+        "  if(!USERNAME||!PAGE||PAGE==='null'||PAGE==='undefined')return;"
         "  fetch(SUPABASE_URL+'/rest/v1/block_saves?username=eq.'+USERNAME+'&page=eq.'+PAGE,"
         "    {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}})"
         "  .then(function(r){return r.json();})"
@@ -2380,6 +2495,80 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    });"
         "  }"
         "  return valid;}"
+        "function checkSketchFields(uList, mList, badIds, path = [], section = ''){"
+        "  if(!uList||!mList)return;"
+        "  for(var i=0;i<uList.length&&i<mList.length;i++){"
+        "    var ub=uList[i],mb=mList[i];"
+        "    if(!ub||!mb)continue;"
+        "    if(ub.type!==mb.type)continue;"
+        "    var bad=false;"
+        "    if(mb.params){"
+        "      for(var j=0;j<mb.params.length;j++){"
+        "        var mv=mb.params[j],uv=(ub.params&&ub.params[j]!==undefined)?ub.params[j]:'';"
+        "        if(typeof mv==='string'&&mv.trim()!==''&&(!uv||(typeof uv==='string'&&uv.trim()===''))){"
+        "          badIds.push({id: ub.id, section: section, path: path.concat([i]), hint: 'Fill in all the fields for this block'});"
+        "          bad=true;break;}}}"
+        "    if(!bad&&mb.exChildren){"
+        "      for(var j=0;j<mb.exChildren.length;j++){"
+        "        var me=mb.exChildren[j],ue=ub.exChildren?ub.exChildren[j]:null;"
+        "        if(me&&me.params&&me.params[0]&&me.params[0].trim()!==''&&(!ue||!ue.params||!ue.params[0]||ue.params[0].trim()==='')){"
+        "          badIds.push({id: ub.id, section: section, path: path.concat([i]), hint: 'Fill in all the fields for this block'});"
+        "          bad=true;break;}}}"
+        "    if(ub.type==='ifblock'){"
+        "      checkSketchFields(ub.ifbody, mb.ifbody, badIds, path.concat([i, 'ifbody']), section);"
+        "      if(ub.elseifs && mb.elseifs) {"
+        "        ub.elseifs.forEach(function(ei, k) {"
+        "          if(mb.elseifs[k]) checkSketchFields(ei.body, mb.elseifs[k].body, badIds, path.concat([i, 'elseifs', k, 'body']), section);"
+        "        });"
+        "      }"
+        "      if(mb.elsebody)checkSketchFields(ub.elsebody||[], mb.elsebody, badIds, path.concat([i, 'elsebody']), section);"
+        "    }else if(ub.type==='forloop'||ub.type==='whileloop'){"
+        "      checkSketchFields(ub.body, mb.body, badIds, path.concat([i, 'body']), section);}}}"
+        "function applySketchHighlights(){"
+        "  document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block').forEach(function(el){el.classList.remove('error-block');});"
+        "  document.querySelectorAll('.block-hint').forEach(function(el){el.remove();});"
+        "  if (SKETCH_ERROR_PATHS.length > 0) {"
+        "    var sb = document.getElementById('statusbar');"
+        "    if(sb) { sb.style.transition='background 0.2s'; sb.style.background='#ffebe9'; setTimeout(function(){sb.style.background='';}, 400); }"
+        "  }"
+        "  SKETCH_ERROR_PATHS.forEach(function(entry){"
+        "    var res = SECTIONS[entry.section];"
+        "    if(!res) return;"
+        "    for(var i=0; i<entry.path.length; i++){"
+        "      res = res[entry.path[i]];"
+        "      if(!res) break;"
+        "    }"
+        "    if(res && res.id){"
+        "      var el = document.querySelector('[data-id=\"'+res.id+'\"]');"
+        "      if(el){"
+        "        el.classList.add('error-block');"
+        "        if(entry.hint){"
+        "          var hd=document.createElement('div');hd.className='block-hint';hd.textContent=entry.hint;"
+        "          var target = el.querySelector('.if-header, .for-header, .while-header') || el;"
+        "          target.appendChild(hd);"
+        "        }"
+        "      }"
+        "    }"
+        "  });"
+        "}"
+        "function validateSketch(){"
+        "  console.log('[DEBUG] validateSketch() invoked.');"
+        "  if(!MASTER_SKETCH)return {valid:true};"
+        "  var badIds=[];"
+        "  ['global','setup','loop'].forEach(function(sec){"
+        "    checkSketchFields(SECTIONS[sec], MASTER_SKETCH[sec], badIds, [], sec);"
+        "  });"
+        "  SKETCH_ERROR_PATHS=badIds;"
+        "  applySketchHighlights();"
+        "  return {valid: badIds.length===0, errorCount: badIds.length, errors: badIds};}"
+        "window.validateSketch = validateSketch;"
+        "window.dumpDebug = function() {"
+        "  console.log('--- BLOCK BUILDER DEBUG DUMP ---');"
+        "  console.log('MASTER_SKETCH:', MASTER_SKETCH);"
+        "  console.log('SECTIONS:', SECTIONS);"
+        "  console.log('SKETCH_ERROR_PATHS:', SKETCH_ERROR_PATHS);"
+        "  console.log('--------------------------------');"
+        "};"
         "function checkStepComplete(){"
         "  if(!PROGRESSION_MODE)return;"
         "  var phantoms=countPhantoms(SECTIONS.global)+countPhantoms(SECTIONS.setup)+countPhantoms(SECTIONS.loop);"
@@ -2387,6 +2576,14 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  var total=phantoms+incomplete;"
         "  var btn=document.getElementById('nextbtn');"
         "  if(btn.classList.contains('next-mode'))return;"
+        "  var curGuidance = STEPS&&STEPS[CURRENT_STEP]?STEPS[CURRENT_STEP].guidance:'guided';"
+        "  if(curGuidance==='free'){"
+        "    btn.classList.add('ready');"
+        "    btn.classList.remove('check-mode');"
+        "    btn.textContent='Next Step \\u2192';"
+        "    btn.classList.add('next-mode');"
+        "    return;"
+        "  }"
         "  if(btn.classList.contains('check-mode')){"
         "     if(total>0){btn.classList.remove('ready');btn.textContent='Complete Step';btn.classList.remove('check-mode');}"
         "     return;"
@@ -2408,7 +2605,6 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "    var si=0;"
         "    templateArr.forEach(function(b){"
         "      if(b.type==='phantom_resolved'){"
-        "        if(STRUCTURAL.indexOf(b.expects)!==-1){return;}"
         "        if(si<savedArr.length){"
         "          var sb=savedArr[si];"
         "          var code=genBlock(sb,0).trim();"
@@ -2424,6 +2620,7 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  SECTIONS.global=mergeSaved(step.global,savedG);"
         "  SECTIONS.setup=mergeSaved(step.setup,savedS);"
         "  SECTIONS.loop=mergeSaved(step.loop,savedL);"
+        "  PALETTE_ALLOWED = (step.palette !== undefined && step.palette !== null) ? step.palette : null;"
         "  var lbl=document.getElementById('step-label');"
         "  var bar=document.getElementById('step-bar');"
         "  if(lbl)lbl.textContent=step.label;"
@@ -2473,17 +2670,17 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "  }"
         "  try{"
         "    var STRUCTURAL=['ifblock','forloop','whileloop'];"
-        "    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}),"
-        "               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}),"
-        "               loop:SECTIONS.loop.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved'&&STRUCTURAL.indexOf(b.type)===-1;}) };"
+        "    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}),"
+        "               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}),"
+        "               loop:SECTIONS.loop.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}) };"
         "    STUDENT_SAVES.push(JSON.parse(JSON.stringify(saves)));"
         "    CURRENT_STEP++;"
         "    flash('advancing to step '+CURRENT_STEP);"
         "    var allSaves={global:[],setup:[],loop:[]};"
         "    STUDENT_SAVES.forEach(function(sv){"
-        "      allSaves.global=allSaves.global.concat(sv.global);"
-        "      allSaves.setup=allSaves.setup.concat(sv.setup);"
-        "      allSaves.loop=allSaves.loop.concat(sv.loop);"
+        "      allSaves.global=allSaves.global.concat(sv.global||[]);"
+        "      allSaves.setup=allSaves.setup.concat(sv.setup||[]);"
+        "      allSaves.loop=allSaves.loop.concat(sv.loop||[]);"
         "    });"
         "    buildWorkspace(CURRENT_STEP,allSaves);"
         "    flash('built step '+CURRENT_STEP);"
@@ -2507,8 +2704,8 @@ def render_builder(height=550, preset=None, drawer_content=None, pin_refs=None, 
         "if(USERNAME){loadBlocks();}"
         "updatePalette();"
         "render();"
-        "if(PROGRESSION_MODE)checkStepComplete();"
-        + overlay_js +
+        "if(PROGRESSION_MODE)checkStepComplete();" +
+        overlay_js +
         "})();"
     )
 

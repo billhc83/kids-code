@@ -163,7 +163,9 @@ SKETCH_PRESET = {
 void loop() {
   digitalWrite(8, HIGH);
 }""",
-    'default_view': 'editor'
+    'default_view': 'editor',
+    'read_only': True,
+    'lock_view': True
 }
 
 CHALLENGE_PRESET = {

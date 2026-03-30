@@ -8,7 +8,7 @@ _fab_icon_b64 = base64.b64encode(_fab_path.read_bytes()).decode("ascii")
 
 def get_builder_html(preset, username=None, page=None,
                      drawer_content=None, pin_refs=None, height=500,
-                     supabase_url=None, supabase_key=None, is_overlay=False, builder_url=None):
+                     supabase_url=None, supabase_key=None, is_overlay=False, builder_url=None, lock_mode=None):
     """
     Calls the local arduino_blocks generator and returns
     the complete FAB + overlay HTML as a string.
@@ -26,14 +26,15 @@ def get_builder_html(preset, username=None, page=None,
                 is_overlay=is_overlay,
                 height=height, # Pass height here
                 supabase_url=SUPABASE_URL,
-                supabase_key=SUPABASE_ANON_KEY
+                supabase_key=SUPABASE_ANON_KEY,
+                lock_mode=lock_mode
             )
 
         # If no URL provided, we fallback to a data URI of the blocks (less ideal for origins)
         if not builder_url:
              from utils.arduino_blocks import render_builder
              from config import SUPABASE_ANON_KEY, SUPABASE_URL
-             html_content = render_builder(preset=preset, username=str(username), page=page, is_overlay=True, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_ANON_KEY)
+             html_content = render_builder(preset=preset, username=str(username), page=page, is_overlay=True, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_ANON_KEY, lock_mode=lock_mode)
              full_doc = f"<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;'>{html_content}</body></html>"
              b64_html = base64.b64encode(full_doc.encode("utf-8")).decode("utf-8")
              builder_url = f"data:text/html;base64,{b64_html}"

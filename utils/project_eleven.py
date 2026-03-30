@@ -204,7 +204,10 @@ void loop() {
     digitalWrite(5, LOW);         // Engine OFF
   }
 }""",
-    'default_view': 'editor'
+    'default_view': 'editor',
+    'fill_conditions': True,
+    'fill_values': False,
+    'lock_view': True,
 }
 
 CHALLENGE_PRESET = {

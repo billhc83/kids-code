@@ -39,6 +39,11 @@ CHALLENGE_UNLOCKS = {
 from datetime import timedelta
 
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -752,17 +757,15 @@ def parse():
 @app.route("/builder")
 @login_required
 def builder_endpoint():
-    from utils.block_builder import get_builder_html
-    preset = request.args.get("preset", "codebreaker")
-    page = request.args.get("page")
-
     from utils.project_registry import PROJECTS
     from utils.contents_flask import DRAWER_CONTENT
-    
+    from utils.block_builder import get_builder_html
+    preset = request.args.get("preset", "codebreaker")
+    page = request.args.get("page") or preset
     drawer = None
-    # Check project registry for drawer override
-    if page in PROJECTS:
-        d = PROJECTS[page].get("drawer")
+    # Check project registry for drawer override - use preset name for lookup
+    if preset in PROJECTS:
+        d = PROJECTS[preset].get("drawer")
         if d:
             if isinstance(d, dict):
                 drawer = d.get(preset) or d.get("default") or (d if "title" in d or "tabs" in d else None)
@@ -855,7 +858,7 @@ def standalone_ide(preset):
     from utils.project_registry import PROJECTS
     from utils.contents_flask import DRAWER_CONTENT
 
-    page = request.args.get("page")
+    page = request.args.get("page") or preset
     drawer_content = None
     default_view = "blocks"
 

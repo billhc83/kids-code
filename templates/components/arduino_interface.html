@@ -138,6 +138,28 @@
     border-radius: 4px;
   }
 
+  #mode-toggle-btn.has-error {
+    border: 2px solid #ef4444;
+    position: relative;
+  }
+  #mode-toggle-btn.has-error::after {
+    content: '!';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #020617;
+  }
+
   /* STATUS / ERROR */
   .error {
     color: #f97316;
@@ -189,11 +211,11 @@
   <button id="connect-btn">Connect</button>
   <button id="compile-btn">Compile</button>
   <button id="upload-btn">Upload</button>
+  <button id="save-btn">Save</button>
+  <button id="copy-btn">Copy</button>
+  <button id="reset-btn">Reset</button>
   <button id="clear-serial-btn">Clear</button>
-  <div class="mode-btn-group">
-    <button id="mode-blocks-btn" class="mode-btn active" onclick="setMode('blocks')">Blocks</button>
-    <button id="mode-editor-btn" class="mode-btn" onclick="setMode('editor')">Editor</button>
-  </div>
+  <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
   <div id="agent-status" class="status-offline">Checking Agent...</div>
 </div>
 
@@ -309,28 +331,62 @@ window.addEventListener('message', function(e) {
 require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
 require(['vs/editor/editor.main'], function() {
   editor = monaco.editor.create(document.getElementById('editor'), {
-    value: `void setup() {\n  Serial.begin(9600);\n  Serial.println("Hello!");\n}\n\nvoid loop() {\n  Serial.println(millis());\n  delay(1000);\n}`,
+    value: "",
     language: 'cpp',
     theme: 'vs-dark',
     fontSize: 14,
     minimap: { enabled: false },
     automaticLayout: true
   });
+
+  // If the editor finishes loading after the block builder, 
+  // and we are in editor mode, sync the code now.
+  if (currentMode === 'editor' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  // Clear markers whenever the user types in the editor
+  editor.onDidChangeModelContent(() => {
+    if (typeof monaco !== 'undefined') monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+  });
 });
+
+async function toggleMode() {
+  setMode(currentMode === 'blocks' ? 'editor' : 'blocks');
+};
 
 async function setMode(mode) {
   if (mode === currentMode) return;
   
   const blocksEl = document.getElementById('blocks-view');
   const editorEl = document.getElementById('editor-view');
-  const blocksBtn = document.getElementById('mode-blocks-btn');
-  const editorBtn = document.getElementById('mode-editor-btn');
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+
+  // Update UI and state immediately for responsiveness
+  currentMode = mode;
+  if (mode === 'blocks') {
+    blocksEl.style.display = 'block';
+    editorEl.style.display = 'none';
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Switch to Editor';
+      toggleBtn.classList.remove('has-error');
+    }
+  } else {
+    blocksEl.style.display = 'none';
+    editorEl.style.display = 'flex';
+    if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
+    if (editor) {
+      // Trigger layout multiple times to ensure we catch the final container size 
+      // after the browser finishes the flexbox reflow.
+      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
+    }
+  }
 
   if (mode === 'blocks') {
     // Sync Editor -> Blocks
     // Only attempt sync if NOT in progression mode to preserve phantom structure
     const isProgression = window.isProgressionMode && window.isProgressionMode();
-    if (!isProgression) {
+    if (!isProgression && editor) {
       const code = editor.getValue();
       try {
         const res = await fetch('/parse', {
@@ -344,29 +400,13 @@ async function setMode(mode) {
         console.error("Failed to parse code into blocks:", e);
       }
     }
-    blocksEl.style.display = 'block';
-    editorEl.style.display = 'none';
-    blocksBtn.classList.add('active');
-    editorBtn.classList.remove('active');
   } else {
     // Sync Blocks -> Editor
-    if (window.getGeneratedCode) {
+    if (window.getGeneratedCode && editor) {
       const code = window.getGeneratedCode();
       editor.setValue(code);
     }
-    blocksEl.style.display = 'none';
-    editorEl.style.display = 'flex';
-    editorBtn.classList.add('active');
-    blocksBtn.classList.remove('active');
-    // Trigger Monaco resize
-    if (editor) {
-      // Trigger layout multiple times to ensure we catch the final container size 
-      // after the browser finishes the flexbox reflow.
-      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
-    }
   }
-  
-  currentMode = mode;
 }
 
 // UI helpers
@@ -377,6 +417,41 @@ function logToSerial(msg, isError = false) {
   if (isError) line.classList.add('error');
   monitor.appendChild(line);
   monitor.scrollTop = monitor.scrollHeight;
+}
+
+function parseAgentErrors(errorString) {
+  if (!errorString) return [];
+  var lines = errorString.split('\n');
+  var errors = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.indexOf('temp_sketch.ino:') === -1) continue;
+
+    var afterFile = line.split('temp_sketch.ino:')[1];
+    var segments = afterFile.split(':');
+    var lineNum = parseInt(segments[0], 10);
+    var colNum = parseInt(segments[1], 10);
+
+    if (isNaN(lineNum)) continue;
+
+    var message = segments.slice(2).join(':').trim();
+    var lowerMsg = message.toLowerCase();
+    if (lowerMsg.indexOf('error') === 0) {
+      message = message.substring(5).trim();
+    } else if (lowerMsg.indexOf('warning') === 0) {
+      message = message.substring(7).trim();
+    }
+    if (message.indexOf(':') === 0) {
+      message = message.substring(1).trim();
+    }
+
+    errors.push({
+      line: lineNum,
+      col: isNaN(colNum) ? 0 : colNum,
+      message: message
+    });
+  }
+  return errors;
 }
 
 // Heartbeat to check if Agent is running
@@ -409,7 +484,7 @@ async function fetchPorts() {
     ports.forEach(p => {
       const option = document.createElement('option');
       option.value = p.port;
-      option.textContent = `${p.port} (${p.label})`;
+      option.textContent = p.label;
       select.appendChild(option);
     });
 
@@ -458,14 +533,67 @@ async function compileSketch() {
 
   const data = await res.json();
 
-  logToSerial(data.success ? "Compile success" : "Compile failed", !data.success);
+  if (data.success) {
+    logToSerial("Compile success");
+  } else {
+    const errors = parseAgentErrors(data.error);
+    if (errors.length > 0) {
+      errors.forEach(err => {
+        logToSerial(`Line ${err.line}: ${err.message}`, true);
+      });
+    } else {
+      logToSerial(data.error, true);
+    }
+  }
 }
 
 // Upload
 async function uploadSketch() {
-  // Ensure editor is up to date if we are currently in blocks mode
-  if (currentMode === 'blocks' && window.getGeneratedCode) {
+  if (currentMode === 'blocks' && window.getGeneratedCode && editor) {
     editor.setValue(window.getGeneratedCode());
+  }
+
+  if (window.validateSketch) {
+    const result = window.validateSketch();
+    console.log('validateSketch result:', JSON.stringify(result));
+    console.log('MASTER_SKETCH:', window.MASTER_SKETCH ? 'loaded' : 'null');
+
+    if (typeof monaco !== 'undefined' && editor) {
+      if (!result.valid) {
+        const lines = editor.getValue().split('\n');
+        const markers = result.errors.map(err => {
+          let lineNo = 1;
+          const snippet = window.getBlockCode ? window.getBlockCode(err.id) : null;
+          if (snippet) {
+            const idx = lines.findIndex(l => l.trim().includes(snippet));
+            if (idx !== -1) lineNo = idx + 1;
+          }
+          return {
+            severity: monaco.MarkerSeverity.Error,
+            message: err.hint || 'Block needs attention',
+            startLineNumber: lineNo, startColumn: 1, endLineNumber: lineNo, endColumn: 1000
+          };
+        });
+        monaco.editor.setModelMarkers(editor.getModel(), 'arduino', markers);
+      } else {
+        monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+      }
+    }
+
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (!result.valid) {
+      if (currentMode === 'blocks') {
+        const msg = "Some blocks need attention — check the highlighted ones before uploading.";
+        if (window.flash) window.flash(msg);
+        else alert(msg);
+        logToSerial(msg, true);
+        return;
+      } else if (toggleBtn) {
+        toggleBtn.classList.add('has-error');
+      }
+    } else if (toggleBtn) {
+      toggleBtn.classList.remove('has-error');
+    }
   }
 
   const port = document.getElementById('port-select').value;
@@ -483,17 +611,29 @@ async function uploadSketch() {
 
   const data = await res.json();
 
-  logToSerial(data.success ? "Upload success" : "Upload failed", !data.success);
+  if (data.success) {
+    logToSerial("Upload success");
+  } else {
+    const errors = parseAgentErrors(data.error);
+    if (errors.length > 0) {
+      errors.forEach(err => {
+        logToSerial(`Line ${err.line}: ${err.message}`, true);
+      });
+    } else {
+      logToSerial(data.error, true);
+    }
+  }
 }
 
 async function loadBlockBuilder() {
   const blocksView = document.getElementById('blocks-view');
   try {
-    // Extract preset from the URL path e.g. /standalone_ide/engine_start -> engine_start
+    const urlParams = new URLSearchParams(window.location.search);
     const pathParts = window.location.pathname.split('/');
-    const preset = pathParts[pathParts.length - 1] || 'codebreaker';
+    const preset = urlParams.get('preset') || pathParts[pathParts.length - 1] || 'codebreaker';
+    const page = urlParams.get('page') || '';
 
-    const response = await fetch('/builder?preset=' + preset);
+    const response = await fetch('/builder?preset=' + preset + '&page=' + page);
     if (!response.ok) throw new Error('Failed to fetch block builder');
     const html = await response.text();
 
@@ -502,16 +642,24 @@ async function loadBlockBuilder() {
     blocksView.innerHTML = '';
     blocksView.appendChild(fragment);
 
-    // Handle initial view and button visibility
-    if (typeof DEFAULT_VIEW !== 'undefined') {
-      setTimeout(() => setMode(DEFAULT_VIEW), 100);
-    }
-    
-    const isProg = window.PROGRESSION_MODE || (window.isProgressionMode && window.isProgressionMode());
-    const modeGroup = document.querySelector('.mode-btn-group');
-    if (modeGroup) {
-      modeGroup.style.display = isProg ? 'none' : 'flex';
-    }
+    // Wait for the components to initialize
+    const checkInterval = setInterval(() => {
+      if (typeof DEFAULT_VIEW === 'undefined' || !window.getGeneratedCode) return;
+      clearInterval(checkInterval);
+      
+      if (typeof DEFAULT_VIEW !== 'undefined') {
+        setMode(DEFAULT_VIEW);
+      }
+      const isProg = window.PROGRESSION_MODE || (window.isProgressionMode && window.isProgressionMode());
+      const isLocked = typeof LOCK_VIEW !== 'undefined' && LOCK_VIEW;
+      const toggleBtn = document.getElementById('mode-toggle-btn');
+      if (toggleBtn) {
+        toggleBtn.style.display = (isProg || isLocked) ? 'none' : 'inline-block';
+      }
+      if (typeof READONLY_MODE !== 'undefined' && READONLY_MODE) {
+        if (editor) editor.updateOptions({ readOnly: true });
+      }
+    }, 50);
   } catch (err) {
     console.error('Block Builder Load Error:', err);
     blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';
@@ -523,6 +671,19 @@ document.getElementById('refresh-ports-btn').onclick = fetchPorts;
 document.getElementById('connect-btn').onclick = connectSerial;
 document.getElementById('compile-btn').onclick = compileSketch;
 document.getElementById('upload-btn').onclick = uploadSketch;
+document.getElementById('save-btn').onclick = function() {
+  if (window.saveBlocks) window.saveBlocks();
+};
+document.getElementById('copy-btn').onclick = function() {
+  if (window.copyCode) window.copyCode();
+  else {
+    const code = window.getGeneratedCode ? window.getGeneratedCode() : editor.getValue();
+    navigator.clipboard.writeText(code).then(() => logToSerial('Copied!'));
+  }
+};
+document.getElementById('reset-btn').onclick = function() {
+  if (window.resetBlocks) window.resetBlocks();
+};
 document.getElementById('clear-serial-btn').onclick = () => {
   document.getElementById('serial-monitor').innerHTML = '';
 };

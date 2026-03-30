@@ -16,6 +16,8 @@ for _, module_name, _ in pkgutil.iter_modules(utils.__path__):
                 PROJECTS[module_name] = {
                     "meta": module.META,
                     "steps": module.STEPS,
+                    "drawer": getattr(module, "DRAWER_CONTENT", {}),
+                    "presets": getattr(module, "presets", {}) 
                 }
         except Exception as e:
             print(f"Error loading module {module_name}: {e}")
