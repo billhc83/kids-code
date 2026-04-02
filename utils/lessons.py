@@ -11,6 +11,12 @@ LESSONS = [
         "part": None,
         "block_builder": None
     },
+    {"key": "block_builder_tutorial",
+        "title": "How to use the block builder",
+        "template": "lessons/block_builder_tutorial.html",
+        "part": None,
+        "block_builder": "block_builder_tutorial"
+    },
     {
         "key": "project_one",
         "title": "💡 Lights On",

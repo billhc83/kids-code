@@ -21,7 +21,7 @@ from utils.feedback import (
     delete_thread, get_all_threads, CATEGORIES,
     notify_discord_feedback
 )
-from config import SUPABASE_URL, SUPABASE_KEY
+from config import SUPABASE_URL, SUPABASE_KEY, SUPABASE_ANON_KEY
 from utils.challenges import get_all_submissions, review_submission
 from utils.assembly_guide_flask import render_assembly_guide
 from utils.contents_flask import DRAWER_CONTENT
@@ -749,7 +749,7 @@ def feedback():
 
 @app.route("/parse", methods=["POST"])
 def parse():
-    from utils.arduino_blocks import parse_sketch
+    from utils.block_parser import parse_sketch
     data = request.get_json()
     code = data.get("code", "")
     return parse_sketch(code, fill_conditions=True, fill_values=True)
@@ -757,46 +757,29 @@ def parse():
 @app.route("/builder")
 @login_required
 def builder_endpoint():
-    from utils.project_registry import PROJECTS
-    from utils.contents_flask import DRAWER_CONTENT
-    from utils.block_builder import get_builder_html
+    from utils.block_builder_config import build_config
+    
     preset = request.args.get("preset", "codebreaker")
     page = request.args.get("page") or preset
-    drawer = None
-    # Check project registry for drawer override - use preset name for lookup
-    if preset in PROJECTS:
-        d = PROJECTS[preset].get("drawer")
-        if d:
-            if isinstance(d, dict):
-                drawer = d.get(preset) or d.get("default") or (d if "title" in d or "tabs" in d else None)
-            else:
-                drawer = d
-    
-    if not drawer:
-        for p in PROJECTS.values():
-            if "drawer" in p and isinstance(p["drawer"], dict) and preset in p["drawer"]:
-                drawer = p["drawer"][preset]
-                break
 
-    if not drawer:
-        drawer = DRAWER_CONTENT.get(preset)
-
-    return get_builder_html(
+    config = build_config(
         preset=preset,
-        drawer_content=drawer,
         username=session.get("user_id"),
         page=page,
-        pin_refs=preset,
         supabase_url=SUPABASE_URL,
-        supabase_key=SUPABASE_KEY, # Pass height here
+        supabase_key=SUPABASE_ANON_KEY,
         is_overlay=False,
-        height=500
     )
+    print("CONFIG MODE:", config.get("mode"))
+    print("CONFIG STEPS:", len(config.get("steps") or []))
+    print("CONFIG BLOCKS:", config.get("blocks"))
+    print("username", config.get("username"))
+    return render_template("block_builder_fragment.html", config=config)
 
 @app.route("/preset/<name>")
 @login_required
 def get_preset(name):
-    from utils.arduino_blocks import parse_progression
+    from utils.block_parser import parse_progression
     from utils.project_registry import PROJECTS
     from utils.presets import PRESETS
     from utils.contents_flask import DRAWER_CONTENT

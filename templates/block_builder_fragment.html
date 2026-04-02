@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="/static/css/block_builder.css">
+
+
+
+<div id="block-builder-ui">
+  <div id="statusbar">click a section or if body to select it</div>
+  <div id="app">
+    <div id="palette">
+      <div id="pal-context">select a section</div>
+      <div id="pal-blocks-section">
+        <button class="block-btn" data-type="intvar">int var</button>
+        <button class="block-btn" data-type="longvar">long var</button>
+        <button class="block-btn" data-type="boolvar">bool var</button>
+        <button class="block-btn" data-type="setvar">set var</button>
+        <button class="block-btn" data-type="increment">++ / --</button>
+        <button class="block-btn" data-type="stringvar">String var</button>
+        <button class="block-btn" data-type="pinmode">pinMode</button>
+        <button class="block-btn" data-type="digitalwrite">digitalWrite</button>
+        <button class="block-btn" data-type="analogwrite">analogWrite</button>
+        <button class="block-btn" data-type="tone">tone</button>
+        <button class="block-btn" data-type="notone">noTone</button>
+        <button class="block-btn" data-type="delay">delay</button>
+        <button class="block-btn" data-type="delaymicroseconds">delayMicroseconds</button>
+        <button class="block-btn" data-type="serialbegin">Serial.begin</button>
+        <button class="block-btn" data-type="serialprint">Serial.print</button>
+        <button class="block-btn" data-type="ifblock">if</button>
+        <button class="block-btn" data-type="forloop">for loop</button>
+        <button class="block-btn" data-type="whileloop">while loop</button>
+      </div>
+      <div id="pal-expr-section">
+        <div class="pal-title-expr" id="pal-expr-title">Expressions</div>
+        <button class="block-btn expr-btn" data-type="value">value</button>
+        <button class="block-btn expr-btn" data-type="millis">millis()</button>
+        <button class="block-btn expr-btn" data-type="analogread">analogRead</button>
+        <button class="block-btn expr-btn" data-type="digitalread">digitalRead</button>
+        <button class="block-btn expr-btn" data-type="random">random()</button>
+        <button class="block-btn expr-btn" data-type="math">math</button>
+        <button class="block-btn expr-btn" data-type="map">map()</button>
+        <button class="block-btn expr-btn" data-type="constrain">constrain</button>
+        <button class="block-btn expr-btn" data-type="serialavailable">Serial.available</button>
+        <button class="block-btn expr-btn" data-type="serialreadstring">Serial.readString</button>
+      </div>
+    </div>
+    <div id="workspace">
+      <div id="step-bar">
+        <span id="step-label">Step</span>
+        <span id="step-progress"></span>
+      </div>
+      <div class="section s-global" id="gs">
+        <div class="section-header"><h3>🌍 Global</h3><span class="toggle-arrow">▼</span></div>
+        <div class="section-body" id="gs-body"></div>
+      </div>
+      <div class="section s-setup expanded" id="ss">
+        <div class="section-header"><h3>🔧 setup()</h3><span class="toggle-arrow">▼</span></div>
+        <div class="section-body" id="ss-body"></div>
+      </div>
+      <div class="section s-loop" id="ls">
+        <div class="section-header"><h3>🔁 loop()</h3><span class="toggle-arrow">▼</span></div>
+        <div class="section-body" id="ls-body"></div>
+      </div>
+    </div>
+    <div id="codepanel">
+      <div id="code-btns"></div>
+      <div id="nav-btns">
+        <button class="cbtn" id="prevbtn" style="display:none">← Prev</button>
+        <button class="cbtn" id="nextbtn" style="display:none">Next →</button>
+      </div>
+      <div id="msg"></div>
+      <div id="codeout">// sketch&#10;// appears&#10;// here</div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/block_builder.js"></script>
+<script>
+  window.BB_CONFIG = {{ config | tojson | safe }};
+</script>

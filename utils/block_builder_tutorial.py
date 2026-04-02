@@ -1,8 +1,7 @@
-
 from utils.step_builder import build_step, intro_step, rect, circle
 
 META = {
-    'title': 'Project 4: Space Station Launch Button',
+    'title': 'How to use the block builder',
     'circuit_image': None,
     'banner_image': None,
 }
@@ -10,8 +9,7 @@ META = {
 STEPS = None
 
 DRAWER_CONTENT = {
-
-    "project_five": {
+    "block_builder_tutorial": {
     "title": "🕵️ Secret Spy Data Beam",
     "tip": "Learn how your Arduino sends messages to your computer using serial communication.",
     "tabs": {
@@ -132,25 +130,92 @@ Send → Wait → Send → Wait
 },
 }
 SKETCH_PRESET = {
-    'sketch': """void setup() {
-  // Start the secret chat!
+    'sketch': """
+//>> Step 1 - The Program Structure | free | blocks | nofilter
+void setup() {
+int i = 0;
+}
+void loop() {
+}
+
+//>> Step 2 - Start Communication | guided 
+void setup() {
+  //?? Turn on the serial connection
   Serial.begin(9600);
-  Serial.println("--- SPY PHONE ON ---");
+}
+void loop() {
+}
+
+//>> Step 3 - Send Your First Message | guided
+void setup() {
+  //## Serial.begin(9600);
+  //?? Send a message to the computer
+  Serial.println("Hello!");
+}
+void loop() {
+}
+
+//>> Step 4 - Create a Variable | guided
+//?? Create a number variable
+int myNumber = 5;
+
+void setup() {
+  //## Serial.begin(9600);
+  //## Serial.println("Hello!");
+}
+void loop() {
+}
+
+//>> Step 5 - Print the Variable | guided
+void setup() {
+  //## Serial.begin(9600);
+  //?? Print the variable value
+  Serial.println(myNumber);
+}
+void loop() {
+}
+
+//>> Step 6 - Change the Variable | guided
+void setup() {
+  //## Serial.begin(9600);
+  //?? Change the variable value
+  myNumber = 10;
+  //## Serial.println(myNumber);
+}
+void loop() {
+}
+
+//>> Step 7 - Move to Loop | guided
+void setup() {
+  //## Serial.begin(9600);
 }
 
 void loop() {
-  // Send a secret message
-  Serial.println("I am a hacker!");
-  delay(1000);
+  //?? Print the variable repeatedly
+  Serial.println(myNumber);
+}
 
-  Serial.println("Mission: Success!");
-  delay(1000);
-}""",
-    'default_view': 'editor',
-    'read_only': True,
-    'fill_values': True,
-    'fill_conditions': True,
+//>> Step 8 - Add a Delay | guided
+void setup() {
+  //## Serial.begin(9600);
+}
 
+void loop() {
+  //## Serial.println(myNumber);
+  //?? Wait 1 second between prints
+  delay(1000);
+}
+
+//>> Step 9 - Tutorial Complete | free
+void setup() {
+  //## Serial.begin(9600);
+}
+
+void loop() {
+  //## Serial.println(myNumber);
+  //## delay(1000);
+}
+""",
 }
 
 CHALLENGE_PRESET = {

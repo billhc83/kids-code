@@ -644,22 +644,20 @@ async function loadBlockBuilder() {
 
     // Wait for the components to initialize
     const checkInterval = setInterval(() => {
-      if (typeof DEFAULT_VIEW === 'undefined' || !window.getGeneratedCode) return;
-      clearInterval(checkInterval);
-      
-      if (typeof DEFAULT_VIEW !== 'undefined') {
-        setMode(DEFAULT_VIEW);
-      }
-      const isProg = window.PROGRESSION_MODE || (window.isProgressionMode && window.isProgressionMode());
-      const isLocked = typeof LOCK_VIEW !== 'undefined' && LOCK_VIEW;
-      const toggleBtn = document.getElementById('mode-toggle-btn');
-      if (toggleBtn) {
-        toggleBtn.style.display = (isProg || isLocked) ? 'none' : 'inline-block';
-      }
-      if (typeof READONLY_MODE !== 'undefined' && READONLY_MODE) {
-        if (editor) editor.updateOptions({ readOnly: true });
-      }
-    }, 50);
+  if (!window.BB_CONFIG || !window.getGeneratedCode) return;
+  clearInterval(checkInterval);
+  
+  const cfg = window.BB_CONFIG;
+  setMode(cfg.default_view || 'blocks');
+  const isProg = window.isProgressionMode && window.isProgressionMode();
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+  if(toggleBtn){
+    toggleBtn.style.display = (isProg || cfg.lock_view) ? 'none' : 'inline-block';
+  }
+  if(cfg.readonly_mode && editor){
+    editor.updateOptions({ readOnly: true });
+  }
+}, 50);
   } catch (err) {
     console.error('Block Builder Load Error:', err);
     blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';

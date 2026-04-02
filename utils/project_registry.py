@@ -5,7 +5,7 @@ import utils
 PROJECTS = {}
 
 for _, module_name, _ in pkgutil.iter_modules(utils.__path__):
-    if module_name.startswith("project_"):
+    if module_name.startswith("project_") or module_name == "block_builder_tutorial":
         try:
             module = importlib.import_module(f"utils.{module_name}")
             # Look for the new unified PROJECT dictionary
@@ -18,6 +18,10 @@ for _, module_name, _ in pkgutil.iter_modules(utils.__path__):
                     "steps": module.STEPS,
                     "drawer": getattr(module, "DRAWER_CONTENT", {}),
                     "presets": getattr(module, "presets", {}) 
+                    
                 }
+                
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"Error loading module {module_name}: {e}")

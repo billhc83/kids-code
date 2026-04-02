@@ -1,0 +1,32 @@
+{% extends "lessons/project_base.html" %}
+
+
+     
+{% block intro %}How To Use The Block Builder{% endblock %}
+{% block lesson_content %}
+
+<img src="{{ url_for('static', filename='graphics/block_builder_banner.png') }}"
+     alt="Code Cracker Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+<hr>
+
+<div class="lesson-intro">
+    <p>👋 Welcome! This is where your Arduino adventure begins.</p> 
+    <p>Here, we’re going to learn how to use our main tool — the Editor and the Block Builder. This is where you will create all the instructions that tell your Arduino what to do.</p> 
+    <p>💡 So what is an Arduino? Think of it like a tiny robot brain 🤖. It can’t think on its own — it only follows instructions that YOU give it!</p> 
+    <p>We give it instructions by writing a special kind of code called a “sketch.” This code tells the Arduino how to control things like lights, buttons, motors, and more.</p> 
+    <p>🖥️ There are two ways to create your code here:</p> 
+    <p>1️⃣ The Editor — where you type the code like a programmer</p> 
+    <p>2️⃣ The Block Builder — where you build your code using blocks, like digital LEGO 🧱</p> 
+    <p>✨ The cool part? Both the Editor and the Block Builder are showing the SAME program. You can switch between them anytime!</p> 
+    <p>The Block Builder makes things easier because you don’t have to worry about typing everything perfectly — you can just snap blocks together.</p> 
+    <p>Once your code is ready, the next step is to send it to your Arduino so it can run your instructions and bring your circuit to life 💡</p> 
+    <p>🚀 In this walkthrough, we’ll show you how all of this works together step by step. You’ll learn how to build your code, understand what it does, and run it on your Arduino.</p> 
+    <p>👇 Ready to start?</p> 
+    <p>Look for the blue button with the little robot 🤖 in the bottom right corner of the screen. That’s where your Editor and Block Builder live.</p> 
+    <p>Click it to open the builder and begin the tutorial!</p> 
+    <p>Take your time, explore, and have fun — you’re about to start building real projects! 🎉</p>
+</div>
+
+
+{% endblock %}

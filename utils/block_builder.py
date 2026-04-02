@@ -1,7 +1,9 @@
 import base64
 from pathlib import Path
+from flask import render_template
+from utils.block_builder_config import build_config
+import json
 
-# Use absolute path to ensure the file is found regardless of working directory
 _fab_path = Path(__file__).parent.parent / "static" / "graphics" / "fab.svg"
 print(_fab_path)
 _fab_icon_b64 = base64.b64encode(_fab_path.read_bytes()).decode("ascii")
@@ -9,35 +11,34 @@ _fab_icon_b64 = base64.b64encode(_fab_path.read_bytes()).decode("ascii")
 def get_builder_html(preset, username=None, page=None,
                      drawer_content=None, pin_refs=None, height=500,
                      supabase_url=None, supabase_key=None, is_overlay=False, builder_url=None, lock_mode=None):
-    """
-    Calls the local arduino_blocks generator and returns
-    the complete FAB + overlay HTML as a string.
-    """
+
     try:
         if not is_overlay:
-            from utils.arduino_blocks import render_builder
-            from config import SUPABASE_ANON_KEY, SUPABASE_URL
-            return render_builder(
+            config = build_config(
                 preset=preset,
                 username=str(username) if username else None,
                 page=page,
-                drawer_content=drawer_content,
-                pin_refs=pin_refs,
-                is_overlay=is_overlay,
-                height=height, # Pass height here
-                supabase_url=SUPABASE_URL,
-                supabase_key=SUPABASE_ANON_KEY,
-                lock_mode=lock_mode
+                supabase_url=supabase_url,
+                supabase_key=supabase_key,
+                lock_mode=lock_mode,
+                is_overlay=False,
             )
+            return render_template("block_builder_fragment.html", config=json.dumps(config))
 
-        # If no URL provided, we fallback to a data URI of the blocks (less ideal for origins)
         if not builder_url:
-             from utils.arduino_blocks import render_builder
-             from config import SUPABASE_ANON_KEY, SUPABASE_URL
-             html_content = render_builder(preset=preset, username=str(username), page=page, is_overlay=True, supabase_url=SUPABASE_URL, supabase_key=SUPABASE_ANON_KEY, lock_mode=lock_mode)
-             full_doc = f"<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;'>{html_content}</body></html>"
-             b64_html = base64.b64encode(full_doc.encode("utf-8")).decode("utf-8")
-             builder_url = f"data:text/html;base64,{b64_html}"
+            config = build_config(
+                preset=preset,
+                username=str(username) if username else None,
+                page=page,
+                supabase_url=supabase_url,
+                supabase_key=supabase_key,
+                lock_mode=lock_mode,
+                is_overlay=True,
+            )
+            html_content = render_template("block_builder_fragment.html", config=json.dumps(config))
+            full_doc = f"<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;'>{html_content}</body></html>"
+            b64_html = base64.b64encode(full_doc.encode("utf-8")).decode("utf-8")
+            builder_url = f"data:text/html;base64,{b64_html}"
 
     except Exception as e:
         return f"<p style='color:red'>Block builder unavailable: {e}</p>"
@@ -102,7 +103,7 @@ def get_builder_html(preset, username=None, page=None,
         isOpen = true;
         overlay.style.display = 'block';
         document.body.style.overflow = 'hidden';
-        void overlay.offsetWidth; // Force reflow
+        void overlay.offsetWidth;
         overlay.classList.add('visible');
         fab.classList.add('open');
         fab.innerHTML = '<span style="color:white;font-size:36px;font-weight:300;">\\u2715</span>';
