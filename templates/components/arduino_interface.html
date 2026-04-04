@@ -13,8 +13,8 @@
   body {
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background: #0f172a;
-    color: #e2e8f0;
+    background: #f1f5f9;
+    color: #1e293b;
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -26,17 +26,18 @@
     align-items: center;
     gap: 10px;
     padding: 10px 15px;
-    background: #020617;
-    border-bottom: 1px solid #1e293b;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
   }
 
   select, button {
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #e2e8f0;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 13px;
+    font-weight: 500;
   }
 
   #top-bar select {
@@ -45,10 +46,12 @@
 
   button {
     transition: all 0.2s ease;
+    cursor: pointer;
   }
 
   button:hover {
-    background: #334155;
+    background: #f8fafc;
+    border-color: #cbd5e1;
     transform: translateY(-1px);
   }
 
@@ -81,7 +84,7 @@
   #workspace {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     overflow: hidden;
     min-height: 0;
   }
@@ -93,6 +96,7 @@
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
+    background: #f8fafc;
   }
 
   /* Stretch whatever the block builder injects (iframe, div, etc.) */
@@ -120,13 +124,13 @@
 
   /* SERIAL MONITOR */
   #serial-monitor {
-    height: 80px;
-    background: #020617;
-    border-top: 1px solid #1e293b;
-    padding: 10px;
+    height: 100px;
+    background: #ffffff;
+    border-top: 2px solid #f1f5f9;
+    padding: 12px 16px;
     font-family: monospace;
-    font-size: 13px;
-    color: #22c55e;
+    font-size: 12px;
+    color: #475569;
     overflow-y: auto;
   }
   
@@ -169,33 +173,38 @@
   .status-offline { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
   
   /* GLOBAL DRAWER */
-  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:24px;
-    background:#e53935; border-left:1px solid #1e293b;
+  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:32px;
+    background:#ef4444; border-left:1px solid #1e293b;
     display:flex; align-items:center; justify-content:center;
-    cursor:pointer; z-index:100; user-select:none; transition:background 0.15s; }
+    cursor:pointer; z-index:100; user-select:none; transition:all 0.2s; }
+  #drawer-tab:hover { background: #dc2626; width: 36px; }
   #drawer-tab span { writing-mode:vertical-rl; text-orientation:mixed;
-    font-size:14px; letter-spacing:.1em; color:#ffffff;
+    font-size:13px; font-weight: 600; letter-spacing:.1em; color:#ffffff;
     text-transform:uppercase; transform:rotate(180deg); }
-  #drawer-panel { position:absolute; right:18px; top:48px; bottom:0; width:0;
-    background:#ffffff; border-left:1px solid #d0d7de;
-    overflow:hidden; z-index:99; transition:width 0.25s ease; display:flex; flex-direction:column; }
+  #drawer-panel { position:absolute; right:32px; top:48px; bottom:0; width:0;
+    background:#ffffff; border-left:1px solid #e2e8f0;
+    overflow:hidden; z-index:99; transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    display:flex; flex-direction:column; box-shadow: -4px 0 15px rgba(0,0,0,0.2); }
   #drawer-panel.open { width:600px; }
   #drawer-inner { width:600px; height:100%; display:flex; flex-direction:column; flex-shrink:0; }
-  .drawer-title { font-size:13px; font-weight:700; color:#0969da;
-    text-transform:uppercase; letter-spacing:.08em; flex-shrink:0;
-    border-bottom:1px solid #d0d7de; padding:12px 14px 8px 14px; }
-  .drawer-tip { background:#ddf4ff; border-bottom:1px solid #84c7fb;
-    padding:8px 14px; font-size:11px; color:#0969da; line-height:1.7; flex-shrink:0; }
-  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #d0d7de; }
+  .drawer-title { font-size:14px; font-weight:700; color:#1e293b;
+    text-transform:uppercase; letter-spacing:.05em; flex-shrink:0;
+    border-bottom:1px solid #f1f5f9; padding:16px 20px; background: #f8fafc; }
+  .drawer-tip { background:#eff6ff; border-bottom:1px solid #dbeafe;
+    padding:12px 20px; font-size:12px; color:#2563eb; line-height:1.6; flex-shrink:0; }
+  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #f1f5f9; padding: 0 10px; background: #fff; }
   .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
     background:none; border:none; border-bottom:2px solid transparent;
-    color:#57606a; cursor:pointer; text-align:center; transition:color 0.15s; }
-  .drawer-tab-btn.active { color:#0969da; border-bottom-color:#0969da; }
+    color:#64748b; cursor:pointer; text-align:center; transition:all 0.2s; font-weight: 600; }
+  .drawer-tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
   .drawer-tab-panels { flex:1; overflow-y:auto; }
-  .drawer-tab-panel { display:none; padding:14px; color:#24292f; }
+  .drawer-tab-panel { display:none; padding:20px; color:#1e293b; }
   .drawer-tab-panel.active { display:block; }
-  .drawer-tab-panel p { font-size:16px; line-height:1.8; white-space:pre-wrap; margin-bottom:8px; }
-  .drawer-tab-panel img { width:100%; border-radius:5px; border:1px solid #d0d7de; margin-top:8px; }
+  .drawer-tab-panel p { font-size:15px; line-height:1.7; white-space:pre-wrap; margin-bottom:12px; }
+  .drawer-tab-panel img { width:100%; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  #step-nav {
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
 </style>
 
@@ -208,7 +217,7 @@
 <div id="top-bar">
   <select id="port-select"></select>
   <button id="refresh-ports-btn">Refresh</button>
-  <button id="connect-btn">Connect</button>
+  <button id="connect-btn">Serial Monitor</button>
   <button id="compile-btn">Compile</button>
   <button id="upload-btn">Upload</button>
   <button id="save-btn">Save</button>
@@ -220,6 +229,13 @@
 </div>
 
 <div id="main-content-wrapper" style="flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="step-nav" style="display:none; align-items:center; gap:10px; padding:6px 15px; background:#0969da; color:white; flex-shrink:0;">
+    <span id="step-label" style="flex:1; font-weight:700; font-size:12px;"></span>
+    <span id="step-progress" style="font-size:11px; opacity:0.8;"></span>
+    <button id="prev-step-btn" style="display:none">← Prev</button>
+    <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
+  </div>
+
   <div id="workspace">
     <div id="blocks-view"></div>
     <div id="editor-view" style="display: none;">
@@ -271,9 +287,17 @@ window.addEventListener('stepchange', function(e) {
   }
 });
 
+function syncStepNavPadding() {
+  const stepNav = document.getElementById('step-nav');
+  if (!stepNav) return;
+  // Panel width (600) + Tab width (32) + original padding (15) = 647px
+  stepNav.style.paddingRight = drawerOpen ? '647px' : '15px';
+}
+
 window.openDrawer = function() {
   drawerOpen = true;
   document.getElementById('drawer-panel').classList.add('open');
+  syncStepNavPadding();
 };
 
 window.updateDrawer = function(stepIdx) {
@@ -316,6 +340,7 @@ window.updateDrawer = function(stepIdx) {
 document.getElementById('drawer-tab').onclick = () => {
   drawerOpen = !drawerOpen;
   document.getElementById('drawer-panel').classList.toggle('open', drawerOpen);
+  syncStepNavPadding();
 };
 
 // Listen for FAB save requests
@@ -333,7 +358,7 @@ require(['vs/editor/editor.main'], function() {
   editor = monaco.editor.create(document.getElementById('editor'), {
     value: "",
     language: 'cpp',
-    theme: 'vs-dark',
+    theme: 'vs',
     fontSize: 14,
     minimap: { enabled: false },
     automaticLayout: true
@@ -361,19 +386,36 @@ async function setMode(mode) {
   const blocksEl = document.getElementById('blocks-view');
   const editorEl = document.getElementById('editor-view');
   const toggleBtn = document.getElementById('mode-toggle-btn');
+  const workspaceWrapper = document.getElementById('workspace');
 
   // Update UI and state immediately for responsiveness
   currentMode = mode;
+
+  var bbUI = document.getElementById('block-builder-ui');
+  if(bbUI){
+    var palette = bbUI.querySelector('#palette');
+    var workspace = bbUI.querySelector('#workspace');
+    if(palette) palette.style.display = mode === 'editor' ? 'none' : '';
+    if(workspace) workspace.style.display = mode === 'editor' ? 'none' : '';
+  }
+  editorEl.style.display = mode === 'editor' ? 'flex' : 'none';
+
+  if (mode === 'editor') {
+    workspaceWrapper.style.flexDirection = 'row-reverse';
+    blocksEl.style.flex = '0 0 252px';
+    editorEl.style.flex = '1';
+  } else {
+    workspaceWrapper.style.flexDirection = 'column';
+    blocksEl.style.flex = '1';
+    editorEl.style.flex = '1';
+  }
+
   if (mode === 'blocks') {
-    blocksEl.style.display = 'block';
-    editorEl.style.display = 'none';
     if (toggleBtn) {
       toggleBtn.textContent = 'Switch to Editor';
       toggleBtn.classList.remove('has-error');
     }
   } else {
-    blocksEl.style.display = 'none';
-    editorEl.style.display = 'flex';
     if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
     if (editor) {
       // Trigger layout multiple times to ensure we catch the final container size 
@@ -484,7 +526,15 @@ async function fetchPorts() {
     ports.forEach(p => {
       const option = document.createElement('option');
       option.value = p.port;
-      option.textContent = p.label;
+      
+      if(p.board_name){
+        option.textContent = p.board_name + ' (' + p.port + ')';
+      } else if(p.fqbn && BOARD_NAMES[p.fqbn]){
+        option.textContent = BOARD_NAMES[p.fqbn] + ' (' + p.port + ')';
+      } else {
+        option.textContent = p.port;
+      }
+      
       select.appendChild(option);
     });
 
@@ -633,9 +683,11 @@ async function loadBlockBuilder() {
     const preset = urlParams.get('preset') || pathParts[pathParts.length - 1] || 'codebreaker';
     const page = urlParams.get('page') || '';
 
+    console.log(`[DEBUG] loadBlockBuilder: Fetching /builder for preset=${preset}, page=${page}`);
     const response = await fetch('/builder?preset=' + preset + '&page=' + page);
     if (!response.ok) throw new Error('Failed to fetch block builder');
     const html = await response.text();
+    console.log(`[DEBUG] loadBlockBuilder: HTML received, length=${html.length}`);
 
     const range = document.createRange();
     const fragment = range.createContextualFragment(html);
@@ -645,6 +697,7 @@ async function loadBlockBuilder() {
     // Wait for the components to initialize
     const checkInterval = setInterval(() => {
   if (!window.BB_CONFIG || !window.getGeneratedCode) return;
+  console.log("[DEBUG] loadBlockBuilder: Components initialized.");
   clearInterval(checkInterval);
   
   const cfg = window.BB_CONFIG;
@@ -652,8 +705,12 @@ async function loadBlockBuilder() {
   const isProg = window.isProgressionMode && window.isProgressionMode();
   const toggleBtn = document.getElementById('mode-toggle-btn');
   if(toggleBtn){
-    toggleBtn.style.display = (isProg || cfg.lock_view) ? 'none' : 'inline-block';
+    toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
   }
+
+  var stepNav = document.getElementById('step-nav');
+  if(stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+
   if(cfg.readonly_mode && editor){
     editor.updateOptions({ readOnly: true });
   }
@@ -692,6 +749,42 @@ setInterval(checkAgentStatus, 5000); // Poll every 5 seconds
 fetchPorts();
 loadBlockBuilder();
 if (DRAWER_STEPS) updateDrawer(0);
+
+document.getElementById('next-step-btn').onclick = function(){
+  if(window.bbNext) window.bbNext();
+};
+document.getElementById('prev-step-btn').onclick = function(){
+  if(window.bbPrev) window.bbPrev();
+};
+
+window.addEventListener('bb_next_state', function(e){
+  var btn = document.getElementById('next-step-btn');
+  var prevBtn = document.getElementById('prev-step-btn');
+  var nav = document.getElementById('step-nav');
+  var d = e.detail.state; // Accessing the state object from the detail
+
+  // Ensure the navigation bar is visible if we are receiving state updates
+  nav.style.display = 'flex';
+
+  btn.textContent = d.text || 'Complete Step';
+  btn.style.opacity = d.ready ? '1' : '0.5';
+  btn.style.pointerEvents = d.ready ? 'auto' : 'none';
+  
+  if(d.hidden) btn.style.display = 'none';
+  else btn.style.display = '';
+
+  if(d.prevVisible) prevBtn.style.display = '';
+  else prevBtn.style.display = 'none';
+});
+
+window.addEventListener('bb_step_update', function(e){
+  document.getElementById('step-nav').style.display = 'flex';
+  document.getElementById('step-label').textContent = e.detail.label || '';
+  document.getElementById('step-progress').textContent = e.detail.progress || '';
+});
+
+// Initial sync for step nav padding based on default drawer state
+syncStepNavPadding();
 </script>
 
 </body>

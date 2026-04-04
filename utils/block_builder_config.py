@@ -6,28 +6,38 @@ from utils.block_parser import parse_sketch, parse_steps, collect_types
 def build_config(preset, username=None, page=None, supabase_url=None, supabase_key=None, lock_mode=None, is_overlay=False):    
     # resolve preset → sketch string + drawer + meta
     from utils.project_registry import PROJECTS
-    from utils.presets import PRESETS
+
+    proj = None  # parent PROJECT (drawer, meta); None for legacy PRESETS-only entries
+    p = None     # resolved preset dict: { sketch, default_view, ... }
+
     if preset in PROJECTS:
         proj = PROJECTS[preset]
         p = proj.get("presets", {}).get("default")
     elif preset in PRESETS:
         p = PRESETS[preset]
-        # Get view settings from preset
     else:
-        for proj in PROJECTS.values():
-            if "presets" in proj and preset in proj["presets"]:
-                p = proj["presets"][preset]
+        for proj_candidate in PROJECTS.values():
+            presets = proj_candidate.get("presets") or {}
+            if preset in presets:
+                proj = proj_candidate
+                p = presets[preset]
                 break
+
+    if p is None:
+        raise ValueError(f"Unknown block builder preset: {preset!r}")
+
+    sketch = p.get("sketch") if isinstance(p, dict) else p
+    if not sketch or not isinstance(sketch, str):
+        raise ValueError(f"Preset {preset!r} has no sketch string")
+
+    drawer = proj.get("drawer", {}) if proj else {}
 
     dv = p.get('default_view', 'blocks') if isinstance(p, dict) else 'blocks'
     lv = p.get('lock_view', False) if isinstance(p, dict) else False
     rv = p.get('read_only', False) if isinstance(p, dict) else False
-
-    sketch = proj["presets"]["default"]["sketch"]
-    drawer = proj.get("drawer", {})
     
-    # parse
-    is_progression = '//>> ' in sketch
+    # parse (progression markers are //>> lines; allow with or without space after >>)
+    is_progression = '//>>' in sketch
     if is_progression:
         steps = parse_steps(sketch)
         config = {
@@ -61,7 +71,8 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
         "is_overlay": is_overlay,
         "default_view": dv,      # ← is this here?
         "lock_view": lv,         # ← and this?
-        "readonly_mode": rv
+        "readonly_mode": rv,
+        "force_preset": True
     })
     
     return config
@@ -69,7 +80,7 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
 
 def render_builder(preset, username=None, page=None, **kwargs):
     config = build_config(preset, username, page, **kwargs)
-    config_json = json.dumps(config)
+    config_json = json.dumps(config).replace('</', '<\\/')    
     return render_template("block_builder.html", config=config_json)
 
 

@@ -1,7 +1,9 @@
-
-
 (function(){
+console.log("[DEBUG] block_builder.js: Execution started.");
 var CFG = window.BB_CONFIG;
+if(!CFG) { console.error("[DEBUG] block_builder.js: BB_CONFIG is missing!"); return; }
+console.log("[DEBUG] block_builder.js: Config loaded.", CFG.mode);
+console.log("[DEBUG] block_builder.js: About to declare variables.");
 var USERNAME = CFG.username;
 var PAGE = CFG.page;
 var MASTER_SKETCH = CFG.master || null;
@@ -11,12 +13,17 @@ var DEFAULT_VIEW = CFG.default_view;
 var LOCK_VIEW = CFG.lock_view;
 var READONLY_MODE = CFG.readonly_mode;
 var LOCK_MODE = CFG.lock_mode;
+
+var nextBtnState = { ready: false, mode: '', text: 'Complete Step', visible: false, prevVisible: false };
+var stepLabel = 'Step';
+var stepProgress = '';
+
 var UNO_DIGITAL_PINS=['0','1','2','3','4','5','6','7','8','9','10','11','12','13'];
 var UNO_ANALOG_PINS=['A0','A1','A2','A3','A4','A5'];
 var UNO_DIGITAL_IO_PINS=UNO_DIGITAL_PINS.concat(UNO_ANALOG_PINS);
 var UNO_PWM_PINS=['3','5','6','9','10','11'];
-var BLOCKS={
-intvar:{allowed:['global','loop','if','for','while'],asStatement:true,asExpr:false,
+var BLOCKS = {
+  intvar:{allowed:['global','loop','if','for','while'],asStatement:true,asExpr:false,
   inputs:[{t:'text',l:'Name'},{t:'expr',l:'Value',fallback:'0'}],
   defaults:[null,{type:'value',params:['0'],children:[]}],
   genStmt:function(p,ex){return 'int '+(p[0]||'myVar')+' = '+genExpr(ex&&ex[1],p[1],'0')+';';}},
@@ -99,21 +106,19 @@ serialbegin:{allowed:['setup'],asStatement:true,asExpr:false,
   inputs:[{t:'sel',l:'Baud',o:['9600','19200','38400','57600','115200']}],
   genStmt:function(p){return 'Serial.begin('+(p[0]||'9600')+');';}},
 serialprint:{allowed:['setup','loop','if','for','while'],asStatement:true,asExpr:false,
-  inputs:[{t:'expr',l:'Value',fallback:'"Hello"'},{t:'sel',l:'',o:['println','print']}],
+  inputs:[{t:'expr',l:'Value',fallback:'"Hello"'},{t:'sel',l:'Mode',o:['println','print']}],
   defaults:[{type:'value',params:['"Hello"'],children:[]},null],
   genStmt:function(p,ex){var fn=p[1]==='print'?'Serial.print':'Serial.println';
     return fn+'('+genExpr(ex&&ex[0],null,'"Hello"')+');';}},
 serialreadstring:{allowed:[],asStatement:false,asExpr:true,
   inputs:[],
   genExpr:function(p){return 'Serial.readString()';}},
-serialavailable:{allowed:[],asStatement:false,asExpr:true,
+serialavailable:{allowed:[],asStatement:false,asExpr:true, // Added this block type
   inputs:[],
   genExpr:function(p){return 'Serial.available()';}},
 codeblock:{allowed:['global','setup','loop','if','for','while'],asStatement:true,asExpr:false,
   inputs:[{t:'text',l:'Code'}],
   genStmt:function(p){return (p[0]||'');}},
-phantom_resolved:{allowed:['global','setup','loop','if','for','while'],asStatement:true,asExpr:false,
-  inputs:[],genStmt:function(){return '';}},
 ifblock:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,
   inputs:[],genStmt:function(){return '';}},
 forloop:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,
@@ -121,7 +126,8 @@ forloop:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,
 whileloop:{allowed:['loop','if','for','while'],asStatement:true,asExpr:false,
   inputs:[],genStmt:function(){return '';}},
 };
-var B=BLOCKS;
+console.log("[DEBUG] checkpoint 2");
+var B = BLOCKS;
 var SECTIONS={global:[],setup:[],loop:[]};
 var exprSel=null;
 var EXPR_COLORS={'analogread':'#1a7f37','digitalread':'#1a7f37','millis':'#0969da',
@@ -159,11 +165,12 @@ function renderExprSlot(block,slotIdx,label){
   slot.addEventListener('click',function(e){
     e.stopPropagation();
     if(exprSel&&exprSel.block===block&&exprSel.slotIdx===slotIdx){exprSel=null;updatePalette();render();return;}
-    exprSel={block:block,slotIdx:slotIdx};sel=null;
+    exprSel={block:block,slotIdx:slotIdx};
     document.getElementById('statusbar').innerHTML='<span style="color:#9a6700">click an expression block to snap it in</span>';
     updatePalette();
     render();});
   wrap.appendChild(slot);return wrap;}
+  console.log("[DEBUG] checkpoint 3");
 function renderExprBlock(exNode,onRemove){
   var def=BLOCKS[exNode.type];if(!def||!def.asExpr)return document.createTextNode('?');
   var chip=document.createElement('span');
@@ -187,7 +194,7 @@ function renderExprBlock(exNode,onRemove){
         subSlot.addEventListener('click',function(e){
           e.stopPropagation();
           if(exprSel&&exprSel.isSubSlot&&exprSel.exNode===capturedExNode&&exprSel.slotIdx===capturedJi){
-            exprSel=null;updatePalette();render();return;}
+            exprSel=null;updatePalette();render();return;} // Clear selection if already active
           exprSel={exNode:capturedExNode,slotIdx:capturedJi,isSubSlot:true};sel=null;
           document.getElementById('statusbar').innerHTML='<span style="color:#9a6700">slot '+inp.l+' selected - click an expression to fill it</span>';
           document.querySelectorAll('.sub-slot-active').forEach(function(el){el.classList.remove('sub-slot-active');});
@@ -204,7 +211,7 @@ function renderExprBlock(exNode,onRemove){
         if(typeof opt==='object'){o.value=opt.v;o.textContent=opt.lb;}else{o.value=opt;o.textContent=opt;}
         es.appendChild(o);});es.value=exNode.params[ji]||'';
       es.addEventListener('click',function(e){e.stopPropagation();});
-      es.addEventListener('change',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;genCode();});
+      es.addEventListener('change',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;window.genCode();});
       chip.appendChild(es);
     }else if(inp.t==='vartext'){
       (function(capturedJiVt,capturedExNodeVt){
@@ -229,7 +236,7 @@ function renderExprBlock(exNode,onRemove){
               item.textContent=v;
               item.addEventListener('mousedown',function(e){
                 e.preventDefault();e.stopPropagation();
-                ei.value=v;capturedExNodeVt.params[capturedJiVt]=v;genCode();
+                ei.value=v;capturedExNodeVt.params[capturedJiVt]=v;window.genCode();
                 closeDrop();});
               drop.appendChild(item);});
           }
@@ -239,7 +246,7 @@ function renderExprBlock(exNode,onRemove){
         ei.addEventListener('focus',function(e){openDrop('');});
         ei.addEventListener('input',function(e){
           e.stopPropagation();
-          capturedExNodeVt.params[capturedJiVt]=e.target.value;genCode();
+          capturedExNodeVt.params[capturedJiVt]=e.target.value;window.genCode();
           var v=e.target.value;
           if(v===''){openDrop('');}else{openDrop(v);}
         });
@@ -256,7 +263,7 @@ function renderExprBlock(exNode,onRemove){
       ei.className='expr-input';ei.value=exNode.params[ji]||'';
       ei.style.width=(inp.t==='number'?'48px':'60px');
       ei.addEventListener('click',function(e){e.stopPropagation();});
-      ei.addEventListener('input',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;genCode();});
+      ei.addEventListener('input',function(e){e.stopPropagation();exNode.params[ji]=e.target.value;window.genCode();});
       chip.appendChild(ei);
     }});
   if(onRemove){
@@ -264,6 +271,7 @@ function renderExprBlock(exNode,onRemove){
     rx.title='Remove expression';
     rx.addEventListener('click',function(e){e.stopPropagation();onRemove();});chip.appendChild(rx);}
   return chip;}
+  console.log("[DEBUG] checkpoint 4");
 function getOptions(key){
   var base;
   if(key==='DIGITAL_PIN_OPTIONS'){base=UNO_DIGITAL_IO_PINS;}
@@ -280,7 +288,7 @@ function getOptions(key){
   return opts;
 }
 var sel=null;
-var activePhantoml=null;
+var activePhantoml=null; // Now points to a slot object {arr, idx, slot}
 var PROGRESSION_MODE=false;
 var STEPS=null;
 var CURRENT_STEP=0;
@@ -293,34 +301,43 @@ function updatePalette(){
   var blockSec=document.getElementById('pal-blocks-section');
   var exprSec=document.getElementById('pal-expr-section');
   var exprTitle=document.getElementById('pal-expr-title');
+  var step=PROGRESSION_MODE&&STEPS?STEPS[CURRENT_STEP]:null;
+  var config=step?step.config:{structure:'none',filter:false,validation:'none',fill:true}; // Default fill:true
+
   if(exprSel){
     activePhantoml=null;
     ctx.className='has-expr';
-    ctx.textContent=exprSel.isSubSlot?'fill sub-slot:':'fill value slot:';
+    ctx.textContent=exprSel.isSubSlot?'fill sub-slot:':(exprSel.exSlot ? 'fill value slot: ' + exprSel.exSlot.phantom_meta.hint : 'fill value slot:');
     blockSec.style.display='none';
     exprTitle.style.display='';
-    var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';
     var expectedType=null;
-    if(exprSel.condObj){
-      var ec=exprSel.condObj._expectedCond;
-      if(ec){
-        var sideKey=exprSel.side==='leftExpr'?'left':exprSel.side==='rightExpr'?'right':exprSel.side==='leftExpr2'?'left2':'right2';
-        expectedType=ec[sideKey]||null;
-      }
-    }else if(!exprSel.isSubSlot&&exprSel.block&&exprSel.block._expectedExpr){
-      expectedType=exprSel.block._expectedExpr[exprSel.slotIdx]||null;}
+    // Only restrict types if we are in a guided (partial) structure mode.
+    // In free mode (structure: "none"), the palette should show everything even if the phantom has a specific type expectation.
+    if(config.structure === 'partial'){
+      if(exprSel.condObj){
+        var ec=exprSel.condObj._expectedCond;
+        if(ec){
+          var sideKey=exprSel.side==='leftExpr'?'left':exprSel.side==='rightExpr'?'right':exprSel.side==='leftExpr2'?'left2':'right2';
+          expectedType=ec[sideKey]||null;
+        }
+      }else if(exprSel.exSlot && exprSel.exSlot.phantom_meta && exprSel.exSlot.phantom_meta.expectedExTypes){
+        // If it's a persistent expression slot, use its phantom_meta
+        expectedType = exprSel.exSlot.phantom_meta.expectedExTypes[exprSel.slotIdx] || null;
+      }else if(!exprSel.isSubSlot&&exprSel.block&&exprSel.block._expectedExpr){
+        expectedType=exprSel.block._expectedExpr[exprSel.slotIdx]||null;}
+    }
     exprSec.querySelectorAll('.block-btn').forEach(function(btn){
-      if(expectedType){
-        btn.classList[btn.getAttribute('data-type')===expectedType?'remove':'add']('hidden');
-      }else{
-        btn.classList.remove('hidden');
-      }});
+      var bType = btn.getAttribute('data-type');
+      var visible = true;
+      if(expectedType && bType !== expectedType) visible = false;
+      if(visible && config.filter && PALETTE_ALLOWED !== null && PALETTE_ALLOWED.indexOf(bType) === -1) visible = false;
+      btn.classList[visible ? 'remove' : 'add']('hidden');
+    });
     return;
   }
   if(activePhantoml){
-    var ph=activePhantoml.phantom;
-    var step=PROGRESSION_MODE&&STEPS?STEPS[CURRENT_STEP]:null;
-    var guided=step?step.guidance==='guided':false;
+    var ph=activePhantoml.slot.phantom_meta; // Get phantom_meta from the slot
+    var isPartial=config.structure==='partial';
     ctx.className='has-sel';
     ctx.textContent='place: '+ph.hint;
     blockSec.style.display='flex';
@@ -329,7 +346,7 @@ function updatePalette(){
       var type=btn.getAttribute('data-type');
       if(ph.expects){
         btn.classList[type===ph.expects?'remove':'add']('hidden');
-      }else if(!guided){
+      }else if(!isPartial){
         btn.classList.remove('hidden');
       }else{
         btn.classList.add('hidden');
@@ -354,9 +371,10 @@ function updatePalette(){
     var def=BLOCKS[type];if(!def){btn.classList.remove('hidden');return;}
     var ok=inNested?(def.allowed.indexOf('if')!==-1||def.allowed.indexOf('for')!==-1||def.allowed.indexOf('while')!==-1)
                    :(def.allowed.indexOf(sel.section)!==-1);
-    if(ok&&PALETTE_ALLOWED!==null)ok=PALETTE_ALLOWED.indexOf(type)!==-1;
+    if(ok && config.filter && PALETTE_ALLOWED!==null) ok=PALETTE_ALLOWED.indexOf(type)!==-1;
     if(ok){btn.classList.remove('hidden');}else{btn.classList.add('hidden');}});
   exprSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.add('hidden');});}
+  console.log("[DEBUG] checkpoint 5");
 function setSelection(section,targetArr,pathStr){
   sel={section:section,targetArr:targetArr,pathStr:pathStr};
   document.getElementById('statusbar').innerHTML='adding to: <span>'+pathStr+'</span>';
@@ -394,6 +412,9 @@ document.querySelectorAll('.block-btn').forEach(function(btn){
     e.stopPropagation();
     var type=btn.getAttribute('data-type');if(!type)return;
     var def=BLOCKS[type];if(!def)return;
+    var step=PROGRESSION_MODE&&STEPS?STEPS[CURRENT_STEP]:null;
+    var config=step?step.config:{structure:'none'};
+
     if(exprSel&&def.asExpr){
       var newNode=makeExNode(type);
       if(exprSel.condObj){
@@ -408,61 +429,75 @@ document.querySelectorAll('.block-btn').forEach(function(btn){
       exprSel=null;updatePalette();render();return;
     }
     if(activePhantoml&&def.asStatement){
-      var ph=activePhantoml.phantom;
       var arr=activePhantoml.arr;
       var idx=activePhantoml.idx;
+      var slot = activePhantoml.slot; // This is the slot object
+      var ph = slot.phantom_meta; // Get phantom metadata from the slot
       var newBlock;
+      var step = PROGRESSION_MODE && STEPS ? STEPS[CURRENT_STEP] : null;
+      var config = step ? step.config : { structure: 'none', fill: true };
+      var isPartial = config.structure === 'partial'; // This is still used for general guidance logic
+      var isMatchingPhantom = ph && type === ph.expects;
+
       if(type==='ifblock'){
-        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';
         var cond={leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};
-        if(ph.condition&&guided){
+        if(ph.condition && (isPartial || (isMatchingPhantom && config.fill === false))){
           cond.op=ph.condition.op||'==';
           cond.joiner=ph.condition.joiner||'none';
           cond.op2=ph.condition.op2||'==';
-          cond._expectedCond={
+          cond._expectedCond = ph.expectedCondTypes || {
             left:ph.condition.leftExpr?ph.condition.leftExpr.type:null,
             right:ph.condition.rightExpr?ph.condition.rightExpr.type:null,
             left2:ph.condition.leftExpr2?ph.condition.leftExpr2.type:null,
             right2:ph.condition.rightExpr2?ph.condition.rightExpr2.type:null
-          };}
-        var ib=guided&&ph.ifbody?JSON.parse(JSON.stringify(ph.ifbody)):[];
-        var eifs=guided&&ph.elseifs?JSON.parse(JSON.stringify(ph.elseifs)):[];
-        var eb=guided&&ph.elsebody?JSON.parse(JSON.stringify(ph.elsebody)):null;
+          };
+        }
+        var ib=isPartial&&ph.ifbody?JSON.parse(JSON.stringify(ph.ifbody)):[];
+        var eifs=isPartial&&ph.elseifs?JSON.parse(JSON.stringify(ph.elseifs)):[];
+        var eb=isPartial&&ph.elsebody?JSON.parse(JSON.stringify(ph.elsebody)):null;
         newBlock={id:(Date.now()+Math.random()).toString(),type:'ifblock',
           condition:cond,ifbody:ib,elseifs:eifs,elsebody:eb};
       }else if(type==='forloop'){
-        var guidedF=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';
-        var ib=guidedF&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];
-        var fi=guidedF?(ph.forinit||'int i = 0'):'int i = 0';
-        var fc=guidedF?(ph.forcond||'i < 10'):'i < 10';
-        var fr=guidedF?(ph.forincr||'i++'):'i++';
+        var ib=isPartial&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];
+        var fi=isPartial?(ph.forinit||'int i = 0'):'int i = 0';
+        var fc=isPartial?(ph.forcond||'i < 10'):'i < 10';
+        var fr=isPartial?(ph.forincr||'i++'):'i++';
         newBlock={id:(Date.now()+Math.random()).toString(),type:'forloop',forinit:fi,forcond:fc,forincr:fr,body:ib};
       }else if(type==='whileloop'){
-        var guidedW=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';
         var wcond={leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};
-        if(ph.condition&&guidedW){
+        if(ph.condition && (isPartial || (isMatchingPhantom && config.fill === false))){
           wcond.op=ph.condition.op||'!=';
-          wcond._expectedCond={
+          wcond._expectedCond = ph.expectedCondTypes || {
             left:ph.condition.leftExpr?ph.condition.leftExpr.type:null,
             right:ph.condition.rightExpr?ph.condition.rightExpr.type:null
-          };}
-        var wb=guidedW&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];
+          };
+        }
+        var wb=isPartial&&ph.body?JSON.parse(JSON.stringify(ph.body)):[];
         newBlock={id:(Date.now()+Math.random()).toString(),type:'whileloop',condition:wcond,body:wb};
       }else{
-        var guided=PROGRESSION_MODE&&STEPS&&STEPS[CURRENT_STEP]&&STEPS[CURRENT_STEP].guidance==='guided';
-        var params=def.inputs.map(function(inp){
-          if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';});
-        var exch=guided
-          ?def.inputs.map(function(){return null;})
-          :(def.defaults?def.defaults.map(function(d){return d?JSON.parse(JSON.stringify(d)):null;}):null)||[];
-        var expectedExpr=guided&&ph.exChildren
-          ?ph.exChildren.map(function(e){return e?e.type:null;})
-          :null;
+        // Use phantom data if it matches the type, otherwise fall back to defaults vs empty slots
+        var params = (isMatchingPhantom && ph.params) 
+          ? JSON.parse(JSON.stringify(ph.params))
+          : def.inputs.map(function(inp){
+              if(inp.t==='sel'){var f=inp.o[0];return typeof f==='object'?f.v:f;}return '';
+            });
+
+        var exch;
+        if (isMatchingPhantom && ph.exChildren) {
+          exch = JSON.parse(JSON.stringify(ph.exChildren));
+        } else {
+          exch = (isPartial || config.fill === false)
+            ? def.inputs.map(function(inp){ return inp.t === 'expr' ? null : undefined; })
+            : (def.defaults ? def.defaults.map(function(d){return d ? JSON.parse(JSON.stringify(d)) : null;}) : []) || [];
+        }
+        
+        var expectedExpr = (isPartial || isMatchingPhantom) ? (ph.expectedExTypes || (ph.exChildren ? ph.exChildren.map(function(e){return e?e.type:null;}) : null)) : null;
+
         newBlock={id:(Date.now()+Math.random()).toString(),type:type,params:params,exChildren:exch};
         if(expectedExpr)newBlock._expectedExpr=expectedExpr;
       }
-      arr.splice(idx,1,newBlock);
-      activePhantoml=null;
+      slot.content = newBlock; // Assign newBlock to the slot's content
+      activePhantoml = null;
       checkStepComplete();
       updatePalette();render();return;
     }
@@ -489,24 +524,28 @@ document.querySelectorAll('.block-btn').forEach(function(btn){
       block={id:(Date.now()+Math.random()).toString(),type:type,params:params,exChildren:exChildren};
     }
     sel.targetArr.push(block);render();});});
+    console.log("[DEBUG] checkpoint 6");
 function render(){
   console.log('render called', new Error().stack);
   var anc=collectAncestorArrays();
   renderSection('gs','global',anc);renderSection('ss','setup',anc);renderSection('ls','loop',anc);
+  // Apply global readonly mode to inputs and action buttons
   ['gs','ss','ls'].forEach(function(id){
     var el=document.getElementById(id);
     var sn=id==='gs'?'global':id==='ss'?'setup':'loop';
     var base='section s-'+(id==='gs'?'global':id==='ss'?'setup':'loop');
     var isExpanded=el.classList.contains('expanded');
     el.className=(sel&&sel.targetArr===SECTIONS[sn])?base+' active':base;
+    // Toggle readonly class for sections if global READONLY_MODE is active
     if(isExpanded)el.classList.add('expanded');});
-  console.log('[DEBUG] render() finishing. Re-applying highlights.'); genCode(); applySketchHighlights();
+  if(typeof genCode === 'function') genCode();
+  if(typeof applySketchHighlights === 'function') applySketchHighlights();
   if (typeof READONLY_MODE !== 'undefined' && READONLY_MODE) {
     document.querySelectorAll('.blk-input,.cond-input,.vartext-input,.cond-select,.cond-joiner').forEach(function(el) {
       el.setAttribute('disabled', true);
     });
     document.querySelectorAll('.act').forEach(function(el) {
-      el.style.display = 'none';
+      el.style.display = 'none'; // Hide action buttons
     });
     document.querySelectorAll('.ws-block,.if-body,.for-body,.while-body,.if-block,.for-block,.while-block').forEach(function(el) {
       el.style.pointerEvents = 'none';
@@ -536,13 +575,20 @@ function containsTarget(ifBlock){
 function braceDepth(arr,idx){
   var depth=0;
   for(var i=0;i<idx;i++){
-    if(arr[i].type!=='codeblock')continue;
-    var c=(arr[i].params[0]||'').trim();
+    var block = arr[i];
+    if (block.type === 'slot' && block.content) { // If it's a filled slot, check its content
+      block = block.content;
+    } else if (block.type === 'slot' && block.content === null) { // Empty slots don't affect depth
+      continue;
+    }
+    if(block.type!=='codeblock')continue; // Only codeblocks affect brace depth
+    var c=(block.params[0]||'').trim();
     if(c.charAt(c.length-1)==='{')depth++;
-    if(c==='}'||c.match(/^\}/))depth=Math.max(0,depth-1);
+    if(c==='}'||c.match(/^\}/))depth=Math.max(0,depth-1); // Ensure depth doesn't go negative
   }
   return depth;
 }
+console.log("[DEBUG] checkpoint 7");
 function renderSection(elId,sName,anc){
   var body=document.getElementById(elId+'-body');
   body.querySelectorAll('.ws-block,.if-block').forEach(function(e){e.remove();});
@@ -551,41 +597,50 @@ function renderBlock(block,idx,parentArr,section,pathStr,anc){
   if(block.type==='ifblock')return renderIfBlock(block,idx,parentArr,section,pathStr,anc);
   if(block.type==='forloop')return renderForBlock(block,idx,parentArr,section,pathStr,anc);
   if(block.type==='whileloop')return renderWhileBlock(block,idx,parentArr,section,pathStr,anc);
-  if(block.type==='phantom')return renderPhantomBlock(block,idx,parentArr);
-  if(block.type==='phantom_resolved')return renderPhantomResolved(block);
+  if(block.type==='slot')return renderSlot(block,idx,parentArr,section,pathStr,anc); // Handle new slot type
   return renderActionBlock(block,idx,parentArr);}
-function renderPhantomBlock(block,idx,parentArr){
-  var d=document.createElement('div');
-  d.className='ws-block phantom-block';
-  var depth=braceDepth(parentArr,idx);
-  if(depth>0)d.style.marginLeft=(depth*18)+'px';
-  var isActive=activePhantoml&&activePhantoml.arr===parentArr&&activePhantoml.idx===idx;
-  if(isActive)d.classList.add('active');
-  var icon=document.createElement('span');icon.className='phantom-icon';icon.textContent='+';
-  var hint=document.createElement('span');hint.className='phantom-hint';hint.textContent=block.hint||'Place a block here';
-  var exp=document.createElement('span');exp.className='phantom-expects';exp.textContent=block.expects||'';
-  d.appendChild(icon);d.appendChild(hint);d.appendChild(exp);
-  d.addEventListener('click',function(e){
-    e.stopPropagation();
-    if(activePhantoml&&activePhantoml.arr===parentArr&&activePhantoml.idx===idx){
-      activePhantoml=null;
-    }else{
-      activePhantoml={arr:parentArr,idx:idx,phantom:block};
-      sel=null;exprSel=null;
-    }
-    updatePalette();render();});
-  return d;}
-function renderPhantomResolved(block){
-  var d=document.createElement('div');
-  d.className='ws-block phantom-block';d.style.opacity='0.45';d.style.cursor='default';
-  d.style.background='#f6f8fa';d.style.borderColor='#d0d7de';
-  var icon=document.createElement('span');icon.className='phantom-icon';icon.textContent='\u2713';
-  var hint=document.createElement('span');hint.className='phantom-hint';
-  hint.style.color='#57606a';hint.textContent=block.hint||'';
-  d.appendChild(icon);d.appendChild(hint);
-  return d;}
+
+// New function to render a slot (which can be empty or filled)
+function renderSlot(slot, idx, parentArr, section, pathStr, anc) {
+  if (slot.content === null) {
+    // Render the phantom placeholder if the slot is empty
+    var d=document.createElement('div');
+    d.className='ws-block phantom-block';
+    var depth=braceDepth(parentArr,idx); // braceDepth needs to handle slots
+    if(depth>0)d.style.marginLeft=(depth*18)+'px';
+
+    var isActive=activePhantoml&&activePhantoml.slot===slot; // Check if this slot is active
+    if(isActive)d.classList.add('active');
+
+    var icon=document.createElement('span');icon.className='phantom-icon';icon.textContent='+';
+    var hint=document.createElement('span');hint.className='phantom-hint';hint.textContent=slot.phantom_meta.hint||'Place a block here';
+    var exp=document.createElement('span');exp.className='phantom-expects';exp.textContent=slot.phantom_meta.expects||'';
+    d.appendChild(icon);d.appendChild(hint);d.appendChild(exp);
+
+    d.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(activePhantoml&&activePhantoml.slot===slot){
+        activePhantoml=null;
+      }else{
+        activePhantoml={arr:parentArr, idx:idx, slot:slot}; // activePhantoml now points to the slot
+        sel=null;exprSel=null;
+      }
+      updatePalette();render();
+    });
+    return d;
+  } else {
+    // Render the actual block inside the slot
+    return renderBlock(slot.content, idx, parentArr, section, pathStr, anc);
+  }
+}
+
+// renderPhantomBlock and renderPhantomResolved are removed.
+// The logic for phantom rendering is now inside renderSlot when slot.content is null.
+
 function renderActionBlock(block,idx,parentArr){
-  var def=B[block.type],d=document.createElement('div');d.className='ws-block';
+  var d=document.createElement('div');
+  var def=B[block.type];
+  d.className='ws-block';
   d.setAttribute('data-id', block.id);
   if(block.type==='codeblock'){
     d.classList.add('codeblock-block');
@@ -597,14 +652,20 @@ function renderActionBlock(block,idx,parentArr){
     var code=document.createElement('span');code.className='codeblock-code';
     code.textContent=block.params[0]||'';d.appendChild(code);
     function mkb2(ic,fn){var bt=document.createElement('button');bt.className='act';bt.textContent=ic;
-      bt.addEventListener('click',function(e){e.stopPropagation();fn();});return bt;}
+      bt.addEventListener('click',function(e){e.stopPropagation();fn();});return bt;} // mkb2 for codeblocks
     d.appendChild(mkb2('\u2191',function(){if(idx>0){var t=parentArr[idx-1];parentArr[idx-1]=parentArr[idx];parentArr[idx]=t;render();}}));
     d.appendChild(mkb2('\u2193',function(){if(idx<parentArr.length-1){var t=parentArr[idx+1];parentArr[idx+1]=parentArr[idx];parentArr[idx]=t;render();}}));
     d.appendChild(mkb2('\u00D7',function(){parentArr.splice(idx,1);render();}));
+    // For codeblocks, deletion is always removal from array
     return d;}
   var nm=document.createElement('span');nm.className='blk-name';nm.textContent=block.type;d.appendChild(nm);
   var bdepth=braceDepth(parentArr,idx);if(bdepth>0)d.style.marginLeft=(bdepth*18)+'px';
-  def.inputs.forEach(function(inp,j){
+
+  // Find the actual parent array for deletion, considering slots
+  var actualParentArr = parentArr;
+  var actualIdx = idx;
+
+  def.inputs.forEach(function(inp,j){ // Loop through inputs for regular blocks
     if(inp.t==='expr'){
       d.appendChild(renderExprSlot(block,j,inp.l));return;}
     if(inp.t==='vartext'){
@@ -631,7 +692,7 @@ function renderActionBlock(block,idx,parentArr){
               item.textContent=v;
               item.addEventListener('mousedown',function(e){
                 e.preventDefault();e.stopPropagation();
-                ei.value=v;block.params[capturedJ]=v;genCode();
+                ei.value=v;block.params[capturedJ]=v;window.genCode();
                 closeDrop();});
               drop.appendChild(item);});
           }
@@ -640,7 +701,7 @@ function renderActionBlock(block,idx,parentArr){
         ei.addEventListener('focus',function(){openDrop('');});
         ei.addEventListener('input',function(e){
           e.stopPropagation();
-          block.params[capturedJ]=e.target.value;genCode();
+          block.params[capturedJ]=e.target.value;window.genCode();
           e.target.value===''?openDrop(''):openDrop(e.target.value);});
         ei.addEventListener('blur',function(){setTimeout(closeDrop,150);});
         ei.addEventListener('keydown',function(e){
@@ -663,29 +724,49 @@ function renderActionBlock(block,idx,parentArr){
     if(block.type==='increment'&&inp.l==='By'){
       var op=block.params[1]||'++';f.style.display=(op==='++'||op==='--')?'none':'';}
     el.addEventListener('click',function(e){e.stopPropagation();});
-    el.addEventListener('input',function(e){e.stopPropagation();block.params[j]=e.target.value;genCode();
+    el.addEventListener('input',function(e){e.stopPropagation();block.params[j]=e.target.value;window.genCode();
       if(block.type==='increment'&&inp.l==='Op'){
         var byF=d.querySelector('.by-field');
         if(byF)byF.style.display=(e.target.value==='++'||e.target.value==='--')?'none':'';}});
     if(block.type==='increment'&&inp.l==='By')f.className+=' by-field';
     f.appendChild(el);d.appendChild(f);});
   function mkb(ic,fn){var bt=document.createElement('button');bt.className='act';bt.textContent=ic;
-    bt.addEventListener('click',function(e){e.stopPropagation();fn();});return bt;}
-  d.appendChild(mkb('\u2191',function(){if(idx>0){var t=parentArr[idx-1];parentArr[idx-1]=parentArr[idx];parentArr[idx]=t;render();}}));
-  d.appendChild(mkb('\u2193',function(){if(idx<parentArr.length-1){var t=parentArr[idx+1];parentArr[idx+1]=parentArr[idx];parentArr[idx]=t;render();}}));
-  d.appendChild(mkb('\u00D7',function(){parentArr.splice(idx,1);render();}));
+    bt.addEventListener('click',function(e){e.stopPropagation();fn(actualParentArr, actualIdx);});return bt;} // mkb for regular blocks
+
+  // Only add move/delete buttons if not in READONLY_MODE and not a locked codeblock
+  var isLockedCodeblock = block.type === 'codeblock' && block.locked;
+  if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE) && !isLockedCodeblock) {
+    // Up/Down buttons
+    d.appendChild(mkb('\u2191',function(arr, i){if(i>0){var t=arr[i-1];arr[i-1]=arr[i];arr[i]=t;render();}}, parentArr, idx));
+    d.appendChild(mkb('\u2193',function(arr, i){if(i<arr.length-1){var t=arr[i+1];arr[i+1]=arr[i];arr[i]=t;render();}}, parentArr, idx));
+    d.appendChild(mkb('\u00D7',function(arr, i){
+      if (arr[i].type === 'slot') {
+        arr[i].content = null; // Clear the slot's content
+      } else {
+        arr.splice(i,1); // Otherwise, remove the block from the array
+      }
+      render();
+    }, parentArr, idx));
+  }
   return d;}
+  console.log("[DEBUG] checkpoint 8");
 function renderIfBlock(block,idx,parentArr,section,parentPathStr,anc){
   var wrap=document.createElement('div');
   wrap.className='if-block'+(anc.indexOf(block.id)!==-1?' ancestor':'');
   wrap.setAttribute('data-id', block.id);
   var hdr=document.createElement('div');hdr.className='if-header';
   hdr.appendChild(kw('if ('));appendCondFields(hdr,block.condition);hdr.appendChild(kw(')'));
-  hdr.appendChild(mkact('+ else if',function(){
-    block.elseifs.push({condition:{leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},body:[]});render();}));
-  if(block.elsebody===null)hdr.appendChild(mkact('+ else',function(){block.elsebody=[];render();}));
-  hdr.appendChild(mkact('\u00D7',function(){
-    parentArr.splice(idx,1);
+  // Only add 'else if' and 'else' buttons if not in READONLY_MODE
+  if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE)) {
+    hdr.appendChild(mkact('+ else if',function(){
+      block.elseifs.push({condition:{leftExpr:null,op:'==',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null},body:[]});render();}));
+    if(block.elsebody===null)hdr.appendChild(mkact('+ else',function(){block.elsebody=[];render();}));
+    hdr.appendChild(mkact('\u00D7',function(){
+      if (parentArr[idx] && parentArr[idx].type === 'slot') {
+        parentArr[idx].content = null;
+    } else {
+      parentArr.splice(idx,1);
+    }
     if(sel&&(sel.targetArr===block.ifbody||isDescendant(block,sel.targetArr)))clearSelection();else render();}));
   wrap.appendChild(hdr);
   var ifPathStr=parentPathStr+' \u2192 if';
@@ -693,8 +774,10 @@ function renderIfBlock(block,idx,parentArr,section,parentPathStr,anc){
   wrap.appendChild(makeBodyZone(block.ifbody,section,ifPathStr,isOnlyBody,anc));
   block.elseifs.forEach(function(ei,eiIdx){
     var eiHdr=document.createElement('div');eiHdr.className='elseif-header';
-    eiHdr.appendChild(kw('else if ('));appendCondFields(eiHdr,ei.condition);eiHdr.appendChild(kw(')'));
-    eiHdr.appendChild(mkact('\u00D7',function(){block.elseifs.splice(eiIdx,1);render();}));
+    eiHdr.appendChild(kw('else if ('));appendCondFields(eiHdr,ei.condition);eiHdr.appendChild(kw(')')); // Cond fields for else if
+    if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE)) {
+      eiHdr.appendChild(mkact('\u00D7',function(){block.elseifs.splice(eiIdx,1);render();}));
+    }
     wrap.appendChild(eiHdr);
     var eiPathStr=parentPathStr+' \u2192 else if';
     var eiIsLast=eiIdx===block.elseifs.length-1&&block.elsebody===null;
@@ -702,14 +785,17 @@ function renderIfBlock(block,idx,parentArr,section,parentPathStr,anc){
   if(block.elsebody!==null){
     var elHdr=document.createElement('div');elHdr.className='else-header';
     elHdr.appendChild(kw('else'));
-    elHdr.appendChild(mkact('\u00D7',function(){block.elsebody=null;render();}));
+    if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE)) {
+      elHdr.appendChild(mkact('\u00D7',function(){block.elsebody=null;render();}));
+    }
     wrap.appendChild(elHdr);
     wrap.appendChild(makeBodyZone(block.elsebody,section,parentPathStr+' \u2192 else',true,anc));}
-  return wrap;}
+  return wrap;}}
 function renderForBlock(block,idx,parentArr,section,parentPathStr,anc){
   var wrap=document.createElement('div');wrap.className='for-block';
   wrap.setAttribute('data-id', block.id);
-  var hdr=document.createElement('div');hdr.className='for-header';
+  var hdr=document.createElement('div');hdr.className='for-header'; // Header for for loop
+  hdr.appendChild(kw('for ('));
   var fkw=document.createElement('span');fkw.className='for-keyword';fkw.textContent='for (';hdr.appendChild(fkw);
   var fields=[{key:'init',label:'init',ph:'int i=0'},{key:'cond',label:'cond',ph:'i<10'},{key:'incr',label:'incr',ph:'i++'}];
   if(!block.forinit&&block.forinit!=='')block.forinit='int i = 0';
@@ -722,14 +808,21 @@ function renderForBlock(block,idx,parentArr,section,parentPathStr,anc){
     var fe=document.createElement('input');fe.type='text';fe.className='cond-input';fe.value=block[ki]||'';
     fe.placeholder=ph;
     fe.addEventListener('click',function(e){e.stopPropagation();});
-    fe.addEventListener('input',function(e){e.stopPropagation();block[ki]=e.target.value;genCode();});
+    fe.addEventListener('input',function(e){e.stopPropagation();block[ki]=e.target.value;window.genCode();});
     fw.appendChild(fe);hdr.appendChild(fw);
     if(fi<2){var sep=document.createElement('span');sep.className='for-keyword';sep.textContent=';';hdr.appendChild(sep);}
   })(keys[fi],labels[fi],phs[fi]);}
   var ekw=document.createElement('span');ekw.className='for-keyword';ekw.textContent=') {';hdr.appendChild(ekw);
-  hdr.appendChild(mkact('\u00D7',function(){parentArr.splice(idx,1);
-    if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
-  wrap.appendChild(hdr);
+  if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE)) {
+    hdr.appendChild(mkact('\u00D7',function(){
+      if (parentArr[idx] && parentArr[idx].type === 'slot') {
+        parentArr[idx].content = null;
+      } else {
+        parentArr.splice(idx,1);
+      }
+      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
+  }
+  wrap.appendChild(hdr); // Forloop itself is deleted, not its content
   if(!block.body)block.body=[];
   var bodyPath=parentPathStr+' \u2192 for';
   var bz=document.createElement('div');bz.className='for-body';
@@ -751,9 +844,16 @@ function renderWhileBlock(block,idx,parentArr,section,parentPathStr,anc){
   if(!block.condition)block.condition={leftExpr:null,op:'!=',rightExpr:null,joiner:'none',leftExpr2:null,op2:'==',rightExpr2:null};
   appendCondFields(hdr,block.condition);
   var ewkw=document.createElement('span');ewkw.className='while-keyword';ewkw.textContent=') {';hdr.appendChild(ewkw);
-  hdr.appendChild(mkact('\u00D7',function(){parentArr.splice(idx,1);
-    if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
-  wrap.appendChild(hdr);
+  if (!(typeof READONLY_MODE !== 'undefined' && READONLY_MODE)) {
+    hdr.appendChild(mkact('\u00D7',function(){
+      if (parentArr[idx] && parentArr[idx].type === 'slot') {
+        parentArr[idx].content = null;
+      } else {
+        parentArr.splice(idx,1);
+      }
+      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
+  }
+  wrap.appendChild(hdr); // Whileloop itself is deleted, not its content
   if(!block.body)block.body=[];
   var bodyPath=parentPathStr+' \u2192 while';
   var bz=document.createElement('div');bz.className='while-body';
@@ -767,14 +867,20 @@ function renderWhileBlock(block,idx,parentArr,section,parentPathStr,anc){
   var cz=document.createElement('div');cz.style.cssText='border-left:1px dashed #6a1b9a;border-right:1px dashed #6a1b9a;border-bottom:1px dashed #6a1b9a;border-radius:0 0 5px 5px;padding:2px 6px;font-size:10px;color:#6a1b9a;';
   cz.textContent='} // end while';wrap.appendChild(cz);
   return wrap;}
+  console.log("[DEBUG] checkpoint 9");
 function isDescendantOf(body,targetArr){
   if(body===targetArr)return true;
   for(var i=0;i<body.length;i++){var b=body[i];
-    if(b.type==='ifblock'){if(isDescendantOf(b.ifbody,targetArr))return true;
-      for(var j=0;j<b.elseifs.length;j++)if(isDescendantOf(b.elseifs[j].body,targetArr))return true;
-      if(b.elsebody&&isDescendantOf(b.elsebody,targetArr))return true;
-    }else if(b.type==='forloop'||b.type==='whileloop'){if(isDescendantOf(b.body,targetArr))return true;}}
+    var blockToCheck = b.type === 'slot' ? b.content : b;
+    if (blockToCheck) {
+      if(blockToCheck.type==='ifblock'){if(isDescendantOf(blockToCheck.ifbody,targetArr))return true;
+        for(var j=0;j<blockToCheck.elseifs.length;j++)if(isDescendantOf(blockToCheck.elseifs[j].body,targetArr))return true;
+        if(blockToCheck.elsebody&&isDescendantOf(blockToCheck.elsebody,targetArr))return true;
+      }else if(blockToCheck.type==='forloop'||blockToCheck.type==='whileloop'){if(blockToCheck.body&&isDescendantOf(blockToCheck.body,targetArr))return true;}
+    }
+  }
   return false;}
+
 function makeBodyZone(arr,section,pathStr,isLast,anc){
   var div=document.createElement('div');
   div.className='if-body'+(isLast?' last':'');
@@ -789,10 +895,13 @@ function makeBodyZone(arr,section,pathStr,isLast,anc){
 function isDescendant(ifBlock,targetArr){
   if(ifBlock.ifbody===targetArr)return true;
   for(var i=0;i<ifBlock.elseifs.length;i++)if(ifBlock.elseifs[i].body===targetArr)return true;
-  if(ifBlock.elsebody===targetArr)return true;
+  if(ifBlock.elsebody===targetArr)return true; // Check if elsebody is the target
   function walkDeep(arr){for(var j=0;j<arr.length;j++){var b=arr[j];
-    if(b.type==='ifblock'&&isDescendant(b,targetArr))return true;
-    if((b.type==='forloop'||b.type==='whileloop')&&b.body&&isDescendantOf(b.body,targetArr))return true;
+    var blockToCheck = b.type === 'slot' ? b.content : b;
+    if (blockToCheck) {
+      if(blockToCheck.type==='ifblock'&&isDescendant(blockToCheck,targetArr))return true;
+      if((blockToCheck.type==='forloop'||blockToCheck.type==='whileloop')&&blockToCheck.body&&isDescendantOf(blockToCheck.body,targetArr))return true;
+    }
   }return false;}
   return walkDeep(ifBlock.ifbody)||ifBlock.elseifs.some(function(ei){return walkDeep(ei.body);})||
          (ifBlock.elsebody?walkDeep(ifBlock.elsebody):false);}
@@ -902,8 +1011,9 @@ function condField(labelText,obj,type){
     el.value=obj[labelText];
   }
   el.addEventListener('click',function(e){e.stopPropagation();});
-  el.addEventListener('change',function(e){e.stopPropagation();obj[labelText]=e.target.value;genCode();});
+  el.addEventListener('change',function(e){e.stopPropagation();obj[labelText]=e.target.value;window.genCode();});
   f.appendChild(el);return f;}
+  console.log("[DEBUG] checkpoint 10");
 function genCond(c){
   var left=c.leftExpr?genExpr(c.leftExpr,null,'x'):(c.left||'x');
   var right=c.rightExpr?genExpr(c.rightExpr,null,'0'):(c.right||'0');
@@ -917,45 +1027,55 @@ function genCond(c){
 function genBlocks(arr,indent){
   var lines=[],extra=0;
   arr.forEach(function(b){
-    if(b.type==='phantom'||b.type==='phantom_resolved')return;
-    if(b.type==='codeblock'){
-      var c=(b.params[0]||'').trim();
+    var blockToGen = b;
+    if (b.type === 'slot') {
+      if (b.content === null) return; // Don't generate code for empty slots
+      blockToGen = b.content;
+    }
+    // Now blockToGen is guaranteed to be a real block or codeblock
+    if(blockToGen.type==='codeblock'){
+      var c=(blockToGen.params[0]||'').trim();
       if(c==='}'||c.match(/^\}/))extra=Math.max(0,extra-1);
-      lines.push(genBlock(b,indent+extra));
+      lines.push(genBlock(blockToGen,indent+extra));
       if(c.charAt(c.length-1)==='{')extra++;
-    }else{lines.push(genBlock(b,indent+extra));}
+    }else{lines.push(genBlock(blockToGen,indent+extra));}
   });
   return lines.join('\n');}
 function genBlock(block,indent){
   var pad='';for(var i=0;i<indent;i++)pad+='   ';
-  if(block.type==='ifblock'){
-    var lines=[pad+'if ('+genCond(block.condition)+') {'];
+  var blockToGen = block;
+  if (block.type === 'slot') {
+    if (block.content === null) return ''; // Should be handled by genBlocks, but safety check
+    blockToGen = block.content;
+  }
+  if(blockToGen.type==='ifblock'){
+    var lines=[pad+'if ('+genCond(blockToGen.condition)+') {'];
     lines.push(genBlocks(block.ifbody,indent+1));
     lines.push(pad+'}');
-    block.elseifs.forEach(function(ei){
+    blockToGen.elseifs.forEach(function(ei){
       lines.push(pad+'else if ('+genCond(ei.condition)+') {');
       lines.push(genBlocks(ei.body,indent+1));
       lines.push(pad+'}');});
-    if(block.elsebody!==null){
+    if(blockToGen.elsebody!==null){
       lines.push(pad+'else {');
-      lines.push(genBlocks(block.elsebody,indent+1));
+      lines.push(genBlocks(blockToGen.elsebody,indent+1));
       lines.push(pad+'}');}
-    return lines.join('\n');}
-  if(block.type==='forloop'){
-    var init=block.forinit||'int i = 0';
-    var cond=block.forcond||'i < 10';
-    var incr=block.forincr||'i++';
+    return lines.join('\n');} // Use blockToGen here
+  if(blockToGen.type==='forloop'){
+    var init=blockToGen.forinit||'int i = 0';
+    var cond=blockToGen.forcond||'i < 10';
+    var incr=blockToGen.forincr||'i++';
     var lines=[pad+'for ('+init+'; '+cond+'; '+incr+') {'];
-    lines.push(genBlocks(block.body||[],indent+1));
+    lines.push(genBlocks(blockToGen.body||[],indent+1));
     lines.push(pad+'}');
-    return lines.join('\n');}
-  if(block.type==='whileloop'){
-    var cond=block.condition?genCond(block.condition):(block.whilecond||'true');
+    return lines.join('\n');} // Use blockToGen here
+  if(blockToGen.type==='whileloop'){
+    var cond=blockToGen.condition?genCond(blockToGen.condition):(blockToGen.whilecond||'true');
     var lines=[pad+'while ('+cond+') {'];
-    lines.push(genBlocks(block.body||[],indent+1));
+    lines.push(genBlocks(blockToGen.body||[],indent+1));
     lines.push(pad+'}');
-    return lines.join('\n');}
-  return pad+BLOCKS[block.type].genStmt(block.params,block.exChildren||[]);}
+    return lines.join('\n');} // Use blockToGen here
+  return pad+BLOCKS[blockToGen.type].genStmt(blockToGen.params,blockToGen.exChildren||[]);}
 function genCode(){
   var co=document.getElementById('codeout');
   var gv=genBlocks(SECTIONS.global,0);
@@ -965,16 +1085,25 @@ function genCode(){
     +(gv?gv+'\n\n':'')
     +'void setup() {\n'+(sc?sc+'\n':'')+'}'+
     '\n\nvoid loop() {\n'+(lc?lc+'\n':'')+'}';checkStepComplete();}
+window.genCode = genCode;
 function findBlockById(id){
   var found=null;
   function walk(arr){
     if(!arr)return;
-    for(var i=0;i<arr.length;i++){
-      if(arr[i].id==id){found=arr[i];return;}
-      if(arr[i].ifbody)walk(arr[i].ifbody);
-      if(arr[i].elseifs)arr[i].elseifs.forEach(function(ei){walk(ei.body);});
-      if(arr[i].elsebody)walk(arr[i].elsebody);
-      if(arr[i].body)walk(arr[i].body);}}
+    for(var i=0;i<arr.length;i++){ // Iterate through the array
+      var b = arr[i];
+      var blockToCheck = b.type === 'slot' ? b.content : b; // Get the actual block if it's a slot
+      if(blockToCheck && blockToCheck.id==id){found=blockToCheck;return;} // Check ID of actual block
+      if(b.type==='slot' && b.content){ // If it's a filled slot, recurse into its content
+        if(b.content.type==='ifblock'){if(b.content.ifbody)walk(b.content.ifbody);
+          if(b.content.elseifs)b.content.elseifs.forEach(function(ei){walk(ei.body);});if(b.content.elsebody)walk(b.content.elsebody);}
+        else if(b.content.type==='forloop'||b.content.type==='whileloop'){if(b.content.body)walk(b.content.body);}
+      } else if (b.type !== 'slot') { // Regular blocks
+        if(b.type==='ifblock'){if(b.ifbody)walk(b.ifbody);
+          if(b.elseifs)b.elseifs.forEach(function(ei){walk(ei.body);});if(b.elsebody)walk(b.elsebody);}
+        else if(b.type==='forloop'||b.body)walk(b.body); // Fixed: b.type==='forloop' || b.type==='whileloop'
+      }
+    }}
   ['global','setup','loop'].forEach(function(s){walk(SECTIONS[s]);});
   return found;}
 window.getBlockCode=function(id){
@@ -984,7 +1113,7 @@ window.getGeneratedCode = function() { return document.getElementById('codeout')
 window.isProgressionMode = function() { return PROGRESSION_MODE; };
 window.setBlockData = function(data) {
   if (!data) return;
-  SECTIONS.global = data.global || [];
+  SECTIONS.global = data.global || []; // This is for non-progression mode
   SECTIONS.setup = data.setup || [];
   SECTIONS.loop = data.loop || [];
   clearSelection();
@@ -1003,13 +1132,11 @@ function fbCopy(txt){
   ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();
   try{document.execCommand('copy');flash('Copied!');}catch(e){flash('Select manually');}
   document.body.removeChild(ta);}
-window.resetBlocks = function(){
-  SECTIONS.global=[];SECTIONS.setup=[];SECTIONS.loop=[];clearSelection();render();genCode();
-};
+console.log("[DEBUG] checkpoint 11");
 function saveBlocks(){
   if(!USERNAME||!PAGE)return;
   var state;
-  if(PROGRESSION_MODE){
+  if(PROGRESSION_MODE){ // In progression mode, save the full SECTIONS state
     state = {current_step: CURRENT_STEP, student_saves: STUDENT_SAVES};
   } else {
     state = {global: SECTIONS.global, setup: SECTIONS.setup, loop: SECTIONS.loop};
@@ -1030,53 +1157,53 @@ function loadBlocks(){
     if(data&&data.length>0){
       var saved=JSON.parse(data[0].blocks_json);
       if(PROGRESSION_MODE&&saved.current_step!==undefined){
-        CURRENT_STEP=saved.current_step;
-        STUDENT_SAVES=saved.student_saves||[];
-        var allSaves={global:[],setup:[],loop:[]};
-        STUDENT_SAVES.forEach(function(sv){
-          allSaves.global=allSaves.global.concat(sv.global||[]);
-          allSaves.setup=allSaves.setup.concat(sv.setup||[]);
-          allSaves.loop=allSaves.loop.concat(sv.loop||[]);});
-        buildWorkspace(CURRENT_STEP,allSaves);
-        clearSelection();render();genCode();if(typeof checkStepComplete==='function')checkStepComplete();
-      }else{
-        SECTIONS.global=saved.global;
-        SECTIONS.setup=saved.setup;
-        SECTIONS.loop=saved.loop;}
-      clearSelection();render();genCode();
+        CURRENT_STEP = saved.current_step;
+        STUDENT_SAVES = saved.student_saves || []; // STUDENT_SAVES now stores full SECTIONS states
+        buildWorkspace(CURRENT_STEP); // buildWorkspace will load from STUDENT_SAVES
+        clearSelection();render();window.genCode();if(typeof checkStepComplete==='function')checkStepComplete();
+      } else {
+      SECTIONS.global = saved.global || [];
+      SECTIONS.setup = saved.setup || [];
+      SECTIONS.loop = saved.loop || [];
+    }
+      clearSelection();render();window.genCode();
       flash('Loaded!');}})
   .catch(function(){flash('Load failed');});}
-window.saveBlocks = saveBlocks;
 
 window.resetBlocks = function(){
-  if(!confirm('Reset to original? Your saved progress will be lost.'))return;
-  STUDENT_SAVES=[];CURRENT_STEP=0;
-  if(CFG.mode === 'progression'){
-    PROGRESSION_MODE = true;
-    STEPS = CFG.steps;
-    buildWorkspace(0, null);
+  if(!confirm('Reset this step? Your progress on this step will be cleared.'))return;
+  if(PROGRESSION_MODE){
+    delete STUDENT_SAVES[CURRENT_STEP];
+    buildWorkspace(CURRENT_STEP);
   } else {
-    SECTIONS.global = CFG.blocks ? CFG.blocks.global : [];
-    SECTIONS.setup = CFG.blocks ? CFG.blocks.setup : [];
-    SECTIONS.loop = CFG.blocks ? CFG.blocks.loop : [];
-    genCode();
-    render();
+    SECTIONS.global = CFG.blocks ? JSON.parse(JSON.stringify(CFG.blocks.global)) : [];
+    SECTIONS.setup  = CFG.blocks ? JSON.parse(JSON.stringify(CFG.blocks.setup))  : [];
+    SECTIONS.loop   = CFG.blocks ? JSON.parse(JSON.stringify(CFG.blocks.loop))   : [];
   }
-  clearSelection();render();genCode();
+  saveBlocks();
+  clearSelection();render();window.genCode();
   flash('Reset!');
 };
+console.log("[DEBUG] checkpoint 12");
 function countPhantoms(arr){
-  var n=0;
+  var n = 0;
   arr.forEach(function(b){
-    if(b.type==='phantom')n++;
-    if(b.type==='ifblock'){n+=countPhantoms(b.ifbody);b.elseifs.forEach(function(ei){n+=countPhantoms(ei.body);});if(b.elsebody)n+=countPhantoms(b.elsebody);}
-    if((b.type==='forloop'||b.type==='whileloop')&&b.body)n+=countPhantoms(b.body);
+    if(b.type === 'slot'){
+      if(b.content === null) n++; // Count empty slots as phantoms
+      else { // Recurse into content if it's a structural block
+        if(b.content.type==='ifblock'){n+=countPhantoms(b.content.ifbody);b.content.elseifs.forEach(function(ei){n+=countPhantoms(ei.body);});if(b.content.elsebody)n+=countPhantoms(b.content.elsebody);}
+        if((b.content.type==='forloop'||b.content.type==='whileloop')&&b.content.body)n+=countPhantoms(b.content.body);
+      }
+    } else if(b.type==='ifblock'){n+=countPhantoms(b.ifbody);b.elseifs.forEach(function(ei){n+=countPhantoms(ei.body);});if(b.elsebody)n+=countPhantoms(b.elsebody);}
+    else if((b.type==='forloop'||b.type==='whileloop')&&b.body)n+=countPhantoms(b.body);
   });
   return n;}
 function countIncomplete(arr){
   var n=0;
   arr.forEach(function(b){
-    if(b.type==='phantom'||b.type==='phantom_resolved'||b.type==='codeblock')return;
+    var currentBlock = b;
+    if (b.type === 'slot') {if (b.content === null) return; currentBlock = b.content;} // If slot is empty, it's a phantom, not incomplete field
+    if(currentBlock.type==='codeblock')return; // Codeblocks are always complete
     if(b.type==='ifblock'){
       var c=b.condition;
       if(c){if(!c.leftExpr)n++;if(!c.rightExpr)n++;
@@ -1095,15 +1222,16 @@ function countIncomplete(arr){
     if(b.type==='forloop'){
       if(b.body)n+=countIncomplete(b.body);return;}
     var def=BLOCKS[b.type];if(!def)return;
-    def.inputs.forEach(function(inp,j){
+    def.inputs.forEach(function(inp,j){ // Use currentBlock here
       if(inp.t==='expr'){
-        if(!b.exChildren||!b.exChildren[j])n++;
+        if(!currentBlock.exChildren||!currentBlock.exChildren[j])n++;
       }else if(inp.t==='text'||inp.t==='number'||inp.t==='vartext'){
-        if(!b.params||!b.params[j]||b.params[j]==='')n++;
+        if(!currentBlock.params||!currentBlock.params[j]||currentBlock.params[j]==='')n++;
       }
     });
   });
   return n;}
+  console.log("[DEBUG] checkpoint 13");
 function compareExpr(u,t){
   if(!u&&!t)return true;if(!u||!t)return false;
   if(u.type!==t.type)return false;
@@ -1161,99 +1289,87 @@ function generateCondHint(u,t,tier){
     h=generateExprHint(u.rightExpr2,t.rightExpr2,tier);if(h)return '2nd Right: '+h;
   }
   return null;}
+  console.log("[DEBUG] checkpoint 14");
 function generateHint(u,t,tier){
   if(tier<2)return '';
-  if(u.type!==t.expects)return 'Wrong block. Should be '+t.expects;
+  var pm=t.type==='slot'?t.phantom_meta:t;
+  var tm=t.type==='slot'?t.master:t;
+  if(u.type!==pm.expects)return 'Wrong block. Should be '+pm.expects;
   var def=BLOCKS[u.type];
   if(!def)return '';
-  for(var i=0;i<(t.params||[]).length;i++){
+  for(var i=0;i<(pm.params||[]).length;i++){
     if(!def.inputs[i])continue;
-    var up=u.params[i]||'',tp=t.params[i]||'';
+    var up=u.params[i]||'',tp=pm.params[i]||'';
     if(up.trim()!==tp.trim()){
-      var lbl=(def&&def.inputs[i])?def.inputs[i].l:'field';
+      var lbl=def.inputs[i].l||'field';
       return tier===3?'Check '+lbl+': expected "'+tp+'"':'Check '+lbl;
     }
   }
-  if(t.expects==='ifblock'||t.expects==='whileloop'){
-    var h=generateCondHint(u.condition,t.condition,tier);if(h)return h;
+  if(pm.expects==='ifblock'||pm.expects==='whileloop'){
+    var h=generateCondHint(u.condition,pm.condition,tier);if(h)return h;
   }
-  if(t.expects==='forloop'){
-    if((u.forinit||'')!==(t.forinit||''))return tier===3?'Init: '+t.forinit:'Check init';
-    if((u.forcond||'')!==(t.forcond||''))return tier===3?'Cond: '+t.forcond:'Check condition';
-    if((u.forincr||'')!==(t.forincr||''))return tier===3?'Incr: '+t.forincr:'Check increment';
+  if(pm.expects==='forloop'){
+    if((u.forinit||'')!==(pm.forinit||''))return tier===3?'Init: '+pm.forinit:'Check init';
+    if((u.forcond||'')!==(pm.forcond||''))return tier===3?'Cond: '+pm.forcond:'Check condition';
+    if((u.forincr||'')!==(pm.forincr||''))return tier===3?'Incr: '+pm.forincr:'Check increment';
   }
-  var uex=u.exChildren||[],tex=t.exChildren||[];
+  var uex=u.exChildren||[];
+  var tex=(tm&&tm.exChildren)||pm.exChildren||[];
   for(var i=0;i<tex.length;i++){
     var h=generateExprHint(uex[i],tex[i],tier);
     if(h){
-       var lbl=(def&&def.inputs[i])?def.inputs[i].l:'slot';
-       return lbl+': '+h;
+      var lbl=(def&&def.inputs[i])?def.inputs[i].l:'slot';
+      return lbl+': '+h;
     }
   }
   return '';}
 function collectBadIds(uList,tList,tier,badIds){
   if(!uList||!tList)return;
-  uList.forEach(function(ub,i){
+  // Iterate through template list, as it defines the expected structure
+  tList.forEach(function(tb,i){
+    var ub = uList[i]; // Corresponding user block
+
     var tb=tList[i];if(!tb)return;
-    if(tb.type==='phantom'){
-      if(!compareBlock(ub,tb))badIds.push({id:ub.id,hint:generateHint(ub,tb,tier)});
-      var tc=null;
-      if(tb.expects==='ifblock')tc={ifbody:tb.ifbody,elseifs:tb.elseifs,elsebody:tb.elsebody};
-      else if(tb.expects==='forloop'||tb.expects==='whileloop')tc={body:tb.body};
-      if(tc){
-        if(ub.type==='ifblock'){collectBadIds(ub.ifbody,tc.ifbody,tier,badIds);
-          if(ub.elseifs&&tc.elseifs)ub.elseifs.forEach(function(ei,k){if(tc.elseifs[k])collectBadIds(ei.body,tc.elseifs[k].body,tier,badIds);});
-          if(ub.elsebody&&tc.elsebody)collectBadIds(ub.elsebody,tc.elsebody,tier,badIds);}
-        else if(ub.type==='forloop'||ub.type==='whileloop'){collectBadIds(ub.body,tc.body,tier,badIds);}
+    if(tb.type==='slot'){ // Template is a slot
+      if(ub===undefined || ub.type !== 'slot' || ub.content === null){ // User block is missing or slot is empty
+        badIds.push({id:tb.id,hint:'Missing block'});
+      } else { // User block is present and slot is filled, compare its content
+        if(!compareBlock(ub.content,tb))badIds.push({id:ub.content.id,hint:generateHint(ub.content,tb,tier)});
+        // Recurse into structural blocks within the slot's content
+        var pm = tb.phantom_meta;
+        var uc = ub.content;
+        if(pm.expects==='ifblock'){collectBadIds(uc.ifbody,pm.ifbody,tier,badIds);
+          if(uc.elseifs&&pm.elseifs)uc.elseifs.forEach(function(ei,k){if(pm.elseifs[k])collectBadIds(ei.body,pm.elseifs[k].body,tier,badIds);});
+          if(uc.elsebody&&pm.elsebody)collectBadIds(uc.elsebody,pm.elsebody,tier,badIds);}
+        else if(pm.expects==='forloop'||pm.expects==='whileloop'){collectBadIds(uc.body,pm.body,tier,badIds);}
       }
+    } else if (tb.type === 'codeblock') { // Codeblocks are fixed, just check if they are present
+      // No comparison needed for codeblocks, they are just there.
     }
-  });}
+  });
+}
 function compareBlock(u,t){
   if(!u)return false;
-  if(t.type==='phantom'){
-    if(u.type!==t.expects)return false;
-    if(t.expects==='ifblock'||t.expects==='whileloop'){
-       if(!compareCondition(u.condition,t.condition))return false;
-    }
-    if(t.expects==='forloop'){
-       if((u.forinit||'')!==(t.forinit||''))return false;
-       if((u.forcond||'')!==(t.forcond||''))return false;
-       if((u.forincr||'')!==(t.forincr||''))return false;
-    }
-    for(var i=0;i<(t.params||[]).length;i++){
-       var up=u.params[i]||'',tp=t.params[i]||'';
+  if(t.type==='slot'){
+    var pm = t.phantom_meta;
+    if(u.type!==pm.expects)return false;
+    var mc=t.master||pm;
+    if(pm.expects==='ifblock'||pm.expects==='whileloop'){if(!compareCondition(u.condition,mc.condition))return false;}
+    if(pm.expects==='forloop'){if((u.forinit||'')!==(mc.forinit||''))return false;
+       if((u.forcond||'')!==(mc.forcond||''))return false;if((u.forincr||'')!==(mc.forincr||''))return false;}
+    var masterParams=(t.master&&t.master.params)||pm.params||[];
+    for(var i=0;i<masterParams.length;i++){
+       var up=u.params[i]||'',tp=masterParams[i]||'';
        if(up.trim()!==tp.trim())return false;
     }
-    var uex=u.exChildren||[],tex=t.exChildren||[];
+    var uex=u.exChildren||[];
+    var tex=(t.master&&t.master.exChildren)||pm.exChildren||[];
     for(var i=0;i<tex.length;i++){
        if(!compareExpr(uex[i],tex[i]))return false;
     }
     return true;
   }
   return true;}
-function validateStep(){
-  if(!STEPS||!STEPS[CURRENT_STEP])return true;
-  var tmpl=STEPS[CURRENT_STEP];
-  var valid=true;var tier=1;if(CHECK_FAIL_COUNT>=2)tier=2;if(CHECK_FAIL_COUNT>=4)tier=3;
-  var badIds=[];
-  ['global','setup','loop'].forEach(function(sec){
-    var uArr=SECTIONS[sec],tArr=tmpl[sec];
-    collectBadIds(uArr,tArr,tier,badIds);
-  });
-  if(badIds.length>0)valid=false;
-  document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block').forEach(function(el){el.classList.remove('error-block');});
-  document.querySelectorAll('.block-hint').forEach(function(el){el.remove();});
-  if(!valid){
-    CHECK_FAIL_COUNT++;
-    badIds.forEach(function(bid){
-      var el=document.querySelector('[data-id="'+bid.id+'"]');
-      if(el){
-        el.classList.add('error-block');
-        if(bid.hint){var hd=document.createElement('div');hd.className='block-hint';hd.textContent=bid.hint;el.appendChild(hd);}
-      }
-    });
-  }
-  return valid;}
 function checkSketchFields(uList, mList, badIds, path = [], section = ''){
   if(!uList||!mList)return;
   for(var i=0;i<uList.length&&i<mList.length;i++){
@@ -1310,6 +1426,7 @@ function applySketchHighlights(){
     }
   });
 }
+console.log("[DEBUG] checkpoint 15");
 function validateSketch(){
   console.log('[DEBUG] validateSketch() invoked.');
   if(!MASTER_SKETCH)return {valid:true};
@@ -1324,181 +1441,128 @@ window.validateSketch = validateSketch;
 window.dumpDebug = function() {
   console.log('--- BLOCK BUILDER DEBUG DUMP ---');
   console.log('MASTER_SKETCH:', MASTER_SKETCH);
-  console.log('SECTIONS:', SECTIONS);
+  console.log('SECTIONS (Current State):', SECTIONS);
   console.log('SKETCH_ERROR_PATHS:', SKETCH_ERROR_PATHS);
   console.log('--------------------------------');
 };
+console.log("[DEBUG] checkpoint 151");
 function checkStepComplete(){
+    console.log("[DEBUG] checkStepComplete called, PROGRESSION_MODE:", PROGRESSION_MODE);
   if(!PROGRESSION_MODE)return;
+    console.log("[DEBUG] checkStepComplete past guard");
   var phantoms=countPhantoms(SECTIONS.global)+countPhantoms(SECTIONS.setup)+countPhantoms(SECTIONS.loop);
+    console.log("[DEBUG] phantoms:", phantoms);
   var incomplete=countIncomplete(SECTIONS.global)+countIncomplete(SECTIONS.setup)+countIncomplete(SECTIONS.loop);
   var total=phantoms+incomplete;
-  var btn=document.getElementById('nextbtn');
-  var curGuidance = STEPS&&STEPS[CURRENT_STEP]?STEPS[CURRENT_STEP].guidance:'guided';
+  var step = STEPS&&STEPS[CURRENT_STEP]?STEPS[CURRENT_STEP]:null;
+  var curGuidance = step && step.config ? (step.config.structure === 'none' ? 'free' : 'guided') : 'guided';
+
   if(curGuidance==='free'){
-    btn.classList.add('ready');
-    btn.classList.remove('check-mode');
-    btn.textContent='Next Step \u2192';
-    btn.classList.add('next-mode');
-    btn.style.display='';
+    nextBtnState.ready = true;
+    nextBtnState.mode = 'next-mode';
+    nextBtnState.text = 'Next Step \u2192';
+    nextBtnState.visible = true;
+    window.dispatchEvent(new CustomEvent('bb_next_state', {detail: {state: {
+      ready: true, 'check-mode': false, 'next-mode': true, hidden: false, text: nextBtnState.text, prevVisible: nextBtnState.prevVisible
+    }}}));
     return;
   }
-  if(btn.classList.contains('next-mode'))return;
-  if(btn.classList.contains('check-mode')){
-     if(total>0){btn.classList.remove('ready');btn.textContent='Complete Step';btn.classList.remove('check-mode');}
+console.log("[DEBUG] checkpoint 152");
+  if(nextBtnState.mode === 'next-mode') return;
+  if(nextBtnState.mode === 'check-mode'){
+     if(total>0){
+        nextBtnState.ready = false;
+        nextBtnState.text = 'Complete Step';
+        nextBtnState.mode = '';
+        window.dispatchEvent(new CustomEvent('bb_next_state', {detail: {state: {
+          ready: false, 'check-mode': false, 'next-mode': false, hidden: !nextBtnState.visible, text: nextBtnState.text, prevVisible: nextBtnState.prevVisible
+        }}}));
+     }
      return;
   }
-  var prog=document.getElementById('step-progress');
-  if(prog){
-    if(phantoms>0)prog.textContent=phantoms+' block'+(phantoms===1?'':'s')+' to place';
-    else if(incomplete>0)prog.textContent=incomplete+' field'+(incomplete===1?'':'s')+' to fill';
-    else prog.textContent='complete';}
-  if(total===0){btn.classList.add('ready');btn.textContent='Check Code';btn.classList.add('check-mode');}
-  else{btn.classList.remove('ready');btn.textContent='Complete Step';btn.classList.remove('check-mode');}}
-function buildWorkspace(stepIdx,saves){
-  if(!PROGRESSION_MODE||!STEPS||stepIdx>=STEPS.length)return;
-  var step=STEPS[stepIdx];
-  function mergeSaved(templateArr,savedArr){
-    if(!savedArr||!savedArr.length)return templateArr.slice();
-    var STRUCTURAL=['ifblock','forloop','whileloop'];
-    var out=[];
-    var si=0;
-    templateArr.forEach(function(b){
-      if(b.type==='phantom_resolved'){
-        if(si<savedArr.length){
-          var sb=savedArr[si];
-          var code=genBlock(sb,0).trim();
-          out.push({id:sb.id,type:'codeblock',params:[code]});
-          si++;}
-      }else{out.push(b);}
-    });
-    return out;
+
+  if(phantoms>0) stepProgress = phantoms+' block'+(phantoms===1?'':'s')+' to place';
+  else if(incomplete>0) stepProgress = incomplete+' field'+(incomplete===1?'':'s')+' to fill';
+  else stepProgress = 'complete';
+
+  if(total===0){
+    nextBtnState.ready = true;
+    nextBtnState.text = 'Check Code';
+    nextBtnState.mode = 'check-mode';
+  } else {
+    nextBtnState.ready = false;
+    nextBtnState.text = 'Complete Step';
+    nextBtnState.mode = '';
   }
-  var savedG=saves?saves.global:null;
-  var savedS=saves?saves.setup:null;
-  var savedL=saves?saves.loop:null;
-  SECTIONS.global=mergeSaved(step.global,savedG);
-  SECTIONS.setup=mergeSaved(step.setup,savedS);
-  SECTIONS.loop=mergeSaved(step.loop,savedL);
+
+  window.dispatchEvent(new CustomEvent('bb_step_update', {detail: {label: stepLabel, progress: stepProgress}}));
+  window.dispatchEvent(new CustomEvent('bb_next_state', {detail: {state: {
+    ready: nextBtnState.ready,
+    'check-mode': nextBtnState.mode === 'check-mode',
+    'next-mode': nextBtnState.mode === 'next-mode',
+    hidden: !nextBtnState.visible,
+    text: nextBtnState.text,
+    prevVisible: nextBtnState.prevVisible
+  }}}));
+
+  return true;}
+console.log("[DEBUG] checkpoint 16");
+function validateStep(){
+  if(!STEPS||!STEPS[CURRENT_STEP])return true;
+  var tmpl=STEPS[CURRENT_STEP];
+  var valid=true; var tier=1; if(CHECK_FAIL_COUNT>=2)tier=2; if(CHECK_FAIL_COUNT>=4)tier=3;
+  var badIds=[];
+  ['global','setup','loop'].forEach(function(sec){ collectBadIds(SECTIONS[sec], tmpl[sec], tier, badIds); });
+  if(badIds.length>0)valid=false;
+  document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block').forEach(function(el){el.classList.remove('error-block');});
+  document.querySelectorAll('.block-hint').forEach(function(el){el.remove();});
+  if(!valid){ CHECK_FAIL_COUNT++; badIds.forEach(function(bid){ var el=document.querySelector('[data-id="'+bid.id+'"]');
+      if(el){ el.classList.add('error-block'); if(bid.hint){var hd=document.createElement('div');hd.className='block-hint';hd.textContent=bid.hint;el.appendChild(hd);}}}); }
+  return valid;}
+console.log("[DEBUG] checkpoint 17");
+function buildWorkspace(stepIdx, saves) {
+  if (!PROGRESSION_MODE || !STEPS || stepIdx >= STEPS.length) return;
+  var step = STEPS[stepIdx];
+  if (STUDENT_SAVES[stepIdx]) {
+    var savedState = STUDENT_SAVES[stepIdx]; SECTIONS.global = JSON.parse(JSON.stringify(savedState.global)); SECTIONS.setup = JSON.parse(JSON.stringify(savedState.setup)); SECTIONS.loop = JSON.parse(JSON.stringify(savedState.loop));
+  } else { SECTIONS.global = JSON.parse(JSON.stringify(step.global)); SECTIONS.setup = JSON.parse(JSON.stringify(step.setup)); SECTIONS.loop = JSON.parse(JSON.stringify(step.loop)); }
   PALETTE_ALLOWED = (step.palette !== undefined && step.palette !== null) ? step.palette : null;
-  var lbl=document.getElementById('step-label');
-  var bar=document.getElementById('step-bar');
-  if(lbl)lbl.textContent=step.label;
-  if(bar)bar.style.display='flex';
-  window.CURRENT_STEP_META = {guidance: step.guidance, view: step.view};
-  window.dispatchEvent(new CustomEvent('stepchange', {detail: window.CURRENT_STEP_META}));
-  var activeId='ls';
-  if(step.active==='global')activeId='gs';
-  else if(step.active==='setup')activeId='ss';
-  expandSection(activeId);
-  var nbtn=document.getElementById('nextbtn');
-  if(nbtn){nbtn.classList.remove('next-mode');nbtn.classList.remove('check-mode');nbtn.classList.remove('ready');}
-  if(nbtn){nbtn.classList.remove('next-mode');nbtn.classList.remove('check-mode');nbtn.classList.remove('ready');}
-  if(nbtn)nbtn.style.display=(step.guidance==='open'||stepIdx>=STEPS.length-1)?'none':'';
-  var pbtn=document.getElementById('prevbtn');
-  if(pbtn)pbtn.style.display=stepIdx>0?'':'none';
-  if(window.updateDrawer) window.updateDrawer(stepIdx);
-  checkStepComplete();}
-document.getElementById('nextbtn').addEventListener('click',function(){
-  if(!document.getElementById('nextbtn').classList.contains('ready'))return;
-  var btn=document.getElementById('nextbtn');
-  var meta=window.CURRENT_STEP_META || {};
-  if(btn.classList.contains('check-mode')){
-    if(meta.view==='editor'){
-      btn.textContent='Compiling...'; btn.disabled=true;
-      var code=window.getEditorCode?window.getEditorCode():'';
-      fetch('http://127.0.0.1:3210/compile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})})
-      .then(function(r){return r.json();})
-      .then(function(data){
-        btn.disabled=false;
-        if(data.success){
-          btn.textContent='Next Step \u2192'; btn.classList.remove('check-mode'); btn.classList.add('next-mode'); flash('Correct!');
-        }else{
-          btn.textContent='Check Code'; flash('Compile failed: '+(data.message||'check your code syntax'));
-        }
-      }).catch(function(){ btn.disabled=false; btn.textContent='Check Code'; flash('Compiler Agent offline'); });
-      return;
-    }
-    if(validateStep()){
-      btn.textContent='Next Step \u2192';
-      btn.classList.remove('check-mode');
-      btn.classList.add('next-mode');
-      flash('Correct!');
-      CHECK_FAIL_COUNT=0;
-    }else{
-      flash('Incorrect - check highlighted blocks');
-    }
-    return;
-  }
-  try{
-    var STRUCTURAL=['ifblock','forloop','whileloop'];
-    var saves={global:SECTIONS.global.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}),
-               setup:SECTIONS.setup.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}),
-               loop:SECTIONS.loop.filter(function(b){return b.type!=='phantom'&&b.type!=='phantom_resolved';}) };
-    STUDENT_SAVES.push(JSON.parse(JSON.stringify(saves)));
-    CURRENT_STEP++;
-    flash('advancing to step '+CURRENT_STEP);
-    var allSaves={global:[],setup:[],loop:[]};
-    STUDENT_SAVES.forEach(function(sv){
-      allSaves.global=allSaves.global.concat(sv.global||[]);
-      allSaves.setup=allSaves.setup.concat(sv.setup||[]);
-      allSaves.loop=allSaves.loop.concat(sv.loop||[]);
-    });
-    buildWorkspace(CURRENT_STEP,allSaves);
-    flash('built step '+CURRENT_STEP);
-    clearSelection();render();genCode();
-    flash('Step '+(CURRENT_STEP+1)+'!');
-    saveBlocks();
-    if(window.openDrawer) window.openDrawer();
-  }catch(e){flash('ERR: '+e.message);console.error(e);}});
-document.getElementById('nextbtn').addEventListener('click', function(){
-  // ... your existing nextbtn code - that part is fine
-});
+  stepLabel = step.label;
+  window.dispatchEvent(new CustomEvent('bb_step_update', { detail: { label: stepLabel, progress: '' } }));
+  window.CURRENT_STEP_META = { guidance: step.config.structure === 'none' ? 'free' : 'guided', view: step.config.interface };
+  window.dispatchEvent(new CustomEvent('stepchange', { detail: window.CURRENT_STEP_META }));
+  var activeId = (step.active === 'global') ? 'gs' : (step.active === 'setup' ? 'ss' : 'ls'); expandSection(activeId);
+  nextBtnState.visible = !(step.config.structure === 'none' || stepIdx >= STEPS.length - 1);
+  nextBtnState.ready = false; nextBtnState.mode = ''; nextBtnState.text = 'Complete Step'; nextBtnState.prevVisible = stepIdx > 0;
+  window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: false, 'check-mode': false, 'next-mode': false, hidden: !nextBtnState.visible, text: nextBtnState.text, prevVisible: nextBtnState.prevVisible }}}));
+  if (window.updateDrawer) window.updateDrawer(stepIdx);
+  checkStepComplete(); render(); genCode(); }
 
-document.getElementById('prevbtn').addEventListener('click', function(){
-  if(!PROGRESSION_MODE || CURRENT_STEP <= 0) return;
-  if(!confirm('Go back to previous step? Your progress on the current step will be discarded.')) return;
-  CURRENT_STEP--;
-  STUDENT_SAVES.pop();
-  var allSaves = {global:[], setup:[], loop:[]};
-  STUDENT_SAVES.forEach(function(sv){
-    allSaves.global = allSaves.global.concat(sv.global);
-    allSaves.setup = allSaves.setup.concat(sv.setup);
-    allSaves.loop = allSaves.loop.concat(sv.loop);
-  });
-  buildWorkspace(CURRENT_STEP, allSaves);
-  flash('Returned to step ' + CURRENT_STEP);
-  clearSelection(); render(); genCode();
-});
+window.bbNext = function() {
+  if (!nextBtnState.ready) return;
+  if (nextBtnState.mode === 'check-mode') {
+    if (validateStep()) { nextBtnState.text = 'Next Step \u2192'; nextBtnState.mode = 'next-mode';
+      window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: true, 'check-mode': false, 'next-mode': true, hidden: false, text: nextBtnState.text, prevVisible: nextBtnState.prevVisible } } }));
+      flash('Correct!'); CHECK_FAIL_COUNT = 0; } else { flash('Incorrect - check highlighted blocks'); }
+    return; }
+  try { STUDENT_SAVES[CURRENT_STEP] = JSON.parse(JSON.stringify(SECTIONS));
+    CURRENT_STEP++; buildWorkspace(CURRENT_STEP); saveBlocks();
+    if (window.openDrawer) window.openDrawer();
+  } catch (e) { flash('ERR: ' + e.message); console.error(e); } };
 
-if(CFG.is_overlay){
-  window.addEventListener('message', function(e){
-    if(e.data && e.data.type === 'bb_save_request'){
-      saveBlocks();
-      setTimeout(function(){ window.parent.postMessage({type:'bb_close'}, '*'); }, 600);
-    }
-  });
-}
+window.bbPrev = function() {
+  if (!PROGRESSION_MODE || CURRENT_STEP <= 0) return;
+  CURRENT_STEP--; STUDENT_SAVES.pop(); buildWorkspace(CURRENT_STEP); };
 
+window.getCurrentStepMeta = function() { return window.CURRENT_STEP_META || {}; };
 
+if (CFG.is_overlay) { window.addEventListener('message', function(e){ if(e.data && e.data.type === 'bb_save_request'){ saveBlocks(); setTimeout(function(){ window.parent.postMessage({type:'bb_close'}, '*'); }, 600); } }); }
 
-if(CFG.mode === 'progression'){
-  PROGRESSION_MODE = true;
-  STEPS = CFG.steps;
-  CURRENT_STEP = 0;
-  CHECK_FAIL_COUNT = 0;
-  STUDENT_SAVES = [];
-  buildWorkspace(0, null);
-} else {
-  SECTIONS.global = CFG.blocks ? CFG.blocks.global : [];
-  SECTIONS.setup = CFG.blocks ? CFG.blocks.setup : [];
-  SECTIONS.loop = CFG.blocks ? CFG.blocks.loop : [];
-  genCode();
-  render();
-}
-if(USERNAME){ loadBlocks(); }
+console.log("[DEBUG] block_builder.js: Initializing workspace.");
+if (CFG.mode === 'progression') { PROGRESSION_MODE = true; STEPS = CFG.steps; CURRENT_STEP = 0; STUDENT_SAVES = []; buildWorkspace(0, null); } 
+else { SECTIONS.global = CFG.blocks ? CFG.blocks.global : []; SECTIONS.setup = CFG.blocks ? CFG.blocks.setup : []; SECTIONS.loop = CFG.blocks ? CFG.blocks.loop : []; render(); window.genCode(); }
+if (USERNAME && (PROGRESSION_MODE || !CFG.force_preset)) loadBlocks();
 updatePalette();
 render();
-if(PROGRESSION_MODE) checkStepComplete();
-
+if (PROGRESSION_MODE) checkStepComplete();
 })();

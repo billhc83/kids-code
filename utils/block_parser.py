@@ -169,7 +169,7 @@ def strip_expr_values(node):
     t = node['type']
     # value leaf — clear it
     if t == 'value':
-        return {'type': 'value', 'params': [''], 'children': []}
+        return None # Return None to indicate an empty expression slot
     # millis has no params to clear
     if t == 'millis':
         return node
@@ -213,8 +213,8 @@ def strip_expr_values(node):
     return node
 
 
-def parse_blocks(code, fill_conditions=False, fill_values=False):
-    process = (lambda node: node) if fill_values else strip_expr_values
+def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_content=False):
+    process = (lambda node: node) if (fill_values is True) else strip_expr_values
     blocks = []
     i = 0
     code = code.strip()
@@ -226,8 +226,8 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             if code[i:i+4] == '//##':
                 end = code.find('\n', i)
                 line = code[i+4:end].strip() if end != -1 else code[i+4:].strip()
-                if line:
-                    blocks.append({'type': 'codeblock', 'params': [line]})
+                if line: # Explicitly locked codeblock
+                    blocks.append({'type': 'codeblock', 'params': [line], 'locked': True})
                 i = end+1 if end != -1 else len(code)
                 continue
             # Check for phantom block flag //??
@@ -241,9 +241,9 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
 
                 # Extract full statement/block for the phantom
                 block_code = ""
-                block_end_idx = -1
+                block_end_idx = -1 # Initialize block_end_idx
 
-                if re.match(r'if\s*\(', code[j:]):
+                if re.match(r'if\s*\(', code[j:]): # Handle if/else if/else blocks
                     try:
                         p_start = code.index('(', j)
                         _, a_p = extract_condition(code, p_start)
@@ -260,10 +260,10 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
                                     b_start = code.index('{', a_p)
                                     _, curr = extract_brace_body(code, b_start)
                                 else:
-                                    b_start = code.index('{', tmp)
+                                    b_start = code.index('{', tmp) # Find the opening brace for 'else {'
                                     _, curr = extract_brace_body(code, b_start)
                                     break
-                            else:
+                            else: # No more else/else if
                                 break
                         block_end_idx = curr
                     except ValueError: pass
@@ -295,23 +295,48 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
                     block_code = code[j:next_end].strip() if next_end != -1 else code[j:].strip()
                     i = next_end+1 if next_end != -1 else len(code)
 
-                real_blocks = parse_blocks(block_code, fill_conditions, fill_values)
-                if real_blocks and not real_blocks[0]['type'] == 'codeblock':
-                    real = real_blocks[0]
+                # Master version: always fully filled for metadata and 'fill:true' content
+                master_blocks = parse_blocks(block_code, fill_conditions=True, fill_values=True)
+                # Template version: stripped based on current settings for student building
+                tmpl_blocks = parse_blocks(block_code, fill_conditions, fill_values)
+
+                if master_blocks and tmpl_blocks and not master_blocks[0]['type'] == 'codeblock':
+                    master = master_blocks[0]
+                    tmpl = tmpl_blocks[0]
+                    ref = master
+                    
+                    ex_types = [e['type'] if e else None for e in ref.get('exChildren', [])]
+                    cond_ref = ref.get('condition')
+                    cond_types = None
+                    if cond_ref:
+                        cond_types = {
+                            'left': cond_ref['leftExpr']['type'] if cond_ref['leftExpr'] else None,
+                            'right': cond_ref['rightExpr']['type'] if cond_ref['rightExpr'] else None,
+                            'left2': cond_ref.get('leftExpr2', {}).get('type') if cond_ref.get('leftExpr2') else None,
+                            'right2': cond_ref.get('rightExpr2', {}).get('type') if cond_ref.get('rightExpr2') else None,
+                        }
+
                     blocks.append({
-                        'type': 'phantom',
-                        'hint': hint,
-                        'expects': real['type'],
-                        'params': real.get('params', []),
-                        'exChildren': real.get('exChildren', []),
-                        'condition': real.get('condition'),
-                        'ifbody': real.get('ifbody', []),
-                        'elseifs': real.get('elseifs', []),
-                        'elsebody': real.get('elsebody'),
-                        'body': real.get('body', []),
-                        'forinit': real.get('forinit'),
-                        'forcond': real.get('forcond'),
-                        'forincr': real.get('forincr'),
+                        'type': 'slot',
+                        'id': str(random.random() * 1000000000000000),
+                        'content': master if initial_fill_content else None,
+                        'master': master,
+                        'phantom_meta': {
+                            'hint': hint,
+                            'expects': master['type'],
+                            'params': tmpl.get('params', []),
+                            'exChildren': tmpl.get('exChildren', []),
+                            'condition': tmpl.get('condition'),
+                            'expectedExTypes': ex_types,
+                            'expectedCondTypes': cond_types,
+                            'ifbody': tmpl.get('ifbody', []),
+                            'elseifs': tmpl.get('elseifs', []),
+                            'elsebody': tmpl.get('elsebody'),
+                            'body': tmpl.get('body', []),
+                            'forinit': tmpl.get('forinit'),
+                            'forcond': tmpl.get('forcond'),
+                            'forincr': tmpl.get('forincr'),
+                        }
                     })
                 continue
             end = code.find('\n', i)
@@ -332,7 +357,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             cond_str, after_paren = extract_condition(code, paren_start)
             brace_start = code.index('{', after_paren)
             body_str, after_body = extract_brace_body(code, brace_start)
-            block = {
+            block = { # If block
                 'type': 'ifblock',
                 'condition': parse_condition(cond_str, fill_conditions),
                 'ifbody':   parse_blocks(body_str, fill_conditions, fill_values),
@@ -347,13 +372,13 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
                     ei_cond, after_paren = extract_condition(code, paren_start)
                     brace_start = code.index('{', after_paren)
                     ei_body, after_body = extract_brace_body(code, brace_start)
-                    block['elseifs'].append({
+                    block['elseifs'].append({ # Else if block
                         'condition': parse_condition(ei_cond, fill_conditions),
                         'body': parse_blocks(ei_body, fill_conditions, fill_values)
                     })
                     i = after_body
                 elif re.match(r'else\s*\{', code[i:]) or (re.match(r'else', code[i:]) and not re.match(r'else\s+if', code[i:])):
-                    brace_start = code.index('{', i)
+                    brace_start = code.index('{', i) # Else block
                     else_body, after_body = extract_brace_body(code, brace_start)
                     block['elsebody'] = parse_blocks(else_body, fill_conditions, fill_values)
                     i = after_body
@@ -365,7 +390,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         if re.match(r'while\s*\(', code[i:]):
             paren_start = code.index('(', i)
             cond_str, after_paren = extract_condition(code, paren_start)
-            brace_start = code.index('{', after_paren)
+            brace_start = code.index('{', after_paren) # While loop
             body_str, after_body = extract_brace_body(code, brace_start)
             blocks.append({
                 'type': 'whileloop',
@@ -377,7 +402,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         if re.match(r'for\s*\(', code[i:]):
             paren_start = code.index('(', i)
             for_str, after_paren = extract_condition(code, paren_start)
-            brace_start = code.index('{', after_paren)
+            brace_start = code.index('{', after_paren) # For loop
             body_str, after_body = extract_brace_body(code, brace_start)
             parts = for_str.split(';', 2)
             forinit = parts[0].strip() if len(parts) > 0 else 'int i = 0'
@@ -408,20 +433,20 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         line = code[i:semi+1].strip()
         i = semi + 1
         m = re.match(r'int\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
+        if m: # int var
+            ex = process(parse_expr(m.group(2) if m.group(2) else ""))
             blocks.append({'type':'intvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'long\s+r\s*=\s*random\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;', line)
         if m: blocks.append({'type':'randomdelay','params':['','']}); continue
         m = re.match(r'long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
         if m:
-            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
+            ex = process(parse_expr(m.group(2) if m.group(2) else "")) # long var
             blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'unsigned\s+long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
         if m:
-            ex = process(parse_expr(m.group(2))) if m.group(2) else {'type': 'value', 'params': [''], 'children': []}
+            ex = process(parse_expr(m.group(2) if m.group(2) else "")) # unsigned long var
             blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'bool\s+(\w+)(?:\s*=\s*(true|false))?\s*;', line)
@@ -429,9 +454,9 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             val = (m.group(2) if fill_values else '') if m.group(2) else ''
             blocks.append({'type':'boolvar','params':[m.group(1), val]})
             continue
-        m = re.match(r'String\s+(\w+)\s*=\s*Serial\.readString\s*\(\s*\)\s*;', line)
+        m = re.match(r'String\s+(\w+)\s*=\s*Serial\.readString\s*\(\s*\)\s*;', line) # String var from Serial.readString
         if m:
-            ex = {'type': 'serialreadstring', 'params': [], 'children': []}
+            ex = {'type': 'serialreadstring', 'params': [], 'children': []} if fill_values else None
             blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
             continue
         m = re.match(r'String\s+(\w+)(?:\s*=\s*"([^"]*)")?\s*;', line)
@@ -439,7 +464,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             val = (m.group(2) if fill_values else '') if m.group(2) else ''
             ex = {'type': 'value', 'params': ['"' + val + '"' if val else ''], 'children': []}
             blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
+            continue # String var
         m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
         if m:
             p0 = m.group(1) if fill_values else ''
@@ -451,24 +476,24 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             p0 = m.group(1) if fill_values else ''
             p1 = m.group(2) if fill_values else ''
             blocks.append({'type':'digitalwrite','params':[p0, p1]})
-            continue
+            continue # digitalWrite
         m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
         if m:
             p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'analogwrite','params':[p0,''],'exChildren':[process(parse_expr(m.group(2)))]})
+            blocks.append({'type':'analogwrite','params':[p0,''],'exChildren':[None, process(parse_expr(m.group(2)))]})
             continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m:
+        if m: # tone with duration
             p0 = m.group(1) if fill_values else ''
             p2 = m.group(3) if fill_values else ''
-            blocks.append({'type':'tone','params':[p0,'', p2],'exChildren':[process(parse_expr(m.group(2)))]})
+            blocks.append({'type':'tone','params':[p0,'', p2],'exChildren':[None, process(parse_expr(m.group(2)))]})
             continue
         m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m:
+        if m: # tone without duration
             p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'tone','params':[p0,'',None],'exChildren':[process(parse_expr(m.group(2)))]})
+            blocks.append({'type':'tone','params':[p0,'',None],'exChildren':[None, process(parse_expr(m.group(2)))]})
             continue
-        m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line)
+        m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line) # noTone
         if m:
             ex = process(parse_expr(m.group(1)))
             blocks.append({'type':'notone','params':[''],'exChildren':[ex]})
@@ -476,17 +501,17 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
         m = re.match(r'delay\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
             ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'delay','params':[''],'exChildren':[ex]})
+            blocks.append({'type':'delay','params':[''],'exChildren':[ex]}) # delay
             continue
         m = re.match(r'delayMicroseconds\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
             ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'delaymicroseconds','params':[''],'exChildren':[ex]})
+            blocks.append({'type':'delaymicroseconds','params':[''],'exChildren':[ex]}) # delayMicroseconds
             continue
         m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
         if m:
             p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'serialbegin','params':[p0]})
+            blocks.append({'type':'serialbegin','params':[p0]}) # Serial.begin
             continue
         m = re.match(r'Serial\.(print|println)\s*\(\s*(.+?)\s*\)\s*;', line)
         if m:
@@ -494,10 +519,10 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             content = m.group(2).strip()
             ex = process(parse_expr(content))
             blocks.append({'type':'serialprint','params':['',fn_type],'exChildren':[ex]})
-            continue
+            continue # Serial.print/println
         m = re.match(r'(\w+)\s*\+\+\s*;', line)
-        if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue
-        m = re.match(r'(\w+)\s*--\s*;', line)
+        if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue # increment ++
+        m = re.match(r'(\w+)\s*--\s*;', line) # increment --
         if m: blocks.append({'type':'increment','params':[m.group(1),'--','1']}); continue
         m = re.match(r'(\w+)\s*\+=\s*(.+?)\s*;', line)
         if m:
@@ -505,7 +530,7 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             blocks.append({'type':'increment','params':[m.group(1),'+=', val]})
             continue
         m = re.match(r'(\w+)\s*-=\s*(.+?)\s*;', line)
-        if m:
+        if m: # decrement -=
             val = m.group(2) if fill_values else ''
             blocks.append({'type':'increment','params':[m.group(1),'-=', val]})
             continue
@@ -516,15 +541,18 @@ def parse_blocks(code, fill_conditions=False, fill_values=False):
             continue
 
         # Fallback for unrecognized statements ending in semicolon
-        blocks.append({'type': 'codeblock', 'params': [line]})
+        blocks.append({'type': 'codeblock', 'params': [line], 'locked': True}) # Unrecognized statement becomes a locked codeblock
 
-    for b in blocks:
-        if 'id' not in b:
-            b['id'] = str(random.random() * 1000000000000000)
+    # After the main parsing loop, check for any remaining unparsed code
+    remaining_code = code[i:].strip()
+    if remaining_code:
+        # Split by newlines to handle multiple lines of unparseable code
+        for line in remaining_code.split('\n'):
+            line = line.strip()
+            if line: # Only add non-empty lines
+                blocks.append({'type': 'codeblock', 'params': [line], 'locked': True})
     return blocks
-
-
-def parse_sketch(sketch_code, fill_conditions=False, fill_values=False):
+def parse_sketch(sketch_code, fill_conditions=False, fill_values=False, initial_fill_content=False):
     result = {'global': [], 'setup': [], 'loop': []}
     setup_start = re.search(r'void\s+setup\s*\(.*?\)', sketch_code)
     global_code = sketch_code[:setup_start.start()].strip() if setup_start else ''
@@ -532,25 +560,54 @@ def parse_sketch(sketch_code, fill_conditions=False, fill_values=False):
     loop_m  = re.search(r'void\s+loop\s*\(.*?\)\s*\{', sketch_code)
     setup_code = extract_brace_body(sketch_code, setup_m.end()-1)[0] if setup_m else ''
     loop_code  = extract_brace_body(sketch_code, loop_m.end()-1)[0]  if loop_m  else ''
-    result['global'] = parse_blocks(global_code, fill_conditions, fill_values)
-    result['setup']  = parse_blocks(setup_code,  fill_conditions, fill_values)
-    result['loop']   = parse_blocks(loop_code,   fill_conditions, fill_values)
+    result['global'] = parse_blocks(global_code, fill_conditions, fill_values, initial_fill_content)
+    result['setup']  = parse_blocks(setup_code,  fill_conditions, fill_values, initial_fill_content)
+    result['loop']   = parse_blocks(loop_code,   fill_conditions, fill_values, initial_fill_content)
     return result
+
+
+def collect_expr_types(nodes):
+    types = set()
+    if not nodes: return types
+    for n in nodes:
+        if not n: continue
+        types.add(n['type'])
+        if n.get('children'):
+            types.update(collect_expr_types(n['children']))
+    return types
 
 
 def collect_types(blocks):
     """Walk a block tree and return the set of all block types used."""
     types = set()
     for b in blocks:
-        types.add(b['type'])
-        if b['type'] == 'ifblock':
-            types.update(collect_types(b.get('ifbody', [])))
-            for ei in b.get('elseifs', []):
-                types.update(collect_types(ei.get('body', [])))
-            if b.get('elsebody'):
-                types.update(collect_types(b['elsebody']))
-        elif b['type'] in ('forloop', 'whileloop'):
-            types.update(collect_types(b.get('body', [])))
+        if b['type'] == 'slot':
+            pm = b['phantom_meta']
+            types.add(pm['expects'])
+            if pm.get('expectedExTypes'):
+                types.update([t for t in pm['expectedExTypes'] if t])
+            if pm.get('expectedCondTypes'):
+                for val in pm['expectedCondTypes'].values():
+                    if val: types.add(val)
+            if pm.get('ifbody'): types.update(collect_types(pm['ifbody']))
+            if pm.get('body'): types.update(collect_types(pm['body']))
+            if b['content']:
+                types.update(collect_types([b['content']]))
+        else:
+            types.add(b['type'])
+            # Collect types from nested expression children
+            if b.get('exChildren'):
+                types.update(collect_expr_types(b['exChildren']))
+            
+            # Standard structural recursion
+            if b['type'] == 'ifblock':
+                types.update(collect_types(b.get('ifbody', [])))
+                for ei in b.get('elseifs', []):
+                    types.update(collect_types(ei.get('body', [])))
+                if b.get('elsebody'):
+                    types.update(collect_types(b['elsebody']))
+            elif b['type'] in ('forloop', 'whileloop'):
+                types.update(collect_types(b.get('body', [])))
     return types
 
 
@@ -599,14 +656,52 @@ def parse_steps(sketch_code):
         guidance = parts[1].lower() if len(parts) > 1 else 'guided'
         view = parts[2].lower() if len(parts) > 2 else 'blocks'
         palette_filter = parts[3].lower() if len(parts) > 3 else 'nofilter'
-        reset = parts[4].lower() == 'reset' if len(parts) > 4 else False
+        reset = any(p.lower() == 'reset' for p in parts)
+        aside = any(p.lower() == 'aside' for p in parts)
+
+        # 1. Base Mapping from Guidance Mode
+        if guidance in ['free', 'open']:
+            structure = "none"
+            validation = "none"
+            fill = True
+        elif guidance == 'full':
+            structure = "full"
+            validation = "step"
+            fill = True
+        else:  # default to guided
+            structure = "partial"
+            validation = "step"
+            fill = False
+
+        # 2. Explicit Overrides (key:value)
+        is_filter = (palette_filter == 'filter')
+        for p in parts:
+            p_low = p.lower()
+            if p_low.startswith('fill:'):
+                fill = (p_low.split(':')[1] == 'true')
+            if p_low.startswith('structure:'):
+                structure = p_low.split(':')[1]
+            if p_low.startswith('validation:'):
+                validation = p_low.split(':')[1]
+            if p_low.startswith('filter:'):
+                is_filter = (p_low.split(':')[1] == 'true')
+
+        step_config = {
+            'flow': "progression",
+            'structure': structure,
+            'fill': fill,
+            'filter': is_filter,
+            'validation': validation,
+            'interface': view if view in ['blocks', 'editor'] else 'blocks'
+        }
+        
+        print(f"STEP CONFIG ({label}):", step_config)
 
         raw_steps.append({
             'label': label,
-            'guidance': guidance or 'guided',
-            'view': view or 'blocks',
-            'palette_filter': palette_filter or 'nofilter',
+            'config': step_config,
             'reset': reset,
+            'aside': aside,
             'chunk': chunk
         })
 
@@ -624,10 +719,10 @@ def parse_steps(sketch_code):
             cumulative_setup = []
             cumulative_loop = []
 
-        # Parse this step's chunk as a sketch
-        parsed = parse_sketch(step['chunk'], fill_conditions=True, fill_values=True)
-
-        if step['palette_filter'] == 'filter':
+        # Parse this step's chunk as a sketch using the explicit fill control
+        fill_val = step['config']['fill']
+        parsed = parse_sketch(step['chunk'], fill_conditions=fill_val, fill_values=fill_val, initial_fill_content=fill_val)
+        if step['config']['filter']:
             step_types = collect_types(
                 parsed['global'] + parsed['setup'] + parsed['loop']
             )
@@ -637,11 +732,11 @@ def parse_steps(sketch_code):
 
         # Determine active section based on where new blocks (phantoms) are located
         active_section = 'loop'
-        if any(b['type'] == 'phantom' for b in parsed['global']):
+        if any(b['type'] == 'slot' and b['content'] is None for b in parsed['global']):
             active_section = 'global'
-        elif any(b['type'] == 'phantom' for b in parsed['setup']):
+        elif any(b['type'] == 'slot' and b['content'] is None for b in parsed['setup']):
             active_section = 'setup'
-        elif any(b['type'] == 'phantom' for b in parsed['loop']):
+        elif any(b['type'] == 'slot' and b['content'] is None for b in parsed['loop']):
             active_section = 'loop'
         elif parsed['setup']:
             active_section = 'setup'
@@ -650,17 +745,19 @@ def parse_steps(sketch_code):
 
         # Build full workspace for this step:
         # global: cumulative phantom_resolved markers + this chunk's global blocks
-        # setup/loop: if chunk has content, use it (replacing cumulative). Else carry over.
+        # setup/loop: use parsed content only if non-empty, otherwise carry cumulative forward.
+        # An empty void setup() / void loop() in a step chunk is ignored.
         full = {
             'global': cumulative_global + parsed['global'],
             'setup': parsed['setup'] if parsed['setup'] else cumulative_setup,
             'loop': parsed['loop'] if parsed['loop'] else cumulative_loop,
         }
         
+        
+        
         steps.append({
             'label':  step['label'],
-            'guidance': step['guidance'],
-            'view':   step['view'],
+            'config': step['config'],
             'palette': step['palette'],
             'active': active_section,
             'global': full['global'],
@@ -668,40 +765,23 @@ def parse_steps(sketch_code):
             'loop':   full['loop'],
         })
 
-        # Update cumulative global — only non-structural phantoms become phantom_resolved
-        STRUCTURAL = ('ifblock', 'forloop', 'whileloop')
-        for b in parsed['global']:
-            if b['type'] == 'phantom':
-                cumulative_global.append({
-                    'type': 'phantom_resolved',
-                    'expects': b['expects'],
-                    'hint': b['hint'],
-                })
-            elif b['type'] != 'phantom':
-                cumulative_global.append(b)
+        # Update cumulative storage: convert resolved slots to real codeblocks for next steps
+        def resolve_slots(arr):
+            resolved = []
+            for b in arr:
+                if b['type'] == 'slot':
+                    # Carry the master solution forward as a locked block
+                    sol = b.get('master')
+                    if sol:
+                        sol['locked'] = True
+                        resolved.append(sol)
+                else:
+                    resolved.append(b)
+            return resolved
 
-        if parsed['setup']:
-            cumulative_setup = []
-        for b in parsed['setup']:
-            if b['type'] == 'phantom':
-                cumulative_setup.append({
-                    'type': 'phantom_resolved', # This becomes a slot for student work
-                    'expects': b['expects'],
-                    'hint': b['hint'],
-                })
-            elif b['type'] != 'phantom':
-                cumulative_setup.append(b)
-
-        if parsed['loop']:
-            cumulative_loop = []
-        for b in parsed['loop']:
-            if b['type'] == 'phantom':
-                cumulative_loop.append({
-                    'type': 'phantom_resolved', # This becomes a slot for student work
-                    'expects': b['expects'],
-                    'hint': b['hint'],
-                })
-            elif b['type'] != 'phantom':
-                cumulative_loop.append(b)
+        if not step.get('aside'):
+            cumulative_global += resolve_slots(parsed['global'])
+            if parsed['setup']: cumulative_setup = resolve_slots(parsed['setup'])
+            if parsed['loop']: cumulative_loop = resolve_slots(parsed['loop'])
 
     return steps

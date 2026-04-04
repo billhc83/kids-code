@@ -258,7 +258,7 @@ void loop() {
   //## }
 }
 
-//>> Step 6 - The Letter Checker | guided
+//>> Step 6 - The Letter Checker | free
 void loop() {
   //## if (Serial.available() > 0) {
   //##   String guess = Serial.readString();

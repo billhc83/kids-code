@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+{% block title %}Preset Builder — Admin{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;">
+
+<div class="dash-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h1>📝 Preset Sketch Builder</h1>
+            <p class="dash-sub">Paste a raw Arduino sketch, annotate each line, and generate a ready-to-paste SKETCH_PRESET.</p>
+        </div>
+        <a href="{{ url_for('admin') }}" class="next-btn" style="text-decoration:none;font-size:14px;">← Admin</a>
+    </div>
+</div>
+
+<!-- ── PHASE 1: Paste Sketch ── -->
+<div class="dash-card" id="phase1" style="margin-bottom:16px;">
+    <div class="dash-card-label">Step 1 — Paste Your Raw Sketch</div>
+    <p style="font-size:13px;color:#57606a;margin:0 0 10px;">Paste a plain Arduino sketch with no markers. Comments are ignored by the block builder — do not include them.</p>
+    <textarea id="raw-sketch"
+        placeholder="void setup() {&#10;  Serial.begin(9600);&#10;}&#10;void loop() {&#10;  // your code here&#10;}"
+        style="width:100%;height:280px;font-family:monospace;font-size:13px;padding:12px;
+               border:2px solid #dbeafe;border-radius:8px;resize:vertical;box-sizing:border-box;
+               background:#f6f8fa;color:#1f2328;line-height:1.5;"></textarea>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+        <button onclick="parseSketch()"
+            style="background:#0969da;color:#fff;border:none;padding:10px 24px;border-radius:8px;
+                   font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+            Parse Sketch →
+        </button>
+    </div>
+</div>
+
+<!-- ── PHASE 2: Annotate ── -->
+<div id="phase2" style="display:none;margin-bottom:16px;">
+    <div class="dash-card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div class="dash-card-label" style="margin:0;">Step 2 — Annotate Lines &amp; Add Step Breaks</div>
+            <button onclick="resetBuilder()"
+                style="background:#f6f8fa;color:#57606a;border:2px solid #dbeafe;padding:6px 14px;
+                       border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
+                ↺ Start Over
+            </button>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;
+                    background:#f6f8fa;border-radius:8px;border:1px solid #dbeafe;">
+            <span style="font-size:12px;font-weight:700;color:#57606a;">Legend:</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#fff;border:1px solid #d1d9e0;">Normal — passes through unchanged</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#fff8e6;border:1px solid #f0a500;">Phantom — student fills this in</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#f1f1f1;border:1px solid #bbb;">Locked — shown but pre-filled</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#dbeafe;border:1px solid #0969da;color:#0969da;">▶ Step Break</span>
+        </div>
+
+        <div id="annotation-table"></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;">
+        <button onclick="generatePreset()"
+            style="background:#1a7f37;color:#fff;border:none;padding:10px 24px;border-radius:8px;
+                   font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+            Generate Preset →
+        </button>
+    </div>
+</div>
+
+<!-- ── PHASE 3: Output ── -->
+<div class="dash-card" id="phase3" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="dash-card-label" style="margin:0;">Step 3 — Generated Preset</div>
+        <button onclick="copyOutput()"
+            style="background:#0969da;color:#fff;border:none;padding:8px 18px;border-radius:6px;
+                   font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
+            📋 Copy to Clipboard
+        </button>
+    </div>
+    <textarea id="output" readonly
+        style="width:100%;height:400px;font-family:monospace;font-size:12px;padding:12px;
+               border:2px solid #dbeafe;border-radius:8px;resize:vertical;box-sizing:border-box;
+               background:#f6f8fa;color:#1f2328;line-height:1.5;"></textarea>
+    <div id="copy-msg" style="display:none;margin-top:8px;color:#1a7f37;font-size:13px;font-weight:700;">
+        ✓ Copied to clipboard!
+    </div>
+</div>
+
+</div>
+
+<style>
+.pb-line-row {
+    display: grid;
+    grid-template-columns: 32px 110px 1fr;
+    gap: 6px;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid #f0f0f0;
+    min-height: 32px;
+}
+.pb-line-row:hover { background: #fafafa; }
+.pb-line-row.is-phantom { background: #fff8e6; }
+.pb-line-row.is-locked  { background: #f4f4f4; }
+
+.pb-blank-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+    border-bottom: 1px solid #f0f0f0;
+    min-height: 24px;
+}
+
+.pb-step-row {
+    background: #dbeafe;
+    border: 2px solid #0969da;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 8px 0;
+}
+.pb-step-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.pb-step-fields {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.pb-step-fields input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 10px;
+    border: 2px solid #0969da;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 700;
+    background: #fff;
+}
+.pb-select {
+    padding: 6px 10px;
+    border: 2px solid #dbeafe;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fff;
+    cursor: pointer;
+}
+.pb-step-select {
+    padding: 6px 10px;
+    border: 2px solid #0969da;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fff;
+    cursor: pointer;
+}
+.pb-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0969da;
+    padding: 4px 8px;
+    background: #fff;
+    border: 2px solid #0969da;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.pb-checkbox-label input { cursor: pointer; }
+.pb-add-step-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid #dbeafe;
+    border-radius: 50%;
+    background: #fff;
+    color: #0969da;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.pb-add-step-btn:hover { background: #dbeafe; }
+.pb-remove-btn {
+    background: #fff;
+    border: 2px solid #cf222e;
+    color: #cf222e;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+.pb-remove-btn:hover { background: #fff0f0; }
+.pb-code {
+    font-family: monospace;
+    font-size: 12px;
+    color: #1f2328;
+    padding: 2px 6px;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pb-hint-input {
+    padding: 4px 8px;
+    border: 2px solid #f0a500;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+}
+.pb-guidance-desc {
+    font-size: 11px;
+    color: #57606a;
+    margin-top: 4px;
+    padding: 0 2px;
+}
+</style>
+
+<script>
+let items = [];
+
+const GUIDANCE_DESCS = {
+    guided: 'Student fills in slot blocks one at a time. Hints shown. Validates on submit.',
+    free:   'Full open editor. No structure or validation. Student writes freely.',
+    full:   'All code pre-filled and locked. Student reads but cannot edit.'
+};
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Parse raw sketch into items array ────────────────────────────────────────
+function parseSketch() {
+    const raw = document.getElementById('raw-sketch').value;
+    if (!raw.trim()) { alert('Please paste a sketch first.'); return; }
+    const lines = raw.split('\n');
+    items = lines.map(line => ({
+        type: 'line',
+        code: line,
+        lineType: 'normal',
+        hint: ''
+    }));
+    renderTable();
+    document.getElementById('phase2').style.display = 'block';
+    document.getElementById('phase3').style.display = 'none';
+    document.getElementById('phase2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetBuilder() {
+    if (!confirm('Start over? This will clear all annotations.')) return;
+    items = [];
+    document.getElementById('phase2').style.display = 'none';
+    document.getElementById('phase3').style.display = 'none';
+    document.getElementById('raw-sketch').value = '';
+    document.getElementById('phase1').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Update item fields without re-rendering ───────────────────────────────────
+function updateItem(idx, field, value) {
+    items[idx][field] = value;
+    // If line type changed, re-render just that row (to show/hide hint input)
+    if (field === 'lineType') {
+        const rows = document.querySelectorAll('[data-idx="' + idx + '"]');
+        if (rows.length) {
+            const newRow = buildLineRow(items[idx], idx);
+            rows[0].replaceWith(newRow);
+        }
+    }
+    // Update guidance description text live
+    if (field === 'guidance') {
+        const descEl = document.getElementById('guidance-desc-' + idx);
+        if (descEl) descEl.textContent = GUIDANCE_DESCS[value] || '';
+    }
+}
+
+// ── Insert / remove step breaks ───────────────────────────────────────────────
+function insertStepBreak(beforeIdx) {
+    const step = { type: 'step', label: '', guidance: 'guided', view: 'blocks', aside: false, reset: false, filter: false };
+    items.splice(beforeIdx, 0, step);
+    renderTable();
+}
+
+function removeItem(idx) {
+    items.splice(idx, 1);
+    renderTable();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function renderTable() {
+    const container = document.getElementById('annotation-table');
+    container.innerHTML = '';
+    items.forEach((item, i) => {
+        container.appendChild(item.type === 'step' ? buildStepRow(item, i) : buildLineRow(item, i));
+    });
+}
+
+function buildStepRow(item, i) {
+    const div = document.createElement('div');
+    div.className = 'pb-step-row';
+    div.dataset.idx = i;
+
+    div.innerHTML = `
+        <div class="pb-step-row-header">
+            <span style="font-size:12px;font-weight:700;color:#0969da;">▶ STEP BREAK</span>
+            <button class="pb-remove-btn" onclick="removeItem(${i})">✕ Remove</button>
+        </div>
+        <div class="pb-step-fields">
+            <input type="text" class="pb-label-input" placeholder="e.g. Step 1 - The Variables"
+                   value="${escHtml(item.label)}"
+                   oninput="updateItem(${i}, 'label', this.value)"
+                   style="flex:1;min-width:220px;padding:6px 10px;border:2px solid #0969da;
+                          border-radius:6px;font-size:13px;font-family:inherit;font-weight:700;background:#fff;">
+
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <select class="pb-step-select" onchange="updateItem(${i}, 'guidance', this.value)">
+                    <option value="guided" ${item.guidance==='guided'?'selected':''}>guided</option>
+                    <option value="free"   ${item.guidance==='free'  ?'selected':''}>free</option>
+                    <option value="full"   ${item.guidance==='full'  ?'selected':''}>full</option>
+                </select>
+                <div class="pb-guidance-desc" id="guidance-desc-${i}">${GUIDANCE_DESCS[item.guidance]||''}</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <select class="pb-step-select" onchange="updateItem(${i}, 'view', this.value)">
+                    <option value="blocks" ${item.view==='blocks'?'selected':''}>blocks</option>
+                    <option value="editor" ${item.view==='editor'?'selected':''}>editor</option>
+                </select>
+                <div class="pb-guidance-desc">Interface view</div>
+            </div>
+
+            <label class="pb-checkbox-label" title="Step does not affect cumulative state — useful for comparison examples">
+                <input type="checkbox" ${item.aside?'checked':''} onchange="updateItem(${i}, 'aside', this.checked)">
+                aside
+            </label>
+            <label class="pb-checkbox-label" title="Clears accumulated global/setup/loop before this step">
+                <input type="checkbox" ${item.reset?'checked':''} onchange="updateItem(${i}, 'reset', this.checked)">
+                reset
+            </label>
+            <label class="pb-checkbox-label" title="Palette limited to only the block types used in this step">
+                <input type="checkbox" ${item.filter?'checked':''} onchange="updateItem(${i}, 'filter', this.checked)">
+                filter
+            </label>
+        </div>
+    `;
+    return div;
+}
+
+function buildLineRow(item, i) {
+    const isBlank = item.code.trim() === '';
+
+    if (isBlank) {
+        const div = document.createElement('div');
+        div.className = 'pb-blank-row';
+        div.dataset.idx = i;
+        div.innerHTML = `
+            <button class="pb-add-step-btn" title="Insert step break here" onclick="insertStepBreak(${i})">+</button>
+            <span style="font-size:11px;color:#bbb;font-family:monospace;">&nbsp;</span>
+        `;
+        return div;
+    }
+
+    const typeClass = item.lineType === 'phantom' ? 'is-phantom' : item.lineType === 'locked' ? 'is-locked' : '';
+    const div = document.createElement('div');
+    div.className = `pb-line-row ${typeClass}`;
+    div.dataset.idx = i;
+
+    // Right column: code + optional hint input below it
+    const codeCol = document.createElement('div');
+    codeCol.style.cssText = 'display:flex;flex-direction:column;gap:3px;overflow:hidden;';
+
+    const codeSpan = document.createElement('div');
+    codeSpan.className = 'pb-code';
+    codeSpan.textContent = item.code;
+    codeCol.appendChild(codeSpan);
+
+    if (item.lineType === 'phantom') {
+        const hintInput = document.createElement('input');
+        hintInput.type = 'text';
+        hintInput.className = 'pb-hint-input';
+        hintInput.placeholder = 'Hint shown to student…';
+        hintInput.value = item.hint;
+        hintInput.oninput = (e) => { items[i].hint = e.target.value; };
+        codeCol.appendChild(hintInput);
+    }
+
+    div.innerHTML = `
+        <button class="pb-add-step-btn" title="Insert step break above this line" onclick="insertStepBreak(${i})">+</button>
+        <select class="pb-select" onchange="updateItem(${i}, 'lineType', this.value)">
+            <option value="normal"  ${item.lineType==='normal' ?'selected':''}>normal</option>
+            <option value="phantom" ${item.lineType==='phantom'?'selected':''}>phantom</option>
+            <option value="locked"  ${item.lineType==='locked' ?'selected':''}>locked</option>
+        </select>
+    `;
+    div.appendChild(codeCol);
+    return div;
+}
+
+// ── Generate ───────────────────────────────────────────────────────────────────
+function generatePreset() {
+    // Validate: every step break must have a label
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type === 'step' && !items[i].label.trim()) {
+            alert('One or more step breaks is missing a label. Please fill in all step labels before generating.');
+            renderTable();
+            document.querySelector('[data-idx="' + i + '"] .pb-label-input').focus();
+            return;
+        }
+    }
+    // Validate: every phantom line must have a hint
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type === 'line' && items[i].lineType === 'phantom' && !items[i].hint.trim()) {
+            alert('One or more phantom lines is missing a hint. Please fill in all hint text before generating.');
+            return;
+        }
+    }
+
+    const lines = [];
+
+    items.forEach(item => {
+        if (item.type === 'step') {
+            let header = `//>> ${item.label.trim()} | ${item.guidance} | ${item.view}`;
+            if (item.filter) header += ' | filter';
+            if (item.aside)  header += ' | aside';
+            if (item.reset)  header += ' | reset';
+            lines.push(header);
+        } else {
+            if (item.code.trim() === '') {
+                lines.push('');
+            } else if (item.lineType === 'locked') {
+                lines.push('//## ' + item.code);
+            } else if (item.lineType === 'phantom') {
+                lines.push('//?? ' + item.hint.trim());
+                lines.push(item.code);
+            } else {
+                lines.push(item.code);
+            }
+        }
+    });
+
+    const sketchBody = lines.join('\n');
+    const output = `SKETCH_PRESET = {\n    'sketch': """\n${sketchBody}\n""",\n}`;
+
+    document.getElementById('output').value = output;
+    document.getElementById('phase3').style.display = 'block';
+    document.getElementById('phase3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Copy ───────────────────────────────────────────────────────────────────────
+function copyOutput() {
+    const ta = document.getElementById('output');
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(ta.value).then(() => {
+        const msg = document.getElementById('copy-msg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 2500);
+    }).catch(() => {
+        document.execCommand('copy');
+    });
+}
+</script>
+{% endblock %}

@@ -42,10 +42,6 @@
       </div>
     </div>
     <div id="workspace">
-      <div id="step-bar">
-        <span id="step-label">Step</span>
-        <span id="step-progress"></span>
-      </div>
       <div class="section s-global" id="gs">
         <div class="section-header"><h3>🌍 Global</h3><span class="toggle-arrow">▼</span></div>
         <div class="section-body" id="gs-body"></div>
@@ -60,18 +56,18 @@
       </div>
     </div>
     <div id="codepanel">
-      <div id="code-btns"></div>
-      <div id="nav-btns">
-        <button class="cbtn" id="prevbtn" style="display:none">← Prev</button>
-        <button class="cbtn" id="nextbtn" style="display:none">Next →</button>
-      </div>
       <div id="msg"></div>
       <div id="codeout">// sketch&#10;// appears&#10;// here</div>
     </div>
   </div>
 </div>
 
-<script src="/static/js/block_builder.js"></script>
-<script>
-  window.BB_CONFIG = {{ config | tojson | safe }};
+
+<script>  
+  window.BB_CONFIG = {{ config | safe }};
 </script>
+<script>
+  console.log("BB_CONFIG keys:", Object.keys(window.BB_CONFIG));
+  console.log("steps count:", window.BB_CONFIG.steps ? window.BB_CONFIG.steps.length : 'none');
+</script>
+<script src="/static/js/block_builder.js"></script>

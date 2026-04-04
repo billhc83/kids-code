@@ -1,4 +1,5 @@
 from flask import Flask, render_template, session, request, redirect, url_for, flash, abort
+import json
 from config import SECRET_KEY
 from utils.auth import (
     get_user_by_username, check_password, create_user,
@@ -538,6 +539,12 @@ def reset_password(token):
 
 import os
 
+@app.route("/admin/preset-builder")
+@login_required
+@admin_required
+def preset_builder():
+    return render_template("admin/preset_builder.html")
+
 @app.route("/admin/step-builder")
 @login_required
 @admin_required
@@ -770,11 +777,15 @@ def builder_endpoint():
         supabase_key=SUPABASE_ANON_KEY,
         is_overlay=False,
     )
-    print("CONFIG MODE:", config.get("mode"))
-    print("CONFIG STEPS:", len(config.get("steps") or []))
-    print("CONFIG BLOCKS:", config.get("blocks"))
-    print("username", config.get("username"))
-    return render_template("block_builder_fragment.html", config=config)
+    print(f"[DEBUG] builder_endpoint: preset={preset}, page={page}")
+    print(f"[DEBUG] CONFIG MODE: {config.get('mode')}")
+    print(f"[DEBUG] CONFIG STEPS: {len(config.get('steps') or [])}")
+    print(f"[DEBUG] CONFIG BLOCKS length: {len(str(config.get('blocks')))}")
+    config_json = json.dumps(config).replace('</', '<\\/')
+    print("[DEBUG] STEP 1 FULL:", json.dumps(config['steps'][0] if config.get('steps') else config.get('blocks'), indent=2))
+    print("[DEBUG] FULL CONFIG JSON:")
+    print(config_json[:500])
+    return render_template("block_builder_fragment.html", config=config_json)
 
 @app.route("/preset/<name>")
 @login_required

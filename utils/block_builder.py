@@ -23,7 +23,8 @@ def get_builder_html(preset, username=None, page=None,
                 lock_mode=lock_mode,
                 is_overlay=False,
             )
-            return render_template("block_builder_fragment.html", config=json.dumps(config))
+            config_json = json.dumps(config).replace('</', '<\\/')
+            return render_template("block_builder_fragment.html", config=config_json)
 
         if not builder_url:
             config = build_config(
@@ -35,7 +36,8 @@ def get_builder_html(preset, username=None, page=None,
                 lock_mode=lock_mode,
                 is_overlay=True,
             )
-            html_content = render_template("block_builder_fragment.html", config=json.dumps(config))
+            config_json = json.dumps(config).replace('</', '<\\/')
+            return render_template("block_builder_fragment.html", config=config_json)
             full_doc = f"<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;'>{html_content}</body></html>"
             b64_html = base64.b64encode(full_doc.encode("utf-8")).decode("utf-8")
             builder_url = f"data:text/html;base64,{b64_html}"
@@ -49,25 +51,25 @@ def get_builder_html(preset, username=None, page=None,
         position: fixed;
         bottom: 30px;
         right: 30px;
-        width: 90px;
-        height: 90px;
-        background: #2196f3;
+        width: 80px;
+        height: 80px;
+        background: #3b82f6;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
         z-index: 999999;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         user-select: none;
     }}
-    #bb-fab:hover {{transform: scale(1.1); background: #1976d2; }}
-    #bb-fab.open {{ background: #455a64; transform: rotate(180deg); }}
+    #bb-fab:hover {{transform: scale(1.05) translateY(-5px); background: #2563eb; }}
+    #bb-fab.open {{ background: #1e293b; transform: rotate(90deg); }}
     #bb-overlay {{
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(15, 23, 42, 0.85);
+        background: rgba(15, 23, 42, 0.9);
         display: none;
         z-index: 999998;
         opacity: 0;
@@ -77,13 +79,13 @@ def get_builder_html(preset, username=None, page=None,
     #bb-overlay.visible {{ opacity: 1; }}
     #bb-iframe {{
         position: absolute;
-        top: 10px; left: 10px; right: 10px; bottom: 10px;
-        width: calc(100% - 20px);
-        height: calc(100% - 20px);
+        top: 20px; left: 20px; right: 20px; bottom: 20px;
+        width: calc(100% - 40px);
+        height: calc(100% - 40px);
         background: white;
         border: none;
-        border-radius: 16px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        border-radius: 24px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }}
 </style>
 <div id="bb-fab" title="Open Block Builder">

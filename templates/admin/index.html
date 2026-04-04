@@ -10,7 +10,10 @@
                 <h1>🛠️ Admin Dashboard</h1>
                 <p class="dash-sub">Manage users, review submissions, and view usage data.</p>
             </div>
-            <a href="{{ url_for('step_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🔧 Step Builder</a>
+            <div style="display:flex;gap:8px;">
+                <a href="{{ url_for('preset_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">📝 Preset Builder</a>
+                <a href="{{ url_for('step_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🔧 Step Builder</a>
+            </div>
         </div>
     </div>
 
