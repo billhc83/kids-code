@@ -1,8 +1,8 @@
-{% extends "lessons/project_base.html" %}
+{% extends "lesson_base.html" %}
 {% set banner_image = "project_five_banner.png" %}
 {% block title %}Project 5: Top Secret Mission — KidsCode{% endblock %}
 
-{% block intro %}
+{% block lesson_content %}
 
 <h1>🚀 Project 5 - Top Secret Mission! 🤫</h1>
 <hr>
@@ -22,18 +22,16 @@
 <hr>
 
 <div class="tips-box">
-    <p>💡 <strong>Find the Secret Window:</strong> Click the Magnifying Glass icon in the corner of your Arduino app. That is the Serial Monitor — your secret chat screen! 🔎</p>
     <p>🧪 <strong>Challenge 1:</strong> Can you change the code to say your name?</p>
     <p>🧪 <strong>Challenge 2:</strong> Make the messages send super fast by changing <code>delay</code> to 100! ⚡</p>
 </div>
 
 <hr>
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
-    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
-        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
-        <button type="submit" class="next-btn">Next Project →</button>
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_five">
+        <button type="submit" class="next-btn">Next Step →</button>
     </form>
-    <p>⬅️ Click here to add the next project to the menu</p>
+    <p>⬅️ Click here to continue to the next step!</p>
 </div>
-
 {% endblock %}

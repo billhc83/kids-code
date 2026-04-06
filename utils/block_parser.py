@@ -688,6 +688,7 @@ def parse_steps(sketch_code):
 
         step_config = {
             'flow': "progression",
+            'guidance': guidance,
             'structure': structure,
             'fill': fill,
             'filter': is_filter,

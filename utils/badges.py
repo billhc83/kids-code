@@ -1,11 +1,4 @@
-import requests
-from config import SUPABASE_URL, SUPABASE_KEY
-
-HEADERS = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json"
-}
+from utils.db_client import supabase
 
 # Define all badges
 BADGE_DEFINITIONS = {
@@ -48,18 +41,15 @@ BADGE_DEFINITIONS = {
 }
 
 def get_user_badges(user_id):
-    resp = requests.get(
-        f"{SUPABASE_URL}/rest/v1/badges?user_id=eq.{user_id}",
-        headers=HEADERS
-    )
-    return [row["badge_key"] for row in resp.json()]
+    resp = supabase.table("badges").select("badge_key").eq("user_id", user_id).execute()
+    return [row["badge_key"] for row in resp.data]
 
 def award_badge(user_id, badge_key):
-    requests.post(
-        f"{SUPABASE_URL}/rest/v1/badges",
-        headers={**HEADERS, "Prefer": "resolution=merge-duplicates"},
-        json={"user_id": user_id, "badge_key": badge_key}
-    )
+    # Note: resolution=merge-duplicates was used in the original REST call.
+    # In supabase-py, we can use upsert(..., on_conflict="user_id,badge_key") or just insert.
+    # For now, let's use upsert to mimic 'merge-duplicates' behavior if possible, 
+    # but simple insert is usually fine if constraints are handled.
+    supabase.table("badges").upsert({"user_id": user_id, "badge_key": badge_key}).execute()
 
 def check_and_award_badges(user_id, completed_lessons):
     """Call this after completing a lesson to award any earned badges."""

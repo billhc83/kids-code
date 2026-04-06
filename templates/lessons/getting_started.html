@@ -165,7 +165,7 @@
 
 <!-- Next button -->
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
-    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
         <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
         <button type="submit" class="next-btn">Next Project →</button>
 </form>

@@ -15,7 +15,7 @@
     <div class="dash-card current-card">
         <div class="dash-card-label">📍 Continue where you left off</div>
         <h2>{{ current_lesson.title }}</h2>
-        <a href="{{ url_for('lesson', lesson_key=current_lesson.key) }}" 
+        <a href="{{ url_for('lessons.lesson', lesson_key=current_lesson.key) }}" 
            class="next-btn">Continue →</a>
     </div>
     {% else %}
@@ -61,7 +61,7 @@
         <div class="completed-grid">
             {% for key in completed %}
                 {% if key in lesson_by_key %}
-                <a href="{{ url_for('lesson', lesson_key=key) }}" 
+                <a href="{{ url_for('lessons.lesson', lesson_key=key) }}" 
                 class="completed-item">
                     {{ lesson_by_key[key].title }}
                 </a>

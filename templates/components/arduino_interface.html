@@ -206,6 +206,26 @@
     transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  @keyframes bb-feedback-pop {
+    0%   { transform: scale(0.7); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #bb-feedback.success {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 3px #bbf7d0, 0 2px 12px rgba(34,197,94,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  #bb-feedback.error {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 3px #fecaca, 0 2px 12px rgba(239,68,68,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
 </style>
 
 <!-- Monaco -->
@@ -232,6 +252,7 @@
   <div id="step-nav" style="display:none; align-items:center; gap:10px; padding:6px 15px; background:#0969da; color:white; flex-shrink:0;">
     <span id="step-label" style="flex:1; font-weight:700; font-size:12px;"></span>
     <span id="step-progress" style="font-size:11px; opacity:0.8;"></span>
+    <span id="bb-feedback" style="display:none; font-size:16px; font-weight:900; padding:5px 18px; border-radius:8px; letter-spacing:0.5px; animation:bb-feedback-pop 0.3s ease;"></span>
     <button id="prev-step-btn" style="display:none">← Prev</button>
     <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
   </div>
@@ -291,7 +312,7 @@ function syncStepNavPadding() {
   const stepNav = document.getElementById('step-nav');
   if (!stepNav) return;
   // Panel width (600) + Tab width (32) + original padding (15) = 647px
-  stepNav.style.paddingRight = drawerOpen ? '647px' : '15px';
+  stepNav.style.paddingRight = drawerOpen ? '647px' : '47px';
 }
 
 window.openDrawer = function() {
@@ -764,6 +785,7 @@ window.addEventListener('bb_next_state', function(e){
   var btn = document.getElementById('next-step-btn');
   var prevBtn = document.getElementById('prev-step-btn');
   var nav = document.getElementById('step-nav');
+  var fbEl = document.getElementById('bb-feedback');
   var d = e.detail.state; // Accessing the state object from the detail
 
   // Ensure the navigation bar is visible if we are receiving state updates
@@ -772,12 +794,28 @@ window.addEventListener('bb_next_state', function(e){
   btn.textContent = d.text || 'Complete Step';
   btn.style.opacity = d.ready ? '1' : '0.5';
   btn.style.pointerEvents = d.ready ? 'auto' : 'none';
-  
+
   if(d.hidden) btn.style.display = 'none';
   else btn.style.display = '';
 
   if(d.prevVisible) prevBtn.style.display = '';
   else prevBtn.style.display = 'none';
+
+  // Show feedback message to the left of the nav buttons
+  if (d.feedback) {
+    fbEl.textContent = d.feedback.text;
+    fbEl.className = d.feedback.type; // 'success' or 'error'
+    fbEl.style.display = '';
+    // Re-trigger animation by forcing reflow
+    fbEl.style.animation = 'none';
+    fbEl.offsetHeight;
+    fbEl.style.animation = '';
+  } else if (d.hasOwnProperty('feedback')) {
+    // feedback: null means clear it
+    fbEl.style.display = 'none';
+    fbEl.textContent = '';
+    fbEl.className = '';
+  }
 });
 
 window.addEventListener('bb_step_update', function(e){
