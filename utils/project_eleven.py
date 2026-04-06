@@ -124,15 +124,17 @@ def img_to_b64(path):
 engine_circuit_b64 = img_to_b64("static/graphics/project_twelve_circuit.png")
 
 DRAWER_CONTENT = {
-
-    "project_eleven": {
-        "title": "📘 Engine Start Guide",
-        "tip": "Build the rules that control when the engine is allowed to run.",
+  "project_eleven": {
+    "steps": [
+      {
+        "title": "Step 1 — Build the Engine Control System 📘",
+        "tip": "Create the rules that control when the engine is allowed to run.",
         "tabs": {
-            "mission": {
-                "label": "🧠 Mission",
-                "content": """
+          "mission": {
+            "label": "🧠 Mission",
+            "content": """
 <h3>You are building an engine system with rules:</h3>
+
 <p>
 - The switch controls the whole system.<br>
 - The button starts the engine.<br>
@@ -140,74 +142,138 @@ DRAWER_CONTENT = {
 - If the switch is OFF, nothing runs.<br>
 - The "If" blocks are filled in already, no need to change them.
 </p>
+
 <p>Your job is to build these rules using blocks.</p>
 """,
-                "image_b64": engine_circuit_b64
-            },
-            "wiring": {
-                "label": "🔌 Wiring",
-                "content": """
+            "image_b64": engine_circuit_b64
+          },
+
+          "wiring": {
+            "label": "🔌 Wiring",
+            "content": """
 <b>Match each part to its pin:</b><br><br>
+
 🔘 Arm Switch → Pin 9<br>
 🔴 Engage Button → Pin 7<br>
 💡 Engine Light → Pin 2<br>
 🔊 Engine Buzzer → Pin 5<br><br>
+
 Find the part in the diagram.<br>
 Follow the wire.<br>
 Match it to the pin.
 """
-            },
-            "logic": {
-                "label": "🧩 Logic",
-                "content": """
+          },
+
+          "logic": {
+            "label": "🧩 Logic",
+            "content": """
 <b>🔘 Important Button Rule</b><br><br>
+
 Look at the wiring diagram.<br><br>
+
 If the button connects to GND, choose:<br>
 <b>INPUT_PULLUP</b><br><br>
+
 That's how this wiring style works.<br><br>
+
 <b>Understanding The "If" statements:</b><br><br>
+
 The Arduino sees <b>HIGH</b> when the switch is <b>off</b> or the button is <b>not pressed</b><br>
 The Arduino sees <b>LOW</b> when the switch is <b>on</b> or the button is <b>pressed</b><br><br>
+
 <b>Think about the flow:</b><br><br>
+
 IF switch is ON<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Light ON<br>
 &nbsp;&nbsp;&nbsp;&nbsp;IF button pressed<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;engine ON<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Engine ON<br><br>
+
 IF switch is OFF (else)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;everything OFF<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Everything OFF<br><br>
+
 Remember: The switch is the boss.
 """
-            }
+          }
         }
-    },
+      },
+
+      {
+        "title": "Step 2 — Test Your Engine System 🚀",
+        "tip": "Upload your code and verify your engine rules work correctly.",
+        "tabs": {
+          "complete": {
+            "label": "🎉 Congratulations",
+            "content": """
+<h3>You Built an Engine Control System! 🎉</h3>
+
+<p>
+Your logic system is ready. Now it's time to test it.
+</p>
+
+<p>
+🔌 Connect your Arduino<br>
+⬆️ Upload your code<br>
+🔘 Turn the switch ON<br>
+🔴 Press the button to start the engine<br>
+💡 Observe the light and buzzer behavior
+</p>
+
+<p>
+<b>Check your system:</b><br><br>
+
+✔️ Switch OFF → Everything stays OFF<br>
+✔️ Switch ON → System becomes active<br>
+✔️ Button Press → Engine activates<br>
+✔️ Switch OFF again → Everything shuts down
+</p>
+
+<p>
+If all of these work, your engine logic is correct!
+</p>
+"""
+          }
+        }
+      }
+    ]
+  }
 }
+
+
 SKETCH_PRESET = {
     'sketch': """
+//>> Step 1 - Complete the skecth | guided | filtered
 void setup() {
-  pinMode(9, INPUT_PULLUP);   // Arm switch
+//##  pinMode(9, INPUT_PULLUP);   // Arm switch
+//?? Define the button pin
   pinMode(7, INPUT_PULLUP);   // Engage button
-  pinMode(2, OUTPUT);         // Engine light
+//##  pinMode(2, OUTPUT);         // Engine light
+//?? Defind the buzzer pin
   pinMode(5, OUTPUT);         // Engine buzzer
 }
 
 void loop() {
-  if (digitalRead(9) == LOW) {   // Switch ON
+//##  if (digitalRead(9) == LOW) {   // Switch ON
+//?? Turn the light on
     digitalWrite(2, HIGH);       // Light ON (armed)
 
-    if (digitalRead(7) == LOW) {
+//##    if (digitalRead(7) == LOW) {
+//?? Turn the buzzer ON
       digitalWrite(5, HIGH);     // Start engine
-    } else {
+//##    } else {
+//?? Turn the buzzer OFF
       digitalWrite(5, LOW);
-    }
-  } else {                        // Switch OFF
+//##    }
+//##  } else {                        // Switch OFF
+//?? Turn the light OFF
     digitalWrite(2, LOW);         // Light OFF
+//?? Turn the buzzer OFF
     digitalWrite(5, LOW);         // Engine OFF
-  }
-}""",
-    'default_view': 'editor',
-    'fill_conditions': True,
-    'fill_values': False,
-    'lock_view': True,
+//##  }
+//## }
+
+//>> Step 2 - Complete | free
+void setup() { }
+void loop() { } """,
 }
 
 CHALLENGE_PRESET = {

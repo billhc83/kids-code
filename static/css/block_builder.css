@@ -166,14 +166,18 @@
   0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5); }
   50%       { box-shadow: 0 0 0 7px rgba(245, 158, 11, 0.12); }
 }
+@keyframes slot-pulse-active {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.5); }
+  50%       { box-shadow: 0 0 0 8px rgba(147, 51, 234, 0.12); }
+}
 .phantom-block { display:flex; align-items:center; gap:12px; padding:12px 16px;
   border:2px dashed #3b82f6; border-radius:12px; background:#f0f9ff;
   cursor:pointer; margin-bottom:8px; transition:background 0.15s, border-color 0.15s; min-height: 52px; }
 .phantom-block:hover { background:#ddf4ff; border-color:#0550ae; }
-.phantom-block.active { background:#fffbeb; border-style:solid; border-color:#f59e0b; border-width:2.5px;
-  animation: slot-pulse 1.4s ease-in-out infinite; }
-.phantom-block.active .phantom-hint { color:#92400e; }
-.phantom-block.active .phantom-icon { filter: hue-rotate(40deg); }
+.phantom-block.active { background:#f3e8ff; border-style:solid; border-color:#9333ea; border-width:2.5px;
+  animation: slot-pulse-active 1.4s ease-in-out infinite; }
+.phantom-block.active .phantom-hint { color:#6b21a8; font-weight:800; }
+.phantom-block.active .phantom-icon { filter: hue-rotate(200deg); }
 .phantom-icon { font-size:14px; }
 .phantom-hint { font-size:12px; font-weight:600; color:#0969da; flex:1; }
 .phantom-expects { font-size:10px; color:#57606a; font-family:monospace; }

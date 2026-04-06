@@ -219,12 +219,16 @@ void loop() {
     digitalWrite(8, LOW);
   }
 }""",
-    'default_view': 'editor'
+    'default_view': 'editor',
+    'read_only': True,
+    'lock_view': True,
+    'fill_values': True,
+    'fill_conditions': True,
 }
 
 CHALLENGE_PRESET = {
     'sketch': '...',
-    'default_view': 'editor',
+    'default_view': 'builder',
 }
 
 # Optional — progression sketch for guided block builder projects

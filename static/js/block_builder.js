@@ -301,6 +301,11 @@ function updatePalette(){
   var blockSec=document.getElementById('pal-blocks-section');
   var exprSec=document.getElementById('pal-expr-section');
   var exprTitle=document.getElementById('pal-expr-title');
+  if(LOCK_VIEW){
+    blockSec.style.display='none';
+    exprSec.querySelectorAll('.block-btn').forEach(function(btn){btn.classList.add('hidden');});
+    return;
+  }
   var step=PROGRESSION_MODE&&STEPS?STEPS[CURRENT_STEP]:null;
   var config=step?step.config:{structure:'none',filter:false,validation:'none',fill:true}; // Default fill:true
 
@@ -745,7 +750,7 @@ function renderActionBlock(block,idx,parentArr){
       } else {
         arr.splice(i,1); // Otherwise, remove the block from the array
       }
-      render();
+      render();checkStepComplete();
     }, parentArr, idx));
   }
   return d;}
@@ -767,7 +772,8 @@ function renderIfBlock(block,idx,parentArr,section,parentPathStr,anc){
     } else {
       parentArr.splice(idx,1);
     }
-    if(sel&&(sel.targetArr===block.ifbody||isDescendant(block,sel.targetArr)))clearSelection();else render();}));
+    if(sel&&(sel.targetArr===block.ifbody||isDescendant(block,sel.targetArr)))clearSelection();else render();checkStepComplete();}));
+  }
   wrap.appendChild(hdr);
   var ifPathStr=parentPathStr+' \u2192 if';
   var isOnlyBody=block.elseifs.length===0&&block.elsebody===null;
@@ -790,7 +796,7 @@ function renderIfBlock(block,idx,parentArr,section,parentPathStr,anc){
     }
     wrap.appendChild(elHdr);
     wrap.appendChild(makeBodyZone(block.elsebody,section,parentPathStr+' \u2192 else',true,anc));}
-  return wrap;}}
+  return wrap;}
 function renderForBlock(block,idx,parentArr,section,parentPathStr,anc){
   var wrap=document.createElement('div');wrap.className='for-block';
   wrap.setAttribute('data-id', block.id);
@@ -820,7 +826,7 @@ function renderForBlock(block,idx,parentArr,section,parentPathStr,anc){
       } else {
         parentArr.splice(idx,1);
       }
-      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
+      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();checkStepComplete();}));
   }
   wrap.appendChild(hdr); // Forloop itself is deleted, not its content
   if(!block.body)block.body=[];
@@ -851,7 +857,7 @@ function renderWhileBlock(block,idx,parentArr,section,parentPathStr,anc){
       } else {
         parentArr.splice(idx,1);
       }
-      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();}));
+      if(sel&&(sel.targetArr===block.body||isDescendantOf(block.body,sel.targetArr)))clearSelection();else render();checkStepComplete();}));
   }
   wrap.appendChild(hdr); // Whileloop itself is deleted, not its content
   if(!block.body)block.body=[];
@@ -1483,7 +1489,7 @@ console.log("[DEBUG] checkpoint 152");
 
   if(phantoms>0) stepProgress = phantoms+' block'+(phantoms===1?'':'s')+' to place';
   else if(incomplete>0) stepProgress = incomplete+' field'+(incomplete===1?'':'s')+' to fill';
-  else stepProgress = 'complete';
+  else stepProgress = 'Click Check Code when Finished';
 
   if(total===0){
     nextBtnState.ready = true;

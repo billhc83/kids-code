@@ -57,6 +57,16 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = timedelta(days=30)
 app.json.sort_keys = False
+
+def normalize_drawer_steps(steps):
+    """Convert each step's tabs dict to an ordered list so JSON serialization preserves insertion order."""
+    result = []
+    for step in steps:
+        s = dict(step)
+        if isinstance(s.get('tabs'), dict):
+            s['tabs'] = [{'id': k, **v} for k, v in s['tabs'].items()]
+        result.append(s)
+    return result
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -491,9 +501,9 @@ def lesson(lesson_key):
         # Provide drawer data to the interface
         if drawer_content:
             if isinstance(drawer_content, list):
-                extra["drawer_steps"] = drawer_content
+                extra["drawer_steps"] = normalize_drawer_steps(drawer_content)
             elif isinstance(drawer_content, dict):
-                extra["drawer_steps"] = drawer_content.get("steps") or [drawer_content]
+                extra["drawer_steps"] = normalize_drawer_steps(drawer_content.get("steps") or [drawer_content])
 
     return render_template(
         lesson_data["template"],
@@ -790,7 +800,7 @@ def builder_endpoint():
 @app.route("/preset/<name>")
 @login_required
 def get_preset(name):
-    from utils.block_parser import parse_progression
+    from utils.block_parser import parse_steps, parse_sketch
     from utils.project_registry import PROJECTS
     from utils.presets import PRESETS
     from utils.contents_flask import DRAWER_CONTENT
@@ -798,6 +808,8 @@ def get_preset(name):
     sketch_code = None
     drawer_content = None
     default_view = "blocks"
+    fill_values = False
+    fill_conditions = False
 
     # Try new registry format first
     if name in PROJECTS:
@@ -806,6 +818,8 @@ def get_preset(name):
         if isinstance(preset_obj, dict):
             sketch_code = preset_obj.get("sketch")
             default_view = preset_obj.get("default_view", "blocks")
+            fill_values = preset_obj.get("fill_values", False)
+            fill_conditions = preset_obj.get("fill_conditions", False)
         else:
             sketch_code = preset_obj
 
@@ -819,8 +833,13 @@ def get_preset(name):
         for p in PROJECTS.values():
             if "presets" in p and name in p["presets"]:
                 preset_obj = p["presets"][name]
-                sketch_code = preset_obj.get("sketch") if isinstance(preset_obj, dict) else preset_obj
-                default_view = preset_obj.get("default_view", "blocks") if isinstance(preset_obj, dict) else "blocks"
+                if isinstance(preset_obj, dict):
+                    sketch_code = preset_obj.get("sketch")
+                    default_view = preset_obj.get("default_view", "blocks")
+                    fill_values = preset_obj.get("fill_values", False)
+                    fill_conditions = preset_obj.get("fill_conditions", False)
+                else:
+                    sketch_code = preset_obj
                 d = p.get("drawer")
                 if d:
                     if isinstance(d, dict):
@@ -833,17 +852,28 @@ def get_preset(name):
     if not sketch_code:
         preset = PRESETS.get(name)
         if not preset: abort(404)
-        sketch_code = preset['sketch'] if isinstance(preset, dict) else preset
-        default_view = preset.get('default_view', 'blocks') if isinstance(preset, dict) else 'blocks'
+        if isinstance(preset, dict):
+            sketch_code = preset['sketch']
+            default_view = preset.get('default_view', 'blocks')
+            fill_values = preset.get('fill_values', False)
+            fill_conditions = preset.get('fill_conditions', False)
+        else:
+            sketch_code = preset
         drawer_content = DRAWER_CONTENT.get(name)
 
-    progression_data = parse_progression(sketch_code) if '//>>' in sketch_code else None
+    if '//>>' in sketch_code:
+        progression_data = parse_steps(sketch_code)
+        parsed_sketch = None
+    else:
+        progression_data = None
+        parsed_sketch = parse_sketch(sketch_code, fill_conditions=fill_conditions, fill_values=fill_values)
 
     return {
         "sketch": sketch_code,
         "drawer_content": drawer_content,
         "default_view": default_view,
-        "progression_data": progression_data
+        "progression_data": progression_data,
+        "parsed_sketch": parsed_sketch,
     }
 
 @app.route("/standalone_ide/<preset>")
@@ -889,9 +919,9 @@ def standalone_ide(preset):
 
     drawer_steps = []
     if isinstance(drawer_content, list):
-        drawer_steps = drawer_content
+        drawer_steps = normalize_drawer_steps(drawer_content)
     elif isinstance(drawer_content, dict):
-        drawer_steps = drawer_content.get("steps") or [drawer_content]
+        drawer_steps = normalize_drawer_steps(drawer_content.get("steps") or [drawer_content])
         
     return render_template(
         "components/arduino_interface.html",

@@ -263,7 +263,11 @@ void loop() {
   }
   delay(500); 
 }""",
-    'default_view': 'editor'
+    'default_view': 'builder',
+    'read_only': True,
+    'lock_view': True,
+    'fill_values': True,
+    'fill_conditions': True,
 }
 
 CHALLENGE_PRESET = {

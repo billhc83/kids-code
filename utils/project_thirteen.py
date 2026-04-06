@@ -51,12 +51,13 @@ def img_to_b64(path):
 timer_circuit_b64 = img_to_b64("static/graphics/reaction_timer_circuit.png")
 
 DRAWER_CONTENT = {
-
- "project_thirteen": {
-    "title": "⏱️ Reaction Timer",
-    "tip": "Measure how fast someone reacts using a button and timing in milliseconds.",
-    "tabs": {
-        "story": {
+  "project_thirteen": {
+    "steps": [
+      {
+        "title": "Step 1 — Build the Reaction Timer ⏱️",
+        "tip": "Understand and assemble the full reaction timer system.",
+        "tabs": {
+          "story": {
             "label": "🧪 Mission",
             "content": """
 <h3>Welcome to the Arduino Reaction Lab! 🧪</h3>
@@ -65,166 +66,246 @@ DRAWER_CONTENT = {
 Today, you will build a <b>reaction timer</b> — just like scientists use to measure reflexes.
 </p>
 
-<p>
-Your mission:
-</p>
+<p><b>Your mission:</b></p>
 
 <p>
 🔘 Press the button as fast as you can<br>
 ⏱️ The Arduino will measure your reaction time<br>
 💻 Watch the results on your computer
+</p>
+
 <p>
 Ready… Set… React!
 </p>
 """,
-                "image_b64": timer_circuit_b64
-        },
-        "code": {
-            "label": "💻 Code",
+            "image_b64": timer_circuit_b64
+          },
+
+          "code": {
+            "label": "💻 Build & Understand",
             "content": """
 <h3>The Reaction Timer Program</h3>
 
+<p>
+You are going to build this program step by step. Each part has a specific job that makes the timer work.
+</p>
+
+<h4>🧩 Variables — Memory</h4>
 <pre>
 int button = 2;
-
 int running = 0;
 
 unsigned long startTime = 0;
 unsigned long time = 0;
+</pre>
+<p>
+These variables store everything the program needs to remember:
+<br>
+• Which pin the button is on<br>
+• Whether the timer is running<br>
+• When the timer started<br>
+• How long the reaction took
+</p>
 
+<h4>⚙️ Setup — Preparation</h4>
+<pre>
 void setup() {
   pinMode(button, INPUT_PULLUP);
   Serial.begin(9600);
 }
+</pre>
+<p>
+The Arduino prepares itself:
+<br>
+• Sets up the button input<br>
+• Opens communication with the computer
+</p>
 
+<h4>🔁 Loop — Continuous Check</h4>
+<pre>
 void loop() {
+</pre>
+<p>
+The Arduino constantly checks for button presses.
+</p>
 
-  if (digitalRead(button) == LOW) {
+<h4>🔘 Input — Detect Press</h4>
+<pre>
+if (digitalRead(button) == LOW) {
+</pre>
+<p>
+When the button is pressed, the program reacts.
+</p>
 
-    if (running == 0) {
-      startTime = millis();
-      running = 1;
-    }
-    else {
-      time = millis() - startTime;
-      Serial.println(time);
-      running = 0;
-    }
-
-    delay(300);
-  }
-
+<h4>🟢 Start Timing</h4>
+<pre>
+if (running == 0) {
+  startTime = millis();
+  running = 1;
 }
 </pre>
-
 <p>
-This program measures the time between the first press and the next press of the button.
+First press → start the timer.
 </p>
+
+<h4>🔴 Stop Timing</h4>
+<pre>
+else {
+  time = millis() - startTime;
+  Serial.println(time);
+  running = 0;
+}
+</pre>
+<p>
+Second press → stop the timer and display the result.
+</p>
+
+<h4>⏱️ Stabilize Input</h4>
+<pre>
+delay(300);
+</pre>
+<p>
+Prevents accidental multiple readings from one press.
+</p>
+
+<pre>
+}
+</pre>
 """
-        },
-        "logic": {
+          },
+
+          "logic": {
             "label": "🧩 Logic",
             "content": """
 <h3>How the Timer Thinks</h3>
 
 <p>
-The Arduino constantly:
+The Arduino is constantly running a simple decision loop:
 </p>
 
 <p>
-🔘 Watches the button<br>
-🤔 Checks if this is the first or second press<br>
-⏱️ Measures elapsed time using <b>millis()</b><br>
-💻 Sends the reaction time to the computer<br>
-🔁 Waits for the next test
+🔘 Check the button<br>
+🤔 Is this the first press or second press?<br>
+⏱️ Start or stop timing<br>
+💻 Send result to the computer<br>
+🔁 Repeat
 </p>
 
 <p>
+<b>Flow:</b><br>
 First press → Start timer<br>
-Second press → Stop timer & record reaction
+Second press → Stop timer and record reaction
 </p>
 """
-        },
-        "translation": {
+          },
+
+          "translation": {
             "label": "🧬 Translation",
             "content": """
-<h3>Breaking Down the Code</h3>
+<h3>Key Code Meanings</h3>
+
+<p><b>pinMode(button, INPUT_PULLUP)</b><br>
+Prepares the button input with a stable signal</p>
+
+<p><b>digitalRead(button)</b><br>
+Checks if the button is pressed</p>
+
+<p><b>running</b><br>
+Tracks whether the timer is active</p>
+
+<p><b>millis()</b><br>
+Gives the current time in milliseconds</p>
+
+<p><b>time = millis() - startTime</b><br>
+Calculates reaction time</p>
+
+<p><b>Serial.println(time)</b><br>
+Sends the result to the computer</p>
+
+<p><b>delay(300)</b><br>
+Prevents multiple accidental presses</p>
+"""
+          }
+        }
+      },
+
+      {
+        "title": "Step 2 — Test Your Reaction Timer 🚀",
+        "tip": "Upload your code and measure your reaction time.",
+        "tabs": {
+          "complete": {
+            "label": "🎉 Congratulations",
+            "content": """
+<h3>You Built a Reaction Timer! 🎉</h3>
 
 <p>
-<b>pinMode(button, INPUT_PULLUP)</b><br>
-Configures the button as an input with a built-in pull-up resistor 🔘
+Your system is ready. Now it's time to test it.
 </p>
 
 <p>
-<b>digitalRead(button)</b><br>
-Reads if the button is pressed (LOW) or not pressed (HIGH)
+🔌 Connect your Arduino<br>
+⬆️ Upload your code<br>
+💻 Open the Serial Monitor<br>
+🔘 Press the button twice to measure your reaction time
 </p>
 
 <p>
-<b>running</b><br>
-Tracks whether the timer is running (0 = stopped, 1 = running) 🧩
-</p>
-
-<p>
-<b>millis()</b><br>
-Returns the number of milliseconds since the Arduino started ⏱️
-</p>
-
-<p>
-<b>time = millis() - startTime</b><br>
-Calculates elapsed time between first and second press
-</p>
-
-<p>
-<b>Serial.println(time)</b><br>
-Displays the reaction time on the computer 💻
-</p>
-
-<p>
-<b>delay(300)</b><br>
-Prevents accidental double counting from bouncing button presses ⏱️
+Try multiple times and see how fast you can react!
 </p>
 """
+          }
         }
-    }
- }
+      }
+    ]
+  }
 }
+
 
 SKETCH_PRESET = {
     'sketch': """
-int button = 2;
+//>> Step 1 - Complete the skecth | guided
+//## int button = 2;
 
-int running = 0;
+//## int running = 0;
 
+//?? Set unsined long variable to 0
 unsigned long startTime = 0;
+//?? Set unsined long variable to 0
 unsigned long time = 0;
 
 void setup() {
+  //?? Set the pinmode for the button
   pinMode(button, INPUT_PULLUP);
-  Serial.begin(9600);
+  //## Serial.begin(9600);
 }
 
 void loop() {
 
-  if (digitalRead(button) == LOW) {
+  //## if (digitalRead(button) == LOW) {
 
-    if (running == 0) {
+    //## if (running == 0) {
+      //?? Set the start time to equal millis
       startTime = millis();
+      //?? Set running to 1
       running = 1;
-    }
-    else {
+    //## }
+    //## else {
+      //?? When was the button pressed?
       time = millis() - startTime;
-      Serial.println(time);
-      running = 0;
-    }
+      //## Serial.println(time);
+      //?? Set running to 0
+        running = 0;
+    //## }
 
-    delay(300);
-  }
-
-}""",
-    'default_view': 'editor',
-    'fill_conditions': True,
-        'fill_values': False,
+    //## delay(300);
+  //## }
+//## }
+//>> Step 2 - Complete | free
+  
+  void setup() { }
+  void loop() { }
+  
+""",
 }
 
 CHALLENGE_PRESET = {

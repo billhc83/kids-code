@@ -10,7 +10,7 @@
             <h1>📝 Preset Sketch Builder</h1>
             <p class="dash-sub">Paste a raw Arduino sketch, annotate each line, and generate a ready-to-paste SKETCH_PRESET.</p>
         </div>
-        <a href="{{ url_for('admin') }}" class="next-btn" style="text-decoration:none;font-size:14px;">← Admin</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="next-btn" style="text-decoration:none;font-size:14px;">← Admin</a>
     </div>
 </div>
 
@@ -52,6 +52,7 @@
             <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#fff8e6;border:1px solid #f0a500;">Phantom — student fills this in</span>
             <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#f1f1f1;border:1px solid #bbb;">Locked — shown but pre-filled</span>
             <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#dbeafe;border:1px solid #0969da;color:#0969da;">▶ Step Break</span>
+            <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:#eef;border:1px solid #0969da;color:#0969da;">↪ Aside (own sketch, no cumulative effect)</span>
         </div>
 
         <div id="annotation-table"></div>
@@ -285,11 +286,18 @@ function updateItem(idx, field, value) {
         const descEl = document.getElementById('guidance-desc-' + idx);
         if (descEl) descEl.textContent = GUIDANCE_DESCS[value] || '';
     }
+    // Re-render step row when aside toggles (show/hide textarea)
+    if (field === 'aside') {
+        const row = document.querySelector('[data-idx="' + idx + '"]');
+        if (row && items[idx].type === 'step') {
+            row.replaceWith(buildStepRow(items[idx], idx));
+        }
+    }
 }
 
 // ── Insert / remove step breaks ───────────────────────────────────────────────
 function insertStepBreak(beforeIdx) {
-    const step = { type: 'step', label: '', guidance: 'guided', view: 'blocks', aside: false, reset: false, filter: false };
+    const step = { type: 'step', label: '', guidance: 'guided', view: 'blocks', fill: 'auto', aside: false, asideSketch: '', reset: false, filter: false };
     items.splice(beforeIdx, 0, step);
     renderTable();
 }
@@ -315,7 +323,7 @@ function buildStepRow(item, i) {
 
     div.innerHTML = `
         <div class="pb-step-row-header">
-            <span style="font-size:12px;font-weight:700;color:#0969da;">▶ STEP BREAK</span>
+            <span style="font-size:12px;font-weight:700;color:#0969da;">${item.aside ? '↪ ASIDE STEP' : '▶ STEP BREAK'}</span>
             <button class="pb-remove-btn" onclick="removeItem(${i})">✕ Remove</button>
         </div>
         <div class="pb-step-fields">
@@ -342,7 +350,17 @@ function buildStepRow(item, i) {
                 <div class="pb-guidance-desc">Interface view</div>
             </div>
 
-            <label class="pb-checkbox-label" title="Step does not affect cumulative state — useful for comparison examples">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <select class="pb-step-select" onchange="updateItem(${i}, 'fill', this.value)"
+                        title="Override the fill behaviour set by guidance mode">
+                    <option value="auto"  ${(item.fill||'auto')==='auto' ?'selected':''}>fill: auto</option>
+                    <option value="true"  ${item.fill==='true' ?'selected':''}>fill: true</option>
+                    <option value="false" ${item.fill==='false'?'selected':''}>fill: false</option>
+                </select>
+                <div class="pb-guidance-desc">Override fill</div>
+            </div>
+
+            <label class="pb-checkbox-label" title="Step shows its own sketch and does not affect cumulative state">
                 <input type="checkbox" ${item.aside?'checked':''} onchange="updateItem(${i}, 'aside', this.checked)">
                 aside
             </label>
@@ -355,6 +373,18 @@ function buildStepRow(item, i) {
                 filter
             </label>
         </div>
+        ${item.aside ? `
+        <div style="margin-top:10px;">
+            <div style="font-size:11px;font-weight:700;color:#0969da;margin-bottom:4px;">
+                ↪ Aside sketch — paste the example code for this step. Use //?? and //## markers as needed. This code is self-contained and does not affect the main progression.
+            </div>
+            <textarea id="aside-sketch-${i}"
+                style="width:100%;height:160px;font-family:monospace;font-size:12px;padding:8px;
+                       border:2px solid #0969da;border-radius:6px;resize:vertical;box-sizing:border-box;
+                       background:#fff;color:#1f2328;line-height:1.5;"
+                placeholder="void loop() {&#10;  // example comparison code&#10;}"
+                oninput="updateItem(${i}, 'asideSketch', this.value)">${escHtml(item.asideSketch||'')}</textarea>
+        </div>` : ''}
     `;
     return div;
 }
@@ -433,10 +463,15 @@ function generatePreset() {
     items.forEach(item => {
         if (item.type === 'step') {
             let header = `//>> ${item.label.trim()} | ${item.guidance} | ${item.view}`;
-            if (item.filter) header += ' | filter';
-            if (item.aside)  header += ' | aside';
-            if (item.reset)  header += ' | reset';
+            if (item.filter)                   header += ' | filter';
+            if (item.aside)                    header += ' | aside';
+            if (item.reset)                    header += ' | reset';
+            if (item.fill && item.fill !== 'auto') header += ` | fill:${item.fill}`;
             lines.push(header);
+            // Aside steps carry their own sketch — emit it inline and consume no main sketch lines
+            if (item.aside && item.asideSketch && item.asideSketch.trim()) {
+                lines.push(item.asideSketch.trimEnd());
+            }
         } else {
             if (item.code.trim() === '') {
                 lines.push('');

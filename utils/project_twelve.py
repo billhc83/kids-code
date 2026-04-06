@@ -75,16 +75,19 @@ def img_to_b64(path):
 patrol_alarm_b64 = img_to_b64("static/graphics/project_thirteen_circuit.png")
 
 DRAWER_CONTENT = {
-
- "project_twelve": {
-        "title": "📘 Light Bar Control Guide",
-        "tip": "Build the flashing pattern that controls the patrol light bar.",
+  "project_twelve": {
+    "steps": [
+      {
+        "title": "Step 1 — Build the Light Bar System 📘",
+        "tip": "Create the flashing pattern that controls the patrol light bar.",
         "tabs": {
-            "mission": {
-                "label": "🧠 Mission",
-                "content": """
+          "mission": {
+            "label": "🧠 Mission",
+            "content": """
 <h3>You are building the patrol vehicle light bar system.</h3>
+
 <p>The light bar must flash in a clear pattern so people can see the vehicle at night.</p>
+
 <p>
 - The switch controls the whole system.<br>
 - If the button is OFF → all lights stay OFF.<br>
@@ -92,95 +95,163 @@ DRAWER_CONTENT = {
 - The lights flash one at a time.<br>
 - The pattern repeats again and again.
 </p>
-<p>Each light flash must use a short pause.<br>
+
+<p>
+Each light flash must use a short pause.<br>
 At Night Patrol Academy we use: <b>delay(150)</b><br>
-Use this delay after each light turns ON and turns OFF.</p>
+Use this delay after each light turns ON and turns OFF.
+</p>
+
 <p>Your job is to build the flashing pattern using blocks.</p>
 """,
-                "image_b64": patrol_alarm_b64
-            },
-            "wiring": {
-                "label": "🔌 Wiring",
-                "content": """
+            "image_b64": patrol_alarm_b64
+          },
+
+          "wiring": {
+            "label": "🔌 Wiring",
+            "content": """
 <b>Match each part to its pin:</b><br><br>
+
 🔘 Master Button → Pin 12<br>
 🔴 Red Light → Pin 8<br>
 🔵 Blue Light → Pin 6<br>
 ⚪ Clear Strobe Light → Pin 4<br><br>
+
 Find the part in the diagram.<br>
 Follow the wire.<br>
 Match it to the pin.
 """
-            },
-            "logic": {
-                "label": "🧩 Logic",
-                "content": """
+          },
+
+          "logic": {
+            "label": "🧩 Logic",
+            "content": """
 <b>🔘 Button Input Rule</b><br><br>
+
 If the Button connects to GND, choose:<br>
 <b>INPUT_PULLUP</b><br><br>
+
 <b>Understanding the Button:</b><br><br>
+
 HIGH = Button OFF (not pressed)<br>
 LOW = Button ON (pressed)<br><br>
+
 <b>Think about the pattern:</b><br><br>
+
 IF button is ON (pressed)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Red ON → delay → Red OFF<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Blue ON → delay → Blue OFF<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Clear ON → delay → Clear OFF<br><br>
+
 IF button is OFF (else)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;All lights OFF<br><br>
+
 Remember: The button controls everything.
 """
-            }
+          }
         }
-    }
+      },
+
+      {
+        "title": "Step 2 — Test Your Light Bar 🚨",
+        "tip": "Upload your code and verify the flashing pattern works correctly.",
+        "tabs": {
+          "complete": {
+            "label": "🎉 Congratulations",
+            "content": """
+<h3>You Built a Patrol Light Bar System! 🎉</h3>
+
+<p>
+Your light system is ready. Now it's time to test it.
+</p>
+
+<p>
+🔌 Connect your Arduino<br>
+⬆️ Upload your code<br>
+🔘 Press the master button<br>
+🚨 Watch the light sequence
+</p>
+
+<p>
+<b>Check your system:</b><br><br>
+
+✔️ Button OFF → All lights stay OFF<br>
+✔️ Button ON → Lights begin flashing<br>
+✔️ Red → Blue → Clear sequence runs in order<br>
+✔️ Each light turns ON and OFF with a delay<br>
+✔️ Pattern repeats continuously
+</p>
+
+<p>
+If all of these work, your patrol light bar is operating correctly!
+</p>
+"""
+          }
+        }
+      }
+    ]
+  }
 }
 
 SKETCH_PRESET = {
     'sketch': """
-int switchPin = 12;
+//>> Step 1 - Complete the skecth | guided
 
+//?? Define the Switch Pin
+int switchPin = 12;
+//?? Define The Red LED Pin
 int redLED = 8;
+//?? Define The Blue LED Pin
 int blueLED = 6;
+//?? Define The Clear LED Pin
 int clearLED = 4;
 
-void setup()
-{
+void setup() {
+//?? Set the mode for the switch pin
   pinMode(switchPin, INPUT_PULLUP);
+//?? Set the mode for the red LED pin
   pinMode(redLED, OUTPUT);
+//?? Set the mode for the blue LED pin
   pinMode(blueLED, OUTPUT);
+//?? Set the mode for the clear LED pin
   pinMode(clearLED, OUTPUT);
 }
 
 void loop()
 {
-  if (digitalRead(switchPin) == LOW)
-  {
-    // Red flash
-    digitalWrite(redLED, HIGH);
-    delay(150);
-    digitalWrite(redLED, LOW);
+//##  if (digitalRead(switchPin) == LOW)
+//##  {
 
-    // Blue flash
+//##    digitalWrite(redLED, HIGH);
+//?? set delay to 150
+    delay(150);
+//##    digitalWrite(redLED, LOW);
+
+//? Set the blue LED to high
     digitalWrite(blueLED, HIGH);
-    delay(150);
-    digitalWrite(blueLED, LOW);
+//##    delay(150);
+//##    digitalWrite(blueLED, LOW);
 
-    // Clear flash
-    digitalWrite(clearLED, HIGH);
-    delay(150);
+//##    digitalWrite(clearLED, HIGH);
+//##    delay(150);
+//?? set the clear LED to low
     digitalWrite(clearLED, LOW);
-  }
-  else
-  {
-    // Switch OFF → everything OFF
+ //## }
+ //## else
+ //## {
+//?? set the red LED to low
     digitalWrite(redLED, LOW);
+//?? set the blue LED to low
     digitalWrite(blueLED, LOW);
+//?? set the clear LED to low
     digitalWrite(clearLED, LOW);
-  }
-}""",
-    'default_view': 'blocks',
-    'fill_conditions': True,
-        'fill_values': False,
+  //##}
+//##}
+
+//>> Step 2 - Complete | free
+void setup() { }
+void loop() { }
+""",
 }
 
 CHALLENGE_PRESET = {

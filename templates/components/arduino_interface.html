@@ -320,9 +320,12 @@ window.updateDrawer = function(stepIdx) {
   const pansC = inner.querySelector('.drawer-tab-panels');
   tabsC.innerHTML = ''; pansC.innerHTML = '';
 
-  const tabs = c.tabs || {};
-  Object.keys(tabs).forEach((k, i) => {
-    const tab = tabs[k];
+  const tabsRaw = c.tabs || [];
+  const tabs = Array.isArray(tabsRaw)
+    ? tabsRaw
+    : Object.entries(tabsRaw).map(([id, v]) => ({ id, ...v }));
+  tabs.forEach((tab, i) => {
+    const k = tab.id || tab.label || i;
     const btn = document.createElement('button');
     btn.className = 'drawer-tab-btn' + (i === 0 ? ' active' : '');
     btn.textContent = tab.label || k;
