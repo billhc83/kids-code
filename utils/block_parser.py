@@ -60,6 +60,12 @@ class BlockTransformer(Transformer):
 
     def locked(self, items):
         line = str(items[0]).replace('//##', '').strip()
+        # Strip trailing inline C++ comments (e.g. `if (...) {   // Switch ON`)
+        # but preserve lines that ARE comments (e.g. `// Serial.begin(9600);`)
+        if not line.startswith('//'):
+            comment_idx = line.find('//')
+            if comment_idx != -1:
+                line = line[:comment_idx].rstrip()
         return {'type': 'codeblock', 'params': [line], 'locked': True}
 
     def unknown_stmt(self, tokens):
@@ -363,12 +369,30 @@ def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_co
     except (UnexpectedToken, UnexpectedCharacters) as e:
         # Enhanced fallback: Include error column/line info if available
         error_meta = {'line': getattr(e, 'line', None), 'column': getattr(e, 'column', None)}
-        return [{
-            'type': 'codeblock', 
-            'params': [line.strip()], 
-            'locked': True, 
-            'parser_error': error_meta if i == (getattr(e, 'line', 1) - 1) else None
-        } for i, line in enumerate(code.split('\n')) if line.strip()]
+        result = []
+        for i, line in enumerate(code.split('\n')):
+            s = line.strip()
+            if not s:
+                continue
+            # Skip directive lines — they are not real code
+            if s.startswith('//??') or s.startswith('//>>'):
+                continue
+            if s.startswith('//##'):
+                s = s.replace('//##', '', 1).strip()
+                # Strip trailing inline comments
+                if not s.startswith('//'):
+                    comment_idx = s.find('//')
+                    if comment_idx != -1:
+                        s = s[:comment_idx].rstrip()
+            if not s:
+                continue
+            result.append({
+                'type': 'codeblock',
+                'params': [s],
+                'locked': True,
+                'parser_error': error_meta if i == (getattr(e, 'line', 1) - 1) else None
+            })
+        return result
 
 def parse_sketch(sketch_code, fill_conditions=False, fill_values=False, initial_fill_content=False):
     result = {'global': [], 'setup': [], 'loop': []}

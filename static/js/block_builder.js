@@ -31,9 +31,10 @@
       }
       if (blockToGen.type === 'codeblock') {
         var c = (blockToGen.params[0] || '').trim();
-        if (c === '}' || c.match(/^\}/)) extra = Math.max(0, extra - 1);
+        var cForIndent = c.replace(/\/\/.*$/, '').trim();
+        if (cForIndent === '}' || cForIndent.match(/^\}/)) extra = Math.max(0, extra - 1);
         lines.push(BB.genBlock(blockToGen, indent + extra));
-        if (c.charAt(c.length - 1) === '{') extra++;
+        if (cForIndent.charAt(cForIndent.length - 1) === '{') extra++;
       } else { lines.push(BB.genBlock(blockToGen, indent + extra)); }
     });
     return lines.join('\n');

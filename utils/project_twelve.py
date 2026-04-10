@@ -242,7 +242,7 @@ void loop()
     delay(150);
 //##    digitalWrite(redLED, LOW);
 
-//? Set the blue LED to high
+//?? Set the blue LED to high
     digitalWrite(blueLED, HIGH);
 //##    delay(150);
 //##    digitalWrite(blueLED, LOW);
@@ -261,7 +261,7 @@ void loop()
 //?? set the clear LED to low
     digitalWrite(clearLED, LOW);
   //##}
-//##}
+}
 
 //>> Step 2 - Complete | free
 void setup() { }
