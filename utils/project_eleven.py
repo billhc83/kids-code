@@ -112,14 +112,7 @@ STEPS = [
     ),
 ]
 
-import base64
-from pathlib import Path
-
-def img_to_b64(path):
-    data = Path(path).read_bytes()
-    b64 = base64.b64encode(data).decode()
-    ext = Path(path).suffix.lstrip(".")
-    return f"data:image/{ext};base64,{b64}"
+from utils.image_utils import img_to_b64
 
 engine_circuit_b64 = img_to_b64("static/graphics/project_twelve_circuit.png")
 
@@ -231,6 +224,24 @@ Your logic system is ready. Now it's time to test it.
 If all of these work, your engine logic is correct!
 </p>
 """
+          },
+          "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+              "components": [
+                {"type": "switch", "id": "sw1",  "pin": 9, "label": "Arm Switch"},
+                {"type": "button", "id": "btn1", "pin": 7, "label": "Start Button"},
+                {"type": "led",    "id": "led1", "color": "red", "pin": 2, "label": "Armed Light"},
+                {"type": "buzzer", "id": "buz1", "pin": 5, "label": "Engine"},
+              ],
+              "behaviors": [
+                {"when": {"sw1": "on"},                        "then": {"led1": "on"}},
+                {"when": {"sw1": "on",  "btn1": "pressed"},    "then": {"buz1": "on"}},
+                {"when": {"sw1": "on",  "btn1": "released"},   "then": {"buz1": "off"}},
+                {"when": {"sw1": "off"},                       "then": {"led1": "off", "buz1": "off"}},
+              ]
+            }
           }
         }
       }

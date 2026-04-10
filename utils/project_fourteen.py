@@ -10,9 +10,8 @@ META = {
 STEPS = None
 
 DRAWER_CONTENT = {
-
- "project_fourteen": [
-
+    "project_fourteen": {
+        "steps": [
     {
         "title": "Step 1 — The Variables 📦",
         "tip": "Set up your agent’s memory for the mission.",
@@ -183,7 +182,8 @@ DRAWER_CONTENT = {
             }
         }
     }
-],
+        ]
+    }
 }
 
 SKETCH_PRESET = {   

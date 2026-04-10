@@ -13,178 +13,245 @@ def extract_brace_body(code, start):
     return '', len(code)
 
 
-def extract_condition(code, start):
-    depth = 0
-    i = start
-    while i < len(code):
-        if code[i] == '(': depth += 1
-        elif code[i] == ')':
-            depth -= 1
-            if depth == 0:
-                return code[start+1:i].strip(), i+1
-        i += 1
-    return '', len(code)
+from lark import Lark, Transformer, v_args, UnexpectedToken, UnexpectedCharacters
+import os
+
+# Load grammar — one parser instance per start symbol to avoid Earley's
+# "multiple start symbol items" bug when using a list of start symbols.
+GRAMMAR_PATH = os.path.join(os.path.dirname(__file__), 'arduino.lark')
+with open(GRAMMAR_PATH, 'r') as f:
+    _grammar_text = f.read()
+
+_EARLEY = dict(parser='earley', maybe_placeholders=False)
+arduino_parser = Lark(_grammar_text, start='block_list', **_EARLEY)
+
+class BlockTransformer(Transformer):
+    def __init__(self, fill_conditions=False, fill_values=False):
+        super().__init__()
+        self.fill_conditions = fill_conditions
+        self.fill_values = fill_values
+
+    def block_list(self, items):
+        # We return the list of raw items and handle phantoms in parse_blocks
+        return [i for i in items if i is not None]
+
+    def _make_phantom_meta(self, hint, tmpl):
+        meta = {
+            'hint': hint,
+            'expects': tmpl['type'],
+            'params': tmpl.get('params', []),
+            'exChildren': tmpl.get('exChildren', []),
+            'condition': tmpl.get('condition'),
+        }
+        for field in ['expectedExTypes', 'expectedCondTypes', 'ifbody', 'elseifs', 'elsebody', 'body', 'forinit', 'forcond', 'forincr']:
+             if field in tmpl:
+                 meta[field] = tmpl[field]
+             elif field == 'expectedExTypes':
+                 meta[field] = [e['type'] if e else None for e in tmpl.get('exChildren', [])]
+        return meta
+
+    def step(self, tokens):
+        # //>> is handled in parse_steps, but we need to ignore it here or mark it
+        return None
+
+    def phantom(self, items):
+        hint = str(items[0]).replace('//??', '').strip()
+        return {'_is_phantom_dir': True, 'hint': hint}
+
+    def locked(self, items):
+        line = str(items[0]).replace('//##', '').strip()
+        return {'type': 'codeblock', 'params': [line], 'locked': True}
+
+    def unknown_stmt(self, tokens):
+        line = str(tokens[0]).strip()
+        return {'type': 'codeblock', 'params': [line], 'locked': True}
+
+    def unknown_raw(self, tokens):
+        line = str(tokens[0]).strip()
+        if not line: return None
+        return {'type': 'codeblock', 'params': [line], 'locked': True}
+
+    def if_block(self, items):
+        cond = items[0]
+        ifbody = items[1]
+        
+        # In Earley, items[2:] includes all subsequent clauses
+        elseifs = [i for i in items[2:] if isinstance(i, dict) and i.get('_is_elseif')]
+        elsebody = next((i for i in items[2:] if isinstance(i, list)), None)
+        
+        return {
+            'type': 'ifblock',
+            'condition': cond,
+            'ifbody': ifbody,
+            'elseifs': elseifs,
+            'elsebody': elsebody
+        }
+
+    def else_if_clause(self, items):
+        return {'_is_elseif': True, 'condition': items[0], 'body': items[1]}
+
+    def else_clause(self, items):
+        return items[0] # Returns the block_list (list)
+
+    def while_loop(self, items):
+        return {'type': 'whileloop', 'condition': items[0], 'body': items[1]}
+
+    def for_loop(self, items):
+        header = str(items[0]).strip()
+        parts = [p.strip() for p in header.split(';')]
+        return {
+            'type': 'forloop',
+            'forinit': parts[0] if len(parts) > 0 else '',
+            'forcond': parts[1] if len(parts) > 1 else '',
+            'forincr': parts[2] if len(parts) > 2 else '',
+            'body': items[1]
+        }
+
+    def condition(self, items):
+        res = {
+            'leftExpr': items[0], 'op': str(items[1]) if len(items)>1 else '==', 'rightExpr': items[2] if len(items)>2 else None,
+            'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None
+        }
+        if len(items) > 3:
+            res['joiner'] = 'and' if str(items[3]) == '&&' else 'or'
+            res['leftExpr2'] = items[4]
+            res['op2'] = str(items[5])
+            res['rightExpr2'] = items[6]
+        return res
+
+    def stmt(self, items):
+        return items[0]
+
+    def empty_val(self, items):
+        return {'type': 'value', 'params': [''], 'children': []}
+
+    def var_decl(self, items):
+        typ, name = str(items[0]), str(items[1])
+        val = items[2] if len(items) > 2 else None
+        vtype = 'intvar' if typ == 'int' else 'longvar' if 'long' in typ else 'boolvar' if typ == 'bool' else 'stringvar'
+        if vtype == 'boolvar':
+             return {'type': vtype, 'params': [name, str(val['params'][0]) if val else '']}
+        return {'type': vtype, 'params': [name, ''], 'exChildren': [None, val]}
+
+    def assignment(self, items):
+        name = str(items[0])
+        val = items[1]
+        return {'type': 'setvar', 'params': [name, ''], 'exChildren': [None, val]}
+
+    def crement(self, items): return {'type': 'increment', 'params': [str(items[0]), str(items[1]), '1']}
+    def op_assign(self, items): return {'type': 'increment', 'params': [str(items[0]), str(items[1]), str(items[2]['params'][0])]}
+
+    def func_call(self, items):
+        from lark import Token as LarkToken
+        if len(items) >= 2 and isinstance(items[1], LarkToken):
+            prefix, name, args = str(items[0]), str(items[1]), (items[2] if len(items) > 2 else [])
+        else:
+            prefix, name, args = "", str(items[0]), (items[1] if len(items) > 1 else [])
+        
+        full_name = f"{prefix}.{name}" if prefix else name
+        
+        if full_name == "pinMode":
+            return {'type': 'pinmode', 'params': [str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '', str(args[1]['params'][0]) if len(args) > 1 and 'params' in args[1] else '']}
+        if full_name == "digitalWrite":
+            return {'type': 'digitalwrite', 'params': [str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '', str(args[1]['params'][0]) if len(args) > 1 and 'params' in args[1] else '']}
+        if full_name == "analogWrite":
+            return {'type': 'analogwrite', 'params': [str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '', ''], 'exChildren': [None, args[1] if len(args)>1 else None]}
+        if full_name == "tone":
+            p0 = str(args[0]['params'][0]) if args else ''
+            p2 = str(args[2]['params'][0]) if len(args) > 2 else ''
+            return {'type': 'tone', 'params': [p0, '', p2 or None], 'exChildren': [None, args[1] if len(args)>1 else None]}
+        if full_name == "noTone":
+            return {'type': 'notone', 'params': [''], 'exChildren': [args[0] if args else None]}
+        if full_name == "delay":
+            return {'type': 'delay', 'params': [''], 'exChildren': [args[0] if args else None]}
+        if full_name == "delayMicroseconds":
+            return {'type': 'delaymicroseconds', 'params': [''], 'exChildren': [args[0] if args else None]}
+        if full_name == "Serial.begin":
+             return {'type': 'serialbegin', 'params': [str(args[0]['params'][0]) if args else '']}
+        if full_name in ["Serial.print", "Serial.println"]:
+             return {'type': 'serialprint', 'params': ['', name], 'exChildren': [args[0] if args else None]}
+        
+        # Fallback for other func calls
+        return {'type': 'codeblock', 'params': [f"{full_name}(...);"], 'locked': True}
+
+    def arg_list(self, items): return items
+
+    def add(self, items): return self._math('+', items)
+    def sub(self, items): return self._math('-', items)
+    def mul(self, items): return self._math('*', items)
+    def div(self, items): return self._math('/', items)
+    def mod(self, items): return self._math('%', items)
+
+    def _math(self, op, items):
+        return {
+            'type': 'math',
+            'params': ['', op, ''],
+            'children': [items[0], None, items[1]]
+        }
+
+    def number(self, tokens): return {'type': 'value', 'params': [str(tokens[0])], 'children': []}
+    def string(self, tokens): return {'type': 'value', 'params': [str(tokens[0])], 'children': []}
+    def var(self, tokens): return {'type': 'value', 'params': [str(tokens[0])], 'children': []}
+    
+    def func_expr(self, items):
+        from lark import Token as LarkToken
+        if len(items) >= 2 and isinstance(items[1], LarkToken):
+            prefix, name, args = str(items[0]), str(items[1]), (items[2] if len(items) > 2 else [])
+        else:
+            prefix, name, args = "", str(items[0]), (items[1] if len(items) > 1 else [])
+        full_name = f"{prefix}.{name}" if prefix else name
+        
+        if full_name == "millis": return {'type': 'millis', 'params': [], 'children': []}
+        if full_name == "Serial.available": return {'type': 'serialavailable', 'params': [], 'children': []}
+        if full_name == "analogRead": return {'type': 'analogread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
+        if full_name == "digitalRead": return {'type': 'digitalread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
+        if full_name == "random": return {'type': 'random', 'params': [str(a['params'][0]) if a else '' for a in args], 'children': []}
+        if full_name == "map":
+             return {
+                 'type': 'map',
+                 'params': ['', *[str(a['params'][0]) if a else '' for a in args[1:]]],
+                 'children': [args[0] if args else None, None, None, None, None]
+             }
+        if full_name == "constrain":
+             return {
+                 'type': 'constrain',
+                 'params': ['', *[str(a['params'][0]) if a else '' for a in args[1:]]],
+                 'children': [args[0] if args else None, None, None]
+             }
+        return {'type': 'value', 'params': [f"{full_name}(...)"], 'children': []}
 
 
 def parse_condition(cond_str, fill_conditions=False):
-    result = {
-        'leftExpr': None, 'op': '==', 'rightExpr': None,
-        'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None
-    }
-    and_match = re.search(r'\s*(&&|\|\|)\s*', cond_str)
-    if and_match:
-        result['joiner'] = 'and' if and_match.group(1) == '&&' else 'or'
-        parse_side(cond_str[:and_match.start()].strip(), result, 'leftExpr',  'op',  'rightExpr',  fill_conditions)
-        parse_side(cond_str[and_match.end():].strip(),   result, 'leftExpr2', 'op2', 'rightExpr2', fill_conditions)
-    else:
-        parse_side(cond_str, result, 'leftExpr', 'op', 'rightExpr', fill_conditions)
-    return result
-
-
-def parse_side(s, result, lkey, opkey, rkey, fill_conditions=False):
-    process = (lambda node: node) if fill_conditions else strip_expr_values
-    for op in ['>=', '<=', '!=', '==', '>', '<']:
-        if op in s:
-            parts = s.split(op, 1)
-            left_str  = parts[0].strip()
-            right_str = parts[1].strip()
-            result[opkey] = op
-            result[lkey]  = process(parse_expr(left_str))  if left_str  else None
-            result[rkey]  = process(parse_expr(right_str)) if right_str else None
-            return
-    result[lkey] = process(parse_expr(s.strip())) if s.strip() else None
-
+    # Wrap in a dummy sketch so it can be parsed via block_list, then extract the condition
+    try:
+        wrapped = f"if ({cond_str}) {{}}"
+        tree = arduino_parser.parse(wrapped, start='block_list')
+        blocks = BlockTransformer(fill_conditions=fill_conditions).transform(tree)
+        if blocks and isinstance(blocks[0], dict) and 'condition' in blocks[0]:
+            return blocks[0]['condition']
+    except:
+        pass
+    return {'leftExpr': None, 'op': '==', 'rightExpr': None, 'joiner': 'none'}
 
 def parse_expr(s):
-    """Parse an expression string into an exChildren node tree.
-    Returns a node dict: {type, params, children} matching JS makeExNode output.
-    Falls back to a value node for anything unrecognised.
-    """
     if not s: return {'type': 'value', 'params': [''], 'children': []}
-    s = s.strip()
-
-    # Strip outer parens: (expr) -> parse inside
-    if s.startswith('(') and s.endswith(')'):
-        inner = s[1:-1].strip()
-        # Only strip if parens are balanced (not something like (a+b)*(c+d))
-        depth = 0
-        balanced = True
-        for i, ch in enumerate(inner):
-            if ch == '(': depth += 1
-            elif ch == ')':
-                depth -= 1
-                if depth < 0:
-                    balanced = False
-                    break
-        if balanced and depth == 0:
-            return parse_expr(inner)
-
-    # Binary math: find lowest-precedence operator outside parens
-    # Precedence: + - (lowest), then * / %
-    for ops in (['+', '-'], ['*', '/', '%']):
-        depth = 0
-        in_quotes = False
-        # Scan right-to-left so left-associativity is preserved
-        for i in range(len(s) - 1, -1, -1):
-            ch = s[i]
-            if ch == '"': in_quotes = not in_quotes
-            if in_quotes:
-                continue
-            if ch == ')':
-                depth += 1
-            elif ch == '(':
-                depth -= 1
-            elif depth == 0 and ch in ops:
-                # Make sure it's not a unary minus at start
-                if ch == '-' and i == 0:
-                    continue
-                left  = s[:i].strip()
-                right = s[i+1:].strip()
-                if left and right:
-                    op_map = {'+': '+', '-': '-', '*': '*', '/': '/', '%': '%'}
-                    left_node  = parse_expr(left)
-                    right_node = parse_expr(right)
-                    return {
-                        'type': 'math',
-                        'params': ['', ch, ''],
-                        'children': [left_node, None, right_node]
-                    }
-
-    # millis()
-    if re.match(r'millis\s*\(\s*\)$', s):
-        return {'type': 'millis', 'params': [], 'children': []}
-
-    # Serial.available()
-    if re.match(r'Serial\.available\s*\(\s*\)$', s):
-        return {'type': 'serialavailable', 'params': [], 'children': []}
-
-    # analogRead(pin)
-    m = re.match(r'analogRead\s*\(\s*(\w+)\s*\)$', s)
-    if m:
-        return {'type': 'analogread', 'params': [m.group(1)], 'children': []}
-
-    # digitalRead(pin)
-    m = re.match(r'digitalRead\s*\(\s*(\w+)\s*\)$', s)
-    if m:
-        return {'type': 'digitalread', 'params': [m.group(1)], 'children': []}
-
-    # random(min, max)
-    m = re.match(r'random\s*\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)$', s)
-    if m:
-        return {'type': 'random', 'params': [m.group(1).strip(), m.group(2).strip()], 'children': []}
-
-    # map(val, inLo, inHi, outLo, outHi)
-    m = re.match(r'map\s*\((.+)\)$', s)
-    if m:
-        args = [a.strip() for a in m.group(1).split(',')]
-        if len(args) == 5:
-            return {
-                'type': 'map',
-                'params': ['', args[1], args[2], args[3], args[4]],
-                'children': [parse_expr(args[0]), None, None, None, None]
-            }
-
-    # constrain(val, lo, hi)
-    m = re.match(r'constrain\s*\((.+)\)$', s)
-    if m:
-        args = [a.strip() for a in m.group(1).split(',')]
-        if len(args) == 3:
-            return {
-                'type': 'constrain',
-                'params': ['', args[1], args[2]],
-                'children': [parse_expr(args[0]), None, None]
-            }
-
-    # Fallback: bare value (number, variable name, or anything else)
+    try:
+        wrapped = f"int _x = {s};"
+        tree = arduino_parser.parse(wrapped, start='block_list')
+        blocks = BlockTransformer(fill_values=True).transform(tree)
+        if blocks and isinstance(blocks[0], dict) and blocks[0].get('exChildren'):
+            return blocks[0]['exChildren'][1] or {'type': 'value', 'params': [s], 'children': []}
+    except:
+        pass
     return {'type': 'value', 'params': [s], 'children': []}
 
-
 def strip_expr_values(node):
-    """Walk an expression node tree and clear all leaf values.
-    Keeps structure (math ops, function types) but empties value nodes
-    and numeric params so the user fills them in.
-    """
-    if node is None:
-        return None
+    if node is None: return None
     t = node['type']
-    # value leaf — clear it
-    if t == 'value':
-        return None # Return None to indicate an empty expression slot
-    # millis has no params to clear
-    if t == 'millis':
-        return node
-    # serialavailable and serialreadstring have no params to clear
-    if t == 'serialavailable':
-        return node
-    if t == 'serialreadstring':
-        return node
-    # analogread/digitalread — clear pin
-    if t in ('analogread', 'digitalread'):
-        return {'type': t, 'params': [''], 'children': []}
-    # random — clear min/max
-    if t == 'random':
-        return {'type': 'random', 'params': ['', ''], 'children': []}
-    # math — keep operator, recurse into children
+    if t == 'value': return None
+    if t in ('millis', 'serialavailable', 'serialreadstring'): return node
+    if t in ('analogread', 'digitalread'): return {'type': t, 'params': [''], 'children': []}
+    if t == 'random': return {'type': 'random', 'params': ['', ''], 'children': []}
     if t == 'math':
         op = node['params'][1] if len(node['params']) > 1 else '+'
         ch = node.get('children') or [None, None, None]
@@ -193,365 +260,116 @@ def strip_expr_values(node):
             'params': ['', op, ''],
             'children': [strip_expr_values(ch[0]), None, strip_expr_values(ch[2])]
         }
-    # map — clear numeric params, recurse into val child
     if t == 'map':
         ch = node.get('children') or [None]
-        return {
-            'type': 'map',
-            'params': ['', '', '', '', ''],
-            'children': [strip_expr_values(ch[0]), None, None, None, None]
-        }
-    # constrain — clear lo/hi, recurse into val child
+        return {'type': 'map', 'params': ['', '', '', '', ''], 'children': [strip_expr_values(ch[0]), None, None, None, None]}
     if t == 'constrain':
         ch = node.get('children') or [None]
-        return {
-            'type': 'constrain',
-            'params': ['', '', ''],
-            'children': [strip_expr_values(ch[0]), None, None]
-        }
-    # anything else — return as-is
+        return {'type': 'constrain', 'params': ['', '', ''], 'children': [strip_expr_values(ch[0]), None, None]}
     return node
 
+def strip_block_values(block):
+    """Deep copy a block and strip all numeric/variable values, keeping only structure."""
+    if block is None: return None
+    if isinstance(block, list):
+         return [strip_block_values(b) for b in block]
+    if not isinstance(block, dict):
+         return block
+    
+    res = {k: v for k, v in block.items()}
+    
+    # Strip params for specific types
+    if res.get('type') in ('pinmode', 'digitalwrite', 'analogwrite', 'tone', 'serialbegin', 'boolvar'):
+         res['params'] = ["" for _ in res['params']]
+    
+    # Recurse into exChildren
+    if res.get('exChildren'):
+        res['exChildren'] = [strip_expr_values(c) for c in res['exChildren']]
+    
+    # Recurse into condition
+    if res.get('condition'):
+        cond = {k: v for k, v in res['condition'].items()}
+        cond['leftExpr'] = strip_expr_values(cond['leftExpr'])
+        cond['rightExpr'] = strip_expr_values(cond['rightExpr'])
+        cond['leftExpr2'] = strip_expr_values(cond['leftExpr2'])
+        cond['rightExpr2'] = strip_expr_values(cond['rightExpr2'])
+        res['condition'] = cond
+    
+    # Recurse into bodies
+    if res.get('ifbody'): res['ifbody'] = [strip_block_values(b) for b in res['ifbody']]
+    if res.get('elseifs'): 
+        for ei in res['elseifs']:
+            ei['body'] = [strip_block_values(b) for b in ei['body']]
+            if ei.get('condition'):
+                c = {k: v for k, v in ei['condition'].items()}
+                c['leftExpr'] = strip_expr_values(c['leftExpr'])
+                c['rightExpr'] = strip_expr_values(c['rightExpr'])
+                ei['condition'] = c
+    if res.get('elsebody'): res['elsebody'] = [strip_block_values(b) for b in res['elsebody']]
+    if res.get('body'): res['body'] = [strip_block_values(b) for b in res['body']]
+    
+    return res
 
 def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_content=False):
-    process = (lambda node: node) if (fill_values is True) else strip_expr_values
-    blocks = []
-    i = 0
     code = code.strip()
-    while i < len(code):
-        while i < len(code) and code[i] in ' \t\n\r': i += 1
-        if i >= len(code): break
-        if code[i:i+2] == '//':
-            # Check for locked block flag //##
-            if code[i:i+4] == '//##':
-                end = code.find('\n', i)
-                line = code[i+4:end].strip() if end != -1 else code[i+4:].strip()
-                if line: # Explicitly locked codeblock
-                    blocks.append({'type': 'codeblock', 'params': [line], 'locked': True})
-                i = end+1 if end != -1 else len(code)
+    if not code: return []
+    
+    try:
+        tree = arduino_parser.parse(code, start='block_list')
+        raw_items = BlockTransformer().transform(tree)
+        
+        final_blocks = []
+        current_phantom_hint = None
+        
+        for item in raw_items:
+            if isinstance(item, dict) and item.get('_is_phantom_dir'):
+                current_phantom_hint = item['hint']
                 continue
-            # Check for phantom block flag //??
-            if code[i:i+4] == '//??' :
-                end = code.find('\n', i)
-                hint = code[i+4:end].strip() if end != -1 else code[i+4:].strip()
-                i = end+1 if end != -1 else len(code)
-                # Find start of next code
-                j = i
-                while j < len(code) and code[j] in ' \t\n\r': j += 1
+            
+            if current_phantom_hint:
+                master = item
+                tmpl = strip_block_values(item)
+                
+                final_blocks.append({
+                    'type': 'slot',
+                    'id': str(random.random() * 1000000000000000),
+                    'content': master if initial_fill_content else None,
+                    'master': master,
+                    'phantom_meta': {
+                        'hint': current_phantom_hint,
+                        'expects': master['type'] if isinstance(master, dict) else 'codeblock',
+                        'params': tmpl.get('params', []) if isinstance(tmpl, dict) else [],
+                        'exChildren': tmpl.get('exChildren', []) if isinstance(tmpl, dict) else [],
+                        'condition': tmpl.get('condition') if isinstance(tmpl, dict) else None,
+                        'expectedExTypes': [e['type'] if e else None for e in master.get('exChildren', [])] if isinstance(master, dict) and 'exChildren' in master else None,
+                        'ifbody': tmpl.get('ifbody', []) if isinstance(tmpl, dict) else [],
+                        'elseifs': tmpl.get('elseifs', []) if isinstance(tmpl, dict) else [],
+                        'elsebody': tmpl.get('elsebody') if isinstance(tmpl, dict) else None,
+                        'body': tmpl.get('body', []) if isinstance(tmpl, dict) else [],
+                        'forinit': tmpl.get('forinit') if isinstance(tmpl, dict) else '',
+                        'forcond': tmpl.get('forcond') if isinstance(tmpl, dict) else '',
+                        'forincr': tmpl.get('forincr') if isinstance(tmpl, dict) else '',
+                    }
+                })
+                current_phantom_hint = None
+            else:
+                 # Normal block
+                 if not fill_values:
+                     final_blocks.append(strip_block_values(item))
+                 else:
+                     final_blocks.append(item)
+        
+        return final_blocks
+    except (UnexpectedToken, UnexpectedCharacters) as e:
+        # Enhanced fallback: Include error column/line info if available
+        error_meta = {'line': getattr(e, 'line', None), 'column': getattr(e, 'column', None)}
+        return [{
+            'type': 'codeblock', 
+            'params': [line.strip()], 
+            'locked': True, 
+            'parser_error': error_meta if i == (getattr(e, 'line', 1) - 1) else None
+        } for i, line in enumerate(code.split('\n')) if line.strip()]
 
-                # Extract full statement/block for the phantom
-                block_code = ""
-                block_end_idx = -1 # Initialize block_end_idx
-
-                if re.match(r'if\s*\(', code[j:]): # Handle if/else if/else blocks
-                    try:
-                        p_start = code.index('(', j)
-                        _, a_p = extract_condition(code, p_start)
-                        b_start = code.index('{', a_p)
-                        _, curr = extract_brace_body(code, b_start)
-                        # Check for else chains
-                        while True:
-                            tmp = curr
-                            while tmp < len(code) and code[tmp] in ' \t\n\r': tmp += 1
-                            if re.match(r'else', code[tmp:]):
-                                if re.match(r'else\s+if\s*\(', code[tmp:]):
-                                    p_start = code.index('(', tmp)
-                                    _, a_p = extract_condition(code, p_start)
-                                    b_start = code.index('{', a_p)
-                                    _, curr = extract_brace_body(code, b_start)
-                                else:
-                                    b_start = code.index('{', tmp) # Find the opening brace for 'else {'
-                                    _, curr = extract_brace_body(code, b_start)
-                                    break
-                            else: # No more else/else if
-                                break
-                        block_end_idx = curr
-                    except ValueError: pass
-                elif re.match(r'(while|for)\s*\(', code[j:]):
-                    try:
-                        p_start = code.index('(', j)
-                        _, a_p = extract_condition(code, p_start)
-                        b_start = code.index('{', a_p)
-                        _, block_end_idx = extract_brace_body(code, b_start)
-                    except ValueError: pass
-                else:
-                    # Statement ending in semicolon
-                    k = j
-                    depth = 0
-                    while k < len(code):
-                        if code[k] in '([': depth += 1
-                        elif code[k] in ')]': depth -= 1
-                        elif code[k] == ';' and depth == 0:
-                            block_end_idx = k + 1
-                            break
-                        k += 1
-
-                if block_end_idx != -1:
-                    block_code = code[j:block_end_idx]
-                    i = block_end_idx
-                else:
-                    # Fallback to single line
-                    next_end = code.find('\n', j)
-                    block_code = code[j:next_end].strip() if next_end != -1 else code[j:].strip()
-                    i = next_end+1 if next_end != -1 else len(code)
-
-                # Master version: always fully filled for metadata and 'fill:true' content
-                master_blocks = parse_blocks(block_code, fill_conditions=True, fill_values=True)
-                # Template version: stripped based on current settings for student building
-                tmpl_blocks = parse_blocks(block_code, fill_conditions, fill_values)
-
-                if master_blocks and tmpl_blocks and not master_blocks[0]['type'] == 'codeblock':
-                    master = master_blocks[0]
-                    tmpl = tmpl_blocks[0]
-                    ref = master
-                    
-                    ex_types = [e['type'] if e else None for e in ref.get('exChildren', [])]
-                    cond_ref = ref.get('condition')
-                    cond_types = None
-                    if cond_ref:
-                        cond_types = {
-                            'left': cond_ref['leftExpr']['type'] if cond_ref['leftExpr'] else None,
-                            'right': cond_ref['rightExpr']['type'] if cond_ref['rightExpr'] else None,
-                            'left2': cond_ref.get('leftExpr2', {}).get('type') if cond_ref.get('leftExpr2') else None,
-                            'right2': cond_ref.get('rightExpr2', {}).get('type') if cond_ref.get('rightExpr2') else None,
-                        }
-
-                    blocks.append({
-                        'type': 'slot',
-                        'id': str(random.random() * 1000000000000000),
-                        'content': master if initial_fill_content else None,
-                        'master': master,
-                        'phantom_meta': {
-                            'hint': hint,
-                            'expects': master['type'],
-                            'params': tmpl.get('params', []),
-                            'exChildren': tmpl.get('exChildren', []),
-                            'condition': tmpl.get('condition'),
-                            'expectedExTypes': ex_types,
-                            'expectedCondTypes': cond_types,
-                            'ifbody': tmpl.get('ifbody', []),
-                            'elseifs': tmpl.get('elseifs', []),
-                            'elsebody': tmpl.get('elsebody'),
-                            'body': tmpl.get('body', []),
-                            'forinit': tmpl.get('forinit'),
-                            'forcond': tmpl.get('forcond'),
-                            'forincr': tmpl.get('forincr'),
-                        }
-                    })
-                continue
-            end = code.find('\n', i)
-            i = end+1 if end != -1 else len(code)
-            continue
-        if code[i:i+2] == '/*':
-            end = code.find('*/', i)
-            i = end+2 if end != -1 else len(code)
-            continue
-        if code[i] == '#':
-            end = code.find('\n', i)
-            line = code[i:end].strip() if end != -1 else code[i:].strip()
-            blocks.append({'type': 'codeblock', 'params': [line]})
-            i = end + 1 if end != -1 else len(code)
-            continue
-        if re.match(r'if\s*\(', code[i:]):
-            paren_start = code.index('(', i)
-            cond_str, after_paren = extract_condition(code, paren_start)
-            brace_start = code.index('{', after_paren)
-            body_str, after_body = extract_brace_body(code, brace_start)
-            block = { # If block
-                'type': 'ifblock',
-                'condition': parse_condition(cond_str, fill_conditions),
-                'ifbody':   parse_blocks(body_str, fill_conditions, fill_values),
-                'elseifs':  [],
-                'elsebody': None
-            }
-            i = after_body
-            while i < len(code):
-                while i < len(code) and code[i] in ' \t\n\r': i += 1
-                if re.match(r'else\s+if\s*\(', code[i:]):
-                    paren_start = code.index('(', i)
-                    ei_cond, after_paren = extract_condition(code, paren_start)
-                    brace_start = code.index('{', after_paren)
-                    ei_body, after_body = extract_brace_body(code, brace_start)
-                    block['elseifs'].append({ # Else if block
-                        'condition': parse_condition(ei_cond, fill_conditions),
-                        'body': parse_blocks(ei_body, fill_conditions, fill_values)
-                    })
-                    i = after_body
-                elif re.match(r'else\s*\{', code[i:]) or (re.match(r'else', code[i:]) and not re.match(r'else\s+if', code[i:])):
-                    brace_start = code.index('{', i) # Else block
-                    else_body, after_body = extract_brace_body(code, brace_start)
-                    block['elsebody'] = parse_blocks(else_body, fill_conditions, fill_values)
-                    i = after_body
-                    break
-                else:
-                    break
-            blocks.append(block)
-            continue
-        if re.match(r'while\s*\(', code[i:]):
-            paren_start = code.index('(', i)
-            cond_str, after_paren = extract_condition(code, paren_start)
-            brace_start = code.index('{', after_paren) # While loop
-            body_str, after_body = extract_brace_body(code, brace_start)
-            blocks.append({
-                'type': 'whileloop',
-                'condition': parse_condition(cond_str, fill_conditions),
-                'body': parse_blocks(body_str, fill_conditions, fill_values)
-            })
-            i = after_body
-            continue
-        if re.match(r'for\s*\(', code[i:]):
-            paren_start = code.index('(', i)
-            for_str, after_paren = extract_condition(code, paren_start)
-            brace_start = code.index('{', after_paren) # For loop
-            body_str, after_body = extract_brace_body(code, brace_start)
-            parts = for_str.split(';', 2)
-            forinit = parts[0].strip() if len(parts) > 0 else 'int i = 0'
-            forcond = parts[1].strip() if len(parts) > 1 else 'i < 10'
-            forincr = parts[2].strip() if len(parts) > 2 else 'i++'
-            blocks.append({
-                'type': 'forloop',
-                'forinit': forinit,
-                'forcond': forcond,
-                'forincr': forincr,
-                'body': parse_blocks(body_str, fill_conditions, fill_values)
-            })
-            i = after_body
-            continue
-        # Find next semicolon not inside parens or brackets
-        depth = 0
-        semi = -1
-        j = i
-        while j < len(code):
-            c = code[j]
-            if c in '([': depth += 1
-            elif c in ')]': depth -= 1
-            elif c == ';' and depth == 0:
-                semi = j
-                break
-            j += 1
-        if semi == -1: break
-        line = code[i:semi+1].strip()
-        i = semi + 1
-        m = re.match(r'int\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
-        if m: # int var
-            ex = process(parse_expr(m.group(2) if m.group(2) else ""))
-            blocks.append({'type':'intvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'long\s+r\s*=\s*random\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)\s*;', line)
-        if m: blocks.append({'type':'randomdelay','params':['','']}); continue
-        m = re.match(r'long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(2) if m.group(2) else "")) # long var
-            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'unsigned\s+long\s+(\w+)(?:\s*=\s*(.+?))?\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(2) if m.group(2) else "")) # unsigned long var
-            blocks.append({'type':'longvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'bool\s+(\w+)(?:\s*=\s*(true|false))?\s*;', line)
-        if m:
-            val = (m.group(2) if fill_values else '') if m.group(2) else ''
-            blocks.append({'type':'boolvar','params':[m.group(1), val]})
-            continue
-        m = re.match(r'String\s+(\w+)\s*=\s*Serial\.readString\s*\(\s*\)\s*;', line) # String var from Serial.readString
-        if m:
-            ex = {'type': 'serialreadstring', 'params': [], 'children': []} if fill_values else None
-            blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-        m = re.match(r'String\s+(\w+)(?:\s*=\s*"([^"]*)")?\s*;', line)
-        if m:
-            val = (m.group(2) if fill_values else '') if m.group(2) else ''
-            ex = {'type': 'value', 'params': ['"' + val + '"' if val else ''], 'children': []}
-            blocks.append({'type':'stringvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue # String var
-        m = re.match(r'pinMode\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m:
-            p0 = m.group(1) if fill_values else ''
-            p1 = m.group(2) if fill_values else ''
-            blocks.append({'type':'pinmode','params':[p0, p1]})
-            continue
-        m = re.match(r'digitalWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m:
-            p0 = m.group(1) if fill_values else ''
-            p1 = m.group(2) if fill_values else ''
-            blocks.append({'type':'digitalwrite','params':[p0, p1]})
-            continue # digitalWrite
-        m = re.match(r'analogWrite\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m:
-            p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'analogwrite','params':[p0,''],'exChildren':[None, process(parse_expr(m.group(2)))]})
-            continue
-        m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: # tone with duration
-            p0 = m.group(1) if fill_values else ''
-            p2 = m.group(3) if fill_values else ''
-            blocks.append({'type':'tone','params':[p0,'', p2],'exChildren':[None, process(parse_expr(m.group(2)))]})
-            continue
-        m = re.match(r'tone\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*;', line)
-        if m: # tone without duration
-            p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'tone','params':[p0,'',None],'exChildren':[None, process(parse_expr(m.group(2)))]})
-            continue
-        m = re.match(r'noTone\s*\(\s*(.+?)\s*\)\s*;', line) # noTone
-        if m:
-            ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'notone','params':[''],'exChildren':[ex]})
-            continue
-        m = re.match(r'delay\s*\(\s*(.+?)\s*\)\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'delay','params':[''],'exChildren':[ex]}) # delay
-            continue
-        m = re.match(r'delayMicroseconds\s*\(\s*(.+?)\s*\)\s*;', line)
-        if m:
-            ex = process(parse_expr(m.group(1)))
-            blocks.append({'type':'delaymicroseconds','params':[''],'exChildren':[ex]}) # delayMicroseconds
-            continue
-        m = re.match(r'Serial\.begin\s*\(\s*(\d+)\s*\)\s*;', line)
-        if m:
-            p0 = m.group(1) if fill_values else ''
-            blocks.append({'type':'serialbegin','params':[p0]}) # Serial.begin
-            continue
-        m = re.match(r'Serial\.(print|println)\s*\(\s*(.+?)\s*\)\s*;', line)
-        if m:
-            fn_type = m.group(1)
-            content = m.group(2).strip()
-            ex = process(parse_expr(content))
-            blocks.append({'type':'serialprint','params':['',fn_type],'exChildren':[ex]})
-            continue # Serial.print/println
-        m = re.match(r'(\w+)\s*\+\+\s*;', line)
-        if m: blocks.append({'type':'increment','params':[m.group(1),'++','1']}); continue # increment ++
-        m = re.match(r'(\w+)\s*--\s*;', line) # increment --
-        if m: blocks.append({'type':'increment','params':[m.group(1),'--','1']}); continue
-        m = re.match(r'(\w+)\s*\+=\s*(.+?)\s*;', line)
-        if m:
-            val = m.group(2) if fill_values else ''
-            blocks.append({'type':'increment','params':[m.group(1),'+=', val]})
-            continue
-        m = re.match(r'(\w+)\s*-=\s*(.+?)\s*;', line)
-        if m: # decrement -=
-            val = m.group(2) if fill_values else ''
-            blocks.append({'type':'increment','params':[m.group(1),'-=', val]})
-            continue
-        m = re.match(r'(\w+)\s*=\s*(.+?)\s*;', line)
-        if m and not re.match(r'(int|long|float|bool|byte|char|String|unsigned)\s', line):
-            ex = process(parse_expr(m.group(2)))
-            blocks.append({'type':'setvar','params':[m.group(1),''],'exChildren':[None, ex]})
-            continue
-
-        # Fallback for unrecognized statements ending in semicolon
-        blocks.append({'type': 'codeblock', 'params': [line], 'locked': True}) # Unrecognized statement becomes a locked codeblock
-
-    # After the main parsing loop, check for any remaining unparsed code
-    remaining_code = code[i:].strip()
-    if remaining_code:
-        # Split by newlines to handle multiple lines of unparseable code
-        for line in remaining_code.split('\n'):
-            line = line.strip()
-            if line: # Only add non-empty lines
-                blocks.append({'type': 'codeblock', 'params': [line], 'locked': True})
-    return blocks
 def parse_sketch(sketch_code, fill_conditions=False, fill_values=False, initial_fill_content=False):
     result = {'global': [], 'setup': [], 'loop': []}
     setup_start = re.search(r'void\s+setup\s*\(.*?\)', sketch_code)
@@ -636,7 +454,7 @@ def parse_steps(sketch_code):
     plus the new phantom and locked blocks for this step.
     """
     # Split on //>> boundaries
-    step_pattern = re.compile(r'^//>>(.+)$', re.MULTILINE)
+    step_pattern = re.compile(r'^\s*//>>(.+)$', re.MULTILINE)
     boundaries = [(m.start(), m.group(1).strip()) for m in step_pattern.finditer(sketch_code)]
 
     if not boundaries:
@@ -675,6 +493,7 @@ def parse_steps(sketch_code):
 
         # 2. Explicit Overrides (key:value)
         is_filter = (palette_filter == 'filter')
+        is_readonly = (guidance not in ['free', 'open']) # Default
         for p in parts:
             p_low = p.lower()
             if p_low.startswith('fill:'):
@@ -685,6 +504,8 @@ def parse_steps(sketch_code):
                 validation = p_low.split(':')[1]
             if p_low.startswith('filter:'):
                 is_filter = (p_low.split(':')[1] == 'true')
+            if p_low.startswith('readonly:'):
+                is_readonly = (p_low.split(':')[1] == 'true')
 
         step_config = {
             'flow': "progression",
@@ -692,6 +513,7 @@ def parse_steps(sketch_code):
             'structure': structure,
             'fill': fill,
             'filter': is_filter,
+            'readonly': is_readonly,
             'validation': validation,
             'interface': view if view in ['blocks', 'editor'] else 'blocks'
         }

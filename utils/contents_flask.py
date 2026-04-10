@@ -5,12 +5,7 @@ The block builder service handles the hover zoom rendering.
 """
 import base64
 from pathlib import Path
-
-def img_to_b64(path):
-    data = Path(path).read_bytes()
-    b64 = base64.b64encode(data).decode()
-    ext = Path(path).suffix.lstrip(".")
-    return f"data:image/{ext};base64,{b64}"
+from utils.image_utils import img_to_b64  # Assuming a new utility file
 
 # Pre-encode circuit images
 engine_circuit_b64 = img_to_b64("static/graphics/project_twelve_circuit.png")

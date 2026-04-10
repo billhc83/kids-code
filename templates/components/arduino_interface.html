@@ -122,16 +122,44 @@
     min-height: 0;
   }
 
-  /* SERIAL MONITOR */
-  #serial-monitor {
-    height: 100px;
+  /* SERIAL MONITOR OVERLAY */
+  #serial-monitor-overlay {
+    display: none;
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 220px;
     background: #ffffff;
-    border-top: 2px solid #f1f5f9;
-    padding: 12px 16px;
+    border-top: 2px solid #e2e8f0;
+    z-index: 200;
+    flex-direction: column;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+  }
+  #serial-monitor-overlay.open {
+    display: flex;
+  }
+  #serial-monitor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  #serial-monitor-toolbar span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    flex: 1;
+  }
+  #serial-monitor {
+    flex: 1;
+    padding: 10px 16px;
     font-family: monospace;
     font-size: 12px;
     color: #475569;
     overflow-y: auto;
+    min-height: 0;
   }
   
   #agent-status {
@@ -230,6 +258,8 @@
 
 <!-- Monaco -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+<!-- Sim Engine -->
+<script src="/static/js/sim-engine.js"></script>
 </head>
 
 <body>
@@ -237,13 +267,12 @@
 <div id="top-bar">
   <select id="port-select"></select>
   <button id="refresh-ports-btn">Refresh</button>
-  <button id="connect-btn">Serial Monitor</button>
+  <button id="connect-btn">Show Monitor</button>
   <button id="compile-btn">Compile</button>
   <button id="upload-btn">Upload</button>
   <button id="save-btn">Save</button>
   <button id="copy-btn">Copy</button>
   <button id="reset-btn">Reset</button>
-  <button id="clear-serial-btn">Clear</button>
   <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
   <div id="agent-status" class="status-offline">Checking Agent...</div>
 </div>
@@ -263,7 +292,16 @@
       <div id="editor"></div>
     </div>
   </div>
-  <div id="serial-monitor"></div>
+
+  <!-- SERIAL MONITOR OVERLAY -->
+  <div id="serial-monitor-overlay">
+    <div id="serial-monitor-toolbar">
+      <span>Serial Monitor</span>
+      <button id="clear-serial-overlay-btn">Clear</button>
+      <button id="close-serial-btn">Hide Monitor</button>
+    </div>
+    <div id="serial-monitor"></div>
+  </div>
 
   <!-- GLOBAL DRAWER -->
   <div id="drawer-panel" class="open">
@@ -305,6 +343,9 @@ window.flash = function(txt) {
 window.addEventListener('stepchange', function(e) {
   if (e.detail && e.detail.view) {
     setMode(e.detail.view);
+  }
+  if (e.detail && e.detail.readOnly !== undefined && editor) {
+    editor.updateOptions({ readOnly: e.detail.readOnly });
   }
 });
 
@@ -356,8 +397,19 @@ window.updateDrawer = function(stepIdx) {
     const p = document.createElement('div');
     p.className = 'drawer-tab-panel' + (i === 0 ? ' active' : '');
     p.id = `dtab-${k}`;
-    p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
-    pansC.appendChild(p);
+
+    if (tab.type === 'sim' && tab.sim_config) {
+      const simDiv = document.createElement('div');
+      simDiv.style.padding = '8px 0';
+      p.appendChild(simDiv);
+      pansC.appendChild(p);
+      setTimeout(() => {
+        if (window.SimEngine) SimEngine.init(simDiv, tab.sim_config);
+      }, 0);
+    } else {
+      p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
+      pansC.appendChild(p);
+    }
   });
 };
 
@@ -442,6 +494,8 @@ async function setMode(mode) {
   } else {
     if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
     if (editor) {
+      const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+      editor.updateOptions({ readOnly: !!meta.readOnly });
       // Trigger layout multiple times to ensure we catch the final container size 
       // after the browser finishes the flexbox reflow.
       [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
@@ -450,9 +504,8 @@ async function setMode(mode) {
 
   if (mode === 'blocks') {
     // Sync Editor -> Blocks
-    // Only attempt sync if NOT in progression mode to preserve phantom structure
-    const isProgression = window.isProgressionMode && window.isProgressionMode();
-    if (!isProgression && editor) {
+    const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+    if (!meta.readOnly && editor) {
       const code = editor.getValue();
       try {
         const res = await fetch('/parse', {
@@ -746,8 +799,27 @@ async function loadBlockBuilder() {
 }
 
 // Events
+let serialMonitorOpen = false;
+
+function openSerialMonitor() {
+  serialMonitorOpen = true;
+  document.getElementById('serial-monitor-overlay').classList.add('open');
+  document.getElementById('connect-btn').textContent = 'Hide Monitor';
+  connectSerial();
+}
+
+function closeSerialMonitor() {
+  serialMonitorOpen = false;
+  document.getElementById('serial-monitor-overlay').classList.remove('open');
+  document.getElementById('connect-btn').textContent = 'Show Monitor';
+  if (ws) { ws.close(); ws = null; }
+}
+
 document.getElementById('refresh-ports-btn').onclick = fetchPorts;
-document.getElementById('connect-btn').onclick = connectSerial;
+document.getElementById('connect-btn').onclick = function() {
+  if (serialMonitorOpen) closeSerialMonitor();
+  else openSerialMonitor();
+};
 document.getElementById('compile-btn').onclick = compileSketch;
 document.getElementById('upload-btn').onclick = uploadSketch;
 document.getElementById('save-btn').onclick = function() {
@@ -763,9 +835,10 @@ document.getElementById('copy-btn').onclick = function() {
 document.getElementById('reset-btn').onclick = function() {
   if (window.resetBlocks) window.resetBlocks();
 };
-document.getElementById('clear-serial-btn').onclick = () => {
+document.getElementById('clear-serial-overlay-btn').onclick = () => {
   document.getElementById('serial-monitor').innerHTML = '';
 };
+document.getElementById('close-serial-btn').onclick = closeSerialMonitor;
 
 // Init
 checkAgentStatus();

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"fill_conditions\\\\|fill_values\" /c/kids-code/kids-code/utils/*.py --include=\"*.py\")",
+      "Bash(venv/Scripts/pip list:*)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python verify_parser.py)",
+      "Bash(venv/Scripts/python -c ':*)"
+    ]
+  }
+}

@@ -63,14 +63,7 @@ STEPS = [
     ),
 ]
 
-import base64
-from pathlib import Path
-
-def img_to_b64(path):
-    data = Path(path).read_bytes()
-    b64 = base64.b64encode(data).decode()
-    ext = Path(path).suffix.lstrip(".")
-    return f"data:image/{ext};base64,{b64}"
+from utils.image_utils import img_to_b64
 
 patrol_alarm_b64 = img_to_b64("static/graphics/project_thirteen_circuit.png")
 
@@ -186,6 +179,28 @@ Your light system is ready. Now it's time to test it.
 If all of these work, your patrol light bar is operating correctly!
 </p>
 """
+          },
+          "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+              "components": [
+                {"type": "button", "id": "btn1",  "pin": 12, "label": "Master Button"},
+                {"type": "led",    "id": "led_r",  "color": "red",   "pin": 8, "label": "Red Light"},
+                {"type": "led",    "id": "led_b",  "color": "blue",  "pin": 6, "label": "Blue Light"},
+                {"type": "led",    "id": "led_w",  "color": "white", "pin": 4, "label": "Clear Strobe"},
+              ],
+              "behaviors": [
+                {
+                  "when": {"btn1": "pressed"},
+                  "then": {"_sequence": ["led_r", "led_b", "led_w"], "_interval": 150}
+                },
+                {
+                  "when": {"btn1": "released"},
+                  "then": {"_stop_sequence": "yes", "led_r": "off", "led_b": "off", "led_w": "off"}
+                },
+              ]
+            }
           }
         }
       }

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sim Preview v3</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #1a1a2e;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  .page-title {
+    color: #666;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .sim-canvas {
+    background: #f0f0ea;
+    border-radius: 20px;
+    padding: 52px 72px 44px;
+    display: flex;
+    align-items: flex-end;
+    gap: 72px;
+    box-shadow: 0 16px 64px rgba(0,0,0,0.6);
+  }
+  .component-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .comp-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .comp-pin { font-size: 10px; font-weight: 400; color: #999; }
+  svg { overflow: visible; display: block; }
+  .status-bar {
+    margin-top: 28px;
+    padding: 10px 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #7ab;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    min-width: 380px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Simulation Components — v3</div>
+
+<div class="sim-canvas">
+
+  <!-- ══ RED LED ══════════════════════════════════════════════════════════════ -->
+  <div class="component-col" id="col-red" onclick="toggleLed('red')">
+    <svg width="60" height="100" viewBox="-30 0 60 100">
+      <defs>
+        <!-- feGaussianBlur filter lives INSIDE this svg — always resolves -->
+        <filter id="f-red" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <clipPath id="c-red"><rect x="-16" y="5" width="32" height="16"/></clipPath>
+        <radialGradient id="shine-red" cx="35%" cy="25%" r="50%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="white" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Glow halo — blurred copy behind the body, hidden by default -->
+      <g id="glow-red" style="display:none">
+        <circle cx="0" cy="21" r="16" fill="#ff2222" filter="url(#f-red)"/>
+      </g>
+
+      <!-- Leads -->
+      <line x1="-7" y1="47" x2="-7" y2="76" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+      <line x1="7"  y1="47" x2="7"  y2="84" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Body -->
+      <circle id="dome-red" cx="0" cy="21" r="16" clip-path="url(#c-red)" fill="#7a1010"/>
+      <rect   id="body-red" x="-16" y="21" width="32" height="19" fill="#7a1010"/>
+      <rect   id="coll-red" x="-16" y="37" width="32" height="8" rx="2" fill="#4d0a0a"/>
+
+      <!-- Shine -->
+      <circle cx="0" cy="21" r="16" clip-path="url(#c-red)" fill="url(#shine-red)" pointer-events="none"/>
+      <rect x="-16" y="21" width="32" height="19" fill="url(#shine-red)" opacity="0.3" pointer-events="none"/>
+    </svg>
+    <div class="comp-label">Red LED<br><span class="comp-pin">Pin 8</span></div>
+  </div>
+
+  <!-- ══ YELLOW LED ═══════════════════════════════════════════════════════════ -->
+  <div class="component-col" id="col-yellow" onclick="toggleLed('yellow')">
+    <svg width="60" height="100" viewBox="-30 0 60 100">
+      <defs>
+        <filter id="f-yellow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <clipPath id="c-yellow"><rect x="-16" y="5" width="32" height="16"/></clipPath>
+        <radialGradient id="shine-yellow" cx="35%" cy="25%" r="50%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="white" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <g id="glow-yellow" style="display:none">
+        <circle cx="0" cy="21" r="16" fill="#ffdd00" filter="url(#f-yellow)"/>
+      </g>
+
+      <line x1="-7" y1="47" x2="-7" y2="76" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+      <line x1="7"  y1="47" x2="7"  y2="84" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+
+      <circle id="dome-yellow" cx="0" cy="21" r="16" clip-path="url(#c-yellow)" fill="#6e5500"/>
+      <rect   id="body-yellow" x="-16" y="21" width="32" height="19" fill="#6e5500"/>
+      <rect   id="coll-yellow" x="-16" y="37" width="32" height="8" rx="2" fill="#453400"/>
+
+      <circle cx="0" cy="21" r="16" clip-path="url(#c-yellow)" fill="url(#shine-yellow)" pointer-events="none"/>
+      <rect x="-16" y="21" width="32" height="19" fill="url(#shine-yellow)" opacity="0.3" pointer-events="none"/>
+    </svg>
+    <div class="comp-label">Yellow LED<br><span class="comp-pin">Pin 9</span></div>
+  </div>
+
+  <!-- ══ BUTTON ════════════════════════════════════════════════════════════════ -->
+  <div class="component-col" id="btn-col">
+    <svg width="76" height="76" viewBox="-38 -38 76 76">
+      <!-- PCB -->
+      <rect x="-29" y="-29" width="58" height="58" rx="5" fill="#267326" stroke="#1a5c1a" stroke-width="1.5"/>
+      <!-- Traces -->
+      <line x1="-29" y1="-12" x2="-15" y2="-12" stroke="#48c248" stroke-width="1.2" opacity="0.55"/>
+      <line x1="15"  y1="-12" x2="29"  y2="-12" stroke="#48c248" stroke-width="1.2" opacity="0.55"/>
+      <line x1="-29" y1="12"  x2="-15" y2="12"  stroke="#48c248" stroke-width="1.2" opacity="0.55"/>
+      <line x1="15"  y1="12"  x2="29"  y2="12"  stroke="#48c248" stroke-width="1.2" opacity="0.55"/>
+      <!-- Pads -->
+      <rect x="-34" y="-18" width="8" height="6" rx="1.5" fill="#c9a000"/>
+      <rect x="26"  y="-18" width="8" height="6" rx="1.5" fill="#c9a000"/>
+      <rect x="-34" y="12"  width="8" height="6" rx="1.5" fill="#c9a000"/>
+      <rect x="26"  y="12"  width="8" height="6" rx="1.5" fill="#c9a000"/>
+      <!-- Rim -->
+      <circle cx="0" cy="0" r="18" fill="#6a6a6a"/>
+      <!-- Inner shadow -->
+      <circle cx="0" cy="2" r="15" fill="#3a3a3a"/>
+      <!-- Cap -->
+      <circle id="btn-cap" cx="0" cy="-1.5" r="13.5" fill="#d2cac0"/>
+      <!-- Specular -->
+      <ellipse id="btn-shine" cx="-3" cy="-6" rx="5" ry="3.2" fill="white" opacity="0.3" pointer-events="none"/>
+    </svg>
+    <div class="comp-label">Button<br><span class="comp-pin">Pin 2</span></div>
+  </div>
+
+</div>
+
+<div class="status-bar" id="status">click an LED to toggle &nbsp;·&nbsp; hold the button to press</div>
+
+<script>
+const LED_CFG = {
+  red: {
+    off: { main: '#7a1010', collar: '#4d0a0a' },
+    on:  { main: '#ff1a1a', collar: '#cc0000' },
+    pin: 8
+  },
+  yellow: {
+    off: { main: '#6e5500', collar: '#453400' },
+    on:  { main: '#ffe000', collar: '#ccaa00' },
+    pin: 9
+  }
+};
+
+const ledState = { red: false, yellow: false };
+
+function toggleLed(color) {
+  ledState[color] = !ledState[color];
+  const on  = ledState[color];
+  const cfg = LED_CFG[color];
+  const c   = on ? cfg.on : cfg.off;
+
+  document.getElementById('dome-' + color).setAttribute('fill', c.main);
+  document.getElementById('body-' + color).setAttribute('fill', c.main);
+  document.getElementById('coll-' + color).setAttribute('fill', c.collar);
+  document.getElementById('glow-' + color).style.display = on ? 'block' : 'none';
+
+  const label = color.charAt(0).toUpperCase() + color.slice(1);
+  setStatus(label + ' LED ' + (on ? 'ON  ●' : 'OFF ○') + '  ·  Pin ' + cfg.pin + ' → ' + (on ? 'HIGH (5V)' : 'LOW (0V)'));
+}
+
+// Button
+const btnCap   = document.getElementById('btn-cap');
+const btnShine = document.getElementById('btn-shine');
+
+function pressBtn() {
+  btnCap.setAttribute('cy', '1.5');
+  btnCap.setAttribute('fill', '#a8a09a');
+  btnShine.setAttribute('opacity', '0.1');
+  setStatus('Button PRESSED  ·  Pin 2 → LOW (0V)');
+}
+function releaseBtn() {
+  btnCap.setAttribute('cy', '-1.5');
+  btnCap.setAttribute('fill', '#d2cac0');
+  btnShine.setAttribute('opacity', '0.3');
+  setStatus('Button RELEASED  ·  Pin 2 → HIGH (5V)');
+}
+
+const btnCol = document.getElementById('btn-col');
+btnCol.addEventListener('mousedown',  pressBtn);
+btnCol.addEventListener('mouseup',    releaseBtn);
+btnCol.addEventListener('mouseleave', releaseBtn);
+btnCol.addEventListener('touchstart', e => { e.preventDefault(); pressBtn(); });
+btnCol.addEventListener('touchend',   e => { e.preventDefault(); releaseBtn(); });
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+</script>
+</body>
+</html>

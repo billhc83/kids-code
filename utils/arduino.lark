@@ -1,0 +1,75 @@
+block_list: (block | directive | statement)*
+
+?block: if_block
+      | while_loop
+      | for_loop
+
+if_block: "if" "(" condition ")" "{" block_list "}" else_if_clause* else_clause?
+else_if_clause: "else" "if" "(" condition ")" "{" block_list "}"
+else_clause: "else" "{" block_list "}"
+
+while_loop: "while" "(" condition ")" "{" block_list "}"
+
+for_loop: "for" "(" FOR_HEADER ")" "{" block_list "}"
+
+?statement: (var_decl | func_call | assignment | increment) ";" -> stmt
+
+?stmt_no_semi: var_decl
+             | func_call
+             | assignment
+             | increment
+
+var_decl: TYPE IDENTIFIER ["=" expression]
+assignment: IDENTIFIER "=" expression
+increment: IDENTIFIER ("++" | "--") -> crement
+         | IDENTIFIER ("+=" | "-=") expression -> op_assign
+
+func_call: IDENTIFIER ["." IDENTIFIER] "(" [arg_list] ")"
+
+arg_list: [arg_item ("," arg_item)*]
+?arg_item: expression | empty_arg
+
+?condition: expression [COMP_OP (expression | empty_arg)] [JOIN_OP condition]
+
+?expression: term
+           | expression "+" term   -> add
+           | expression "-" term   -> sub
+
+?term: factor
+     | term "*" factor           -> mul
+     | term "/" factor           -> div
+     | term "%" factor           -> mod
+
+?factor: NUMBER                  -> number
+       | STRING                  -> string
+       | IDENTIFIER ["." IDENTIFIER] "(" [arg_list] ")" -> func_expr
+       | IDENTIFIER              -> var
+       | "(" expression ")"
+
+directive: STEP_DIR      -> step
+         | PHANTOM_DIR   -> phantom
+         | LOCKED_DIR    -> locked
+
+empty_arg: -> empty_val
+
+// Terminals
+TYPE.2: "int" | "long" | "unsigned" "long" | "bool" | "String" | "float" | "byte" | "char"
+COMP_OP: "==" | "!=" | ">=" | "<=" | ">" | "<"
+JOIN_OP: "&&" | "||"
+IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
+STRING: /"[^"]*"/
+NUMBER: /-?\d+(\.\d*)?/
+
+FOR_HEADER: /[^)]+/
+
+STEP_DIR.3: /\/\/>>[^\n]+/
+PHANTOM_DIR.3: /\/\/\?\?[^\n]+/
+LOCKED_DIR.3: /\/\/\#\#[^\n]+/
+
+// Only ignore comments that are NOT directive lines (//??, //##, //>>)
+PLAIN_COMMENT: /\/\/(?!\?\?|##|>>)[^\n]*/
+%import common.WS
+%ignore WS
+%ignore PLAIN_COMMENT
+%import common.C_COMMENT
+%ignore C_COMMENT

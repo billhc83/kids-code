@@ -1,6 +1,7 @@
 import base64
 from pathlib import Path
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.image_utils import img_to_b64
 
 META = {
     'title': 'How to use the block builder',
@@ -9,13 +10,6 @@ META = {
 }
 
 STEPS = None
-
-
-def img_to_b64(path):
-    data = Path(path).read_bytes()
-    b64 = base64.b64encode(data).decode()
-    ext = Path(path).suffix.lstrip(".")
-    return f"data:image/{ext};base64,{b64}"
 
 phantom = img_to_b64("static/graphics/phantom.png")
 selected_phantom = img_to_b64("static/graphics/selected_phantom.png")
@@ -394,7 +388,7 @@ DRAWER_CONTENT = {
 
 SKETCH_PRESET = {
     'sketch': """
-//>> Step 1 - The Program Structure | free | blocks | filter | fill:false
+//>> Step 1 - The Program Structure | open | blocks | filter | fill:false
 void setup() {
 }
 void loop() {
@@ -454,7 +448,7 @@ void loop() {
   delay(1000);
 }
 
-//>> Step 8 - Tutorial Complete | guided | blocks | filter |fill:false
+//>> Step 8 - Tutorial Complete | open | blocks | filter |fill:false
 
 void loop() {
   //## Serial.println(myNumber);

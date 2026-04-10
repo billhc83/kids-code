@@ -139,6 +139,12 @@ def step_builder():
     ]) if os.path.exists(graphics_dir) else []
     return render_template("admin/step_builder.html", graphics=graphics)
 
+@admin_bp.route("/admin/sim-builder")
+@login_required
+@admin_required
+def sim_builder():
+    return render_template("admin/sim_builder.html")
+
 @admin_bp.route("/admin/step-builder-preview", methods=["POST"])
 @login_required
 @admin_required

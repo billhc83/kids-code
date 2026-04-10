@@ -39,14 +39,7 @@ STEPS = [
     ),
 ]
 
-import base64
-from pathlib import Path
-
-def img_to_b64(path):
-    data = Path(path).read_bytes()
-    b64 = base64.b64encode(data).decode()
-    ext = Path(path).suffix.lstrip(".")
-    return f"data:image/{ext};base64,{b64}"
+from utils.image_utils import img_to_b64
 
 timer_circuit_b64 = img_to_b64("static/graphics/reaction_timer_circuit.png")
 
@@ -253,6 +246,19 @@ Your system is ready. Now it's time to test it.
 Try multiple times and see how fast you can react!
 </p>
 """
+          },
+          "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+              "components": [
+                {"type": "button", "id": "btn1", "pin": 2, "label": "Timer Button"},
+                {"type": "timer",  "id": "tmr1",           "label": "Reaction Time"},
+              ],
+              "behaviors": [
+                {"when": {"btn1": "pressed"}, "then": {"tmr1": "toggle"}},
+              ]
+            }
           }
         }
       }

@@ -10,3 +10,4 @@ pytest-flask
 responses
 supabase
 respx
+lark
