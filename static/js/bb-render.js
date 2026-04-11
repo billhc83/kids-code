@@ -1,7 +1,7 @@
 // bb-render.js — All rendering, UI interaction, palette, and selection functions
 // Requires: bb-blocks.js loaded first (window._BB must exist)
 (function () {
-  console.log('[DEBUG] bb-render.js: start');
+  ('[DEBUG] bb-render.js: start');
   var BB = window._BB;
 
   // ── Expression slot rendering ─────────────────────────────────────────────
@@ -169,6 +169,8 @@
           }
         } else if (BB.exprSel.exSlot && BB.exprSel.exSlot.phantom_meta && BB.exprSel.exSlot.phantom_meta.expectedExTypes) {
           expectedType = BB.exprSel.exSlot.phantom_meta.expectedExTypes[BB.exprSel.slotIdx] || null;
+        } else if (BB.exprSel.isSubSlot && BB.exprSel.exNode && BB.exprSel.exNode._expectedChildren) {
+          expectedType = BB.exprSel.exNode._expectedChildren[BB.exprSel.slotIdx] || null;
         } else if (!BB.exprSel.isSubSlot && BB.exprSel.block && BB.exprSel.block._expectedExpr) {
           expectedType = BB.exprSel.block._expectedExpr[BB.exprSel.slotIdx] || null;
         }
@@ -177,7 +179,7 @@
         var bType = btn.getAttribute('data-type');
         var visible = true;
         if (expectedType && bType !== expectedType) visible = false;
-        if (visible && config.filter && BB.PALETTE_ALLOWED !== null && BB.PALETTE_ALLOWED.indexOf(bType) === -1) visible = false;
+        if (visible && !expectedType && config.filter && BB.PALETTE_ALLOWED !== null && BB.PALETTE_ALLOWED.indexOf(bType) === -1) visible = false;
         btn.classList[visible ? 'remove' : 'add']('hidden');
       });
       return;
@@ -300,11 +302,21 @@
         if (BB.exprSel.condObj) {
           BB.exprSel.condObj[BB.exprSel.side] = newNode;
         } else if (BB.exprSel.isSubSlot) {
+          var prevSubTemplate = BB.exprSel.exNode._childTemplates && BB.exprSel.exNode._childTemplates[BB.exprSel.slotIdx];
           if (!BB.exprSel.exNode.children) BB.exprSel.exNode.children = [];
           BB.exprSel.exNode.children[BB.exprSel.slotIdx] = newNode;
+          if (prevSubTemplate && prevSubTemplate.children) {
+            newNode._expectedChildren = prevSubTemplate.children.map(function (c) { return c ? c.type : null; });
+            newNode._childTemplates = prevSubTemplate.children;
+          }
         } else {
+          var prevTemplate = BB.exprSel.block.exChildren && BB.exprSel.block.exChildren[BB.exprSel.slotIdx];
           if (!BB.exprSel.block.exChildren) BB.exprSel.block.exChildren = [];
           BB.exprSel.block.exChildren[BB.exprSel.slotIdx] = newNode;
+          if (prevTemplate && prevTemplate.children) {
+            newNode._expectedChildren = prevTemplate.children.map(function (c) { return c ? c.type : null; });
+            newNode._childTemplates = prevTemplate.children;
+          }
         }
         BB.exprSel = null; updatePalette(); render(); return;
       }
@@ -412,7 +424,7 @@
 
   // ── Main render ───────────────────────────────────────────────────────────
   function render() {
-    console.log('render called', new Error().stack);
+    ('render called', new Error().stack);
     var anc = collectAncestorArrays();
     renderSection('gs', 'global', anc); renderSection('ss', 'setup', anc); renderSection('ls', 'loop', anc);
     ['gs', 'ss', 'ls'].forEach(function (id) {
@@ -425,6 +437,7 @@
     });
     if (typeof BB.genCode === 'function') BB.genCode();
     if (typeof BB.applySketchHighlights === 'function') BB.applySketchHighlights();
+    if (typeof BB.applyStepHighlights === 'function') BB.applyStepHighlights();
     if (BB.READONLY_MODE) {
       document.querySelectorAll('.blk-input,.cond-input,.vartext-input,.cond-select,.cond-joiner').forEach(function (el) {
         el.setAttribute('disabled', true);
@@ -955,5 +968,5 @@
   }
   BB.condField = condField;
 
-  console.log('[DEBUG] bb-render.js: done');
+  ('[DEBUG] bb-render.js: done');
 })();

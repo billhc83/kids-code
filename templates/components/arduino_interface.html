@@ -682,8 +682,8 @@ async function uploadSketch() {
 
   if (window.validateSketch) {
     const result = window.validateSketch();
-    console.log('validateSketch result:', JSON.stringify(result));
-    console.log('MASTER_SKETCH:', window.MASTER_SKETCH ? 'loaded' : 'null');
+    ('validateSketch result:', JSON.stringify(result));
+    ('MASTER_SKETCH:', window.MASTER_SKETCH ? 'loaded' : 'null');
 
     if (typeof monaco !== 'undefined' && editor) {
       if (!result.valid) {
@@ -754,29 +754,43 @@ async function uploadSketch() {
 
 async function loadBlockBuilder() {
   const blocksView = document.getElementById('blocks-view');
+
+  // Cancel any previous init poll that may still be running
+  if (window._bbCheckInterval) {
+    clearInterval(window._bbCheckInterval);
+    window._bbCheckInterval = null;
+  }
+
+  // Clear stale globals so the init check below waits for the freshly-loaded
+  // scripts to initialize rather than firing immediately on the old values.
+  window.BB_CONFIG = null;
+  window.getGeneratedCode = null;
+
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const pathParts = window.location.pathname.split('/');
     const preset = urlParams.get('preset') || pathParts[pathParts.length - 1] || 'codebreaker';
     const page = urlParams.get('page') || '';
 
-    console.log(`[DEBUG] loadBlockBuilder: Fetching /builder for preset=${preset}, page=${page}`);
+    (`[DEBUG] loadBlockBuilder: Fetching /builder for preset=${preset}, page=${page}`);
     const response = await fetch('/builder?preset=' + preset + '&page=' + page);
     if (!response.ok) throw new Error('Failed to fetch block builder');
     const html = await response.text();
-    console.log(`[DEBUG] loadBlockBuilder: HTML received, length=${html.length}`);
+    (`[DEBUG] loadBlockBuilder: HTML received, length=${html.length}`);
 
     const range = document.createRange();
     const fragment = range.createContextualFragment(html);
     blocksView.innerHTML = '';
     blocksView.appendChild(fragment);
 
-    // Wait for the components to initialize
-    const checkInterval = setInterval(() => {
+    // Wait for the components to initialize (BB_CONFIG set by inline script,
+    // getGeneratedCode set by block_builder.js after all scripts have run).
+    window._bbCheckInterval = setInterval(() => {
   if (!window.BB_CONFIG || !window.getGeneratedCode) return;
-  console.log("[DEBUG] loadBlockBuilder: Components initialized.");
-  clearInterval(checkInterval);
-  
+  ("[DEBUG] loadBlockBuilder: Components initialized.");
+  clearInterval(window._bbCheckInterval);
+  window._bbCheckInterval = null;
+
   const cfg = window.BB_CONFIG;
   setMode(cfg.default_view || 'blocks');
   const isProg = window.isProgressionMode && window.isProgressionMode();

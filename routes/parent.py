@@ -1,6 +1,6 @@
 from flask import Blueprint, request, session, render_template
 from utils.decorators import login_required, parent_required
-from utils.auth import get_students_for_parent, create_student_for_parent, reset_student_password
+from utils.auth import get_students_for_parent, create_student_for_parent, reset_student_password, mark_first_login_complete
 from utils.progression import get_completed_lessons
 
 parent_bp = Blueprint('parent', __name__)
@@ -56,5 +56,6 @@ def parent_dashboard():
         student_count=len(students),
         max_students=3,
         error=error,
-        success=success
+        success=success,
+        show_welcome=session.get("show_welcome", False)
     )

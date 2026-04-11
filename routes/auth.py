@@ -3,8 +3,8 @@ from extensions import limiter
 from utils.auth import (
     get_user_by_username, check_password, create_user,
     hash_password, send_verification_email, verify_token,
-    create_reset_token, send_reset_email, verify_reset_token,
-    reset_password_with_token
+    resend_verification_email, create_reset_token, send_reset_email,
+    verify_reset_token, reset_password_with_token, mark_first_login_complete
 )
 from utils.progression import seed_first_lesson
 
@@ -30,6 +30,7 @@ def login():
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]
         session["is_admin"] = user["is_admin"]
+        session["show_welcome"] = not user.get("first_login_completed", False)
         session.permanent = True
         seed_first_lesson(user["id"])
         if user["is_parent"]:
@@ -63,6 +64,7 @@ def register():
             return render_template("register.html")
         
         send_verification_email(email, user["verification_token"])
+        session["pending_email"] = email
         return redirect(url_for("auth.check_email"))
     return render_template("register.html")
 
@@ -76,7 +78,22 @@ def verify(token):
 
 @auth_bp.route("/check-email")
 def check_email():
-    return render_template("check_email.html")
+    email = session.get("pending_email", "")
+    return render_template("check_email.html", email=email)
+
+@auth_bp.route("/resend-verification", methods=["POST"])
+@limiter.limit("3 per hour")
+def resend_verification():
+    email = request.form.get("email", "").strip().lower()
+    if not email:
+        flash("Email address is required")
+        return redirect(url_for("auth.check_email"))
+    success, err = resend_verification_email(email)
+    if err:
+        flash(err)
+    else:
+        flash("Verification email sent! Check your inbox.")
+    return redirect(url_for("auth.check_email"))
 
 @auth_bp.route("/logout")
 def logout():
@@ -85,6 +102,7 @@ def logout():
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
+@limiter.limit("10 per hour")
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
@@ -98,6 +116,7 @@ def forgot_password():
     return render_template("forgot_password.html")
 
 @auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def reset_password(token):
     user, err = verify_reset_token(token)
     if err:

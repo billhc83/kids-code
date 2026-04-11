@@ -1,10 +1,10 @@
 // block_builder.js — Entry point: reads BB_CONFIG, code generation, persistence, window exports, and initialization
 // Load order: bb-blocks.js → bb-render.js → bb-validation.js → block_builder.js (this file)
 (function () {
-  console.log('[DEBUG] block_builder.js: Execution started.');
+  ('[DEBUG] block_builder.js: Execution started.');
   var CFG = window.BB_CONFIG;
   if (!CFG) { console.error('[DEBUG] block_builder.js: BB_CONFIG is missing!'); return; }
-  console.log('[DEBUG] block_builder.js: Config loaded.', CFG.mode);
+  ('[DEBUG] block_builder.js: Config loaded.', CFG.mode);
 
   var BB = window._BB;
 
@@ -162,7 +162,10 @@
     if (!BB.USERNAME || !BB.PAGE) return;
     var state;
     if (BB.PROGRESSION_MODE) {
-      state = { current_step: BB.CURRENT_STEP, student_saves: BB.STUDENT_SAVES };
+      // Snapshot the current in-progress step so it survives a page reload
+      var saves = BB.STUDENT_SAVES.slice();
+      saves[BB.CURRENT_STEP] = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
+      state = { current_step: BB.CURRENT_STEP, student_saves: saves };
     } else {
       state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
     }
@@ -185,17 +188,22 @@
       .then(function (data) {
         if (data && data.length > 0) {
           var saved = JSON.parse(data[0].blocks_json);
-          if (BB.PROGRESSION_MODE && saved.current_step !== undefined) {
-            BB.CURRENT_STEP   = saved.current_step;
-            BB.STUDENT_SAVES  = saved.student_saves || [];
+          if (BB.PROGRESSION_MODE) {
+            if (saved.current_step !== undefined) {
+              BB.CURRENT_STEP   = saved.current_step;
+              BB.STUDENT_SAVES  = saved.student_saves || [];
+            } else if (saved.global || saved.setup || saved.loop) {
+              // Fallback: migrate old free-mode save into progression format
+              BB.STUDENT_SAVES[BB.CURRENT_STEP] = { global: saved.global || [], setup: saved.setup || [], loop: saved.loop || [] };
+            }
             BB.buildWorkspace(BB.CURRENT_STEP);
-            BB.clearSelection(); BB.render(); BB.genCode(); BB.checkStepComplete();
           } else {
             BB.SECTIONS.global = saved.global || [];
             BB.SECTIONS.setup  = saved.setup  || [];
             BB.SECTIONS.loop   = saved.loop   || [];
           }
           BB.clearSelection(); BB.render(); BB.genCode();
+          if (BB.PROGRESSION_MODE) BB.checkStepComplete();
           BB.flash('Loaded!');
         }
       })
@@ -217,6 +225,48 @@
     BB.flash('Reset!');
   };
 
+  // ── Auto-save ──────────────────────────────────────────────────────────────
+  BB._dirty = false;
+  BB._autoSaveReady = false;  // only track changes after initial load
+
+  BB.saveBlocksAuto = function () {
+    if (!BB.USERNAME || !BB.PAGE) return;
+    var state;
+    if (BB.PROGRESSION_MODE) {
+      // Snapshot the current in-progress step so it survives a page reload
+      var saves = BB.STUDENT_SAVES.slice();
+      saves[BB.CURRENT_STEP] = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
+      state = { current_step: BB.CURRENT_STEP, student_saves: saves };
+    } else {
+      state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
+    }
+    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?on_conflict=username,page', {
+      method: 'POST',
+      headers: {
+        'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ username: BB.USERNAME, page: BB.PAGE, blocks_json: JSON.stringify(state), updated_at: new Date().toISOString() })
+    }).then(function (r) { if (r.ok) BB.flash('Auto-saved'); });
+  };
+
+  // Wrap BB.render so any user-driven render marks the state as dirty
+  var _origRender = BB.render;
+  BB.render = function () {
+    _origRender.apply(this, arguments);
+    if (BB.PROGRESSION_MODE) BB.applyStepHighlights();
+    else BB.applySketchHighlights();
+    if (BB._autoSaveReady) BB._dirty = true;
+  };
+  window.render = BB.render;
+
+  setInterval(function () {
+    if (BB._dirty && BB._autoSaveReady) {
+      BB._dirty = false;
+      BB.saveBlocksAuto();
+    }
+  }, 7000);
+
   // ── Overlay message listener ───────────────────────────────────────────────
   if (CFG.is_overlay) {
     window.addEventListener('message', function (e) {
@@ -228,7 +278,7 @@
   }
 
   // ── Initialization ─────────────────────────────────────────────────────────
-  console.log('[DEBUG] block_builder.js: Initializing workspace.');
+  ('[DEBUG] block_builder.js: Initializing workspace.');
   if (CFG.mode === 'progression') {
     BB.PROGRESSION_MODE = true;
     BB.STEPS = CFG.steps;
@@ -246,4 +296,7 @@
   BB.updatePalette();
   BB.render();
   if (BB.PROGRESSION_MODE) BB.checkStepComplete();
+
+  // Enable dirty tracking after initial load settles (500 ms grace period)
+  setTimeout(function () { BB._autoSaveReady = true; }, 500);
 })();

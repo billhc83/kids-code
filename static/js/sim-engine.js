@@ -10,9 +10,14 @@
  *   _sequence: ["id1","id2",...]  — starts a cyclic LED flash loop
  *   _interval: <ms>              — interval for _sequence (default 150)
  *   _stop_sequence: "yes"        — stops any running sequence
+ *   _beep: "buzzerId"            — starts a pulsing on/off beep on a buzzer
+ *   _beep_interval: <ms>         — half-period for _beep (default 400)
+ *   _stop_beep: "yes"            — stops any running beep
  *
- * Special component type:
+ * Special component types:
  *   timer — shows a running millisecond counter; toggled via {timerId: "toggle"}
+ *   sonar — HC-SR04 ultrasonic sensor with a distance slider (0-100 cm);
+ *            state emitted: "safe" (>50 cm), "warning" (20-50 cm), "danger" (<20 cm)
  */
 window.SimEngine = (function () {
   'use strict';
@@ -107,6 +112,42 @@ window.SimEngine = (function () {
     );
   }
 
+  function sonarSVG(id) {
+    return (
+      '<svg data-id="' + id + '" width="100" height="80" viewBox="-50 -15 100 85"' +
+      ' style="overflow:visible;display:block;cursor:default">' +
+      /* Signal rings — expand upward, hidden by default */
+      '<circle id="' + id + '-r3" cx="0" cy="-2" r="36" fill="none" stroke="#00ff88" stroke-width="0.8" opacity="0" pointer-events="none"/>' +
+      '<circle id="' + id + '-r2" cx="0" cy="-2" r="24" fill="none" stroke="#00ff88" stroke-width="1.1" opacity="0" pointer-events="none"/>' +
+      '<circle id="' + id + '-r1" cx="0" cy="-2" r="14" fill="none" stroke="#00ff88" stroke-width="1.5" opacity="0" pointer-events="none"/>' +
+      /* PCB body */
+      '<rect x="-42" y="5" width="84" height="52" rx="4" fill="#1a5c1a" stroke="#0d3d0d" stroke-width="1.5"/>' +
+      /* Silkscreen label */
+      '<text x="0" y="15" text-anchor="middle" font-family="Arial,sans-serif" font-size="7" font-weight="bold" fill="#2d8a2d" pointer-events="none">HC-SR04</text>' +
+      /* Left transducer (TRIG) */
+      '<circle cx="-20" cy="34" r="16" fill="#222" stroke="#555" stroke-width="1.5"/>' +
+      '<circle cx="-20" cy="34" r="11" fill="#1a1a1a"/>' +
+      '<circle cx="-20" cy="34" r="7"  fill="#333"/>' +
+      '<circle cx="-20" cy="34" r="2.5" fill="#666"/>' +
+      /* Right transducer (ECHO) */
+      '<circle cx="20" cy="34" r="16" fill="#222" stroke="#555" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="34" r="11" fill="#1a1a1a"/>' +
+      '<circle cx="20" cy="34" r="7"  fill="#333"/>' +
+      '<circle cx="20" cy="34" r="2.5" fill="#666"/>' +
+      /* Pins */
+      '<line x1="-33" y1="57" x2="-33" y2="70" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>' +
+      '<line x1="-11" y1="57" x2="-11" y2="70" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>' +
+      '<line x1="11"  y1="57" x2="11"  y2="70" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>' +
+      '<line x1="33"  y1="57" x2="33"  y2="70" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>' +
+      /* Pin labels */
+      '<text x="-33" y="76" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#64748b">VCC</text>' +
+      '<text x="-11" y="76" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#64748b">GND</text>' +
+      '<text x="11"  y="76" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#64748b">TRIG</text>' +
+      '<text x="33"  y="76" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#64748b">ECHO</text>' +
+      '</svg>'
+    );
+  }
+
   /* ── Visual state appliers ───────────────────────────────────────────────── */
   function applyLED(id, on, color) {
     var c = PALETTES[color] || PALETTES.red;
@@ -149,7 +190,51 @@ window.SimEngine = (function () {
     if (shine) shine.setAttribute('opacity', pressed ? '0.1' : '0.28');
   }
 
+  var SONAR_ZONE_COLORS  = { safe: '#00ff88', warning: '#ffcc00', danger: '#ff4444' };
+  var SONAR_ZONE_LABELS  = { safe: '🟢 SAFE', warning: '🟡 WARNING', danger: '🔴 DANGER' };
+
+  function applySonar(id, zone) {
+    var color = SONAR_ZONE_COLORS[zone] || '#00ff88';
+    /* Recolour signal rings */
+    [1, 2, 3].forEach(function (n) {
+      var r = document.getElementById(id + '-r' + n);
+      if (r) r.setAttribute('stroke', color);
+    });
+    /* Recolour readout badge */
+    var readout = document.getElementById(id + '-readout');
+    var zoneTag = document.getElementById(id + '-zone');
+    if (readout) readout.style.color = color;
+    if (zoneTag) { zoneTag.textContent = SONAR_ZONE_LABELS[zone] || zone; zoneTag.style.color = color; }
+  }
+
+  function sonarPingFlash(id) {
+    var opacities = ['0.8', '0.5', '0.22'];
+    [1, 2, 3].forEach(function (n, i) {
+      var r = document.getElementById(id + '-r' + n);
+      if (r) r.setAttribute('opacity', opacities[i]);
+    });
+    setTimeout(function () {
+      [1, 2, 3].forEach(function (n) {
+        var r = document.getElementById(id + '-r' + n);
+        if (r) r.setAttribute('opacity', '0');
+      });
+    }, 700);
+  }
+
   /* ── Build component column DOM element ─────────────────────────────────── */
+  function makeLbl(comp) {
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:10px;font-weight:700;color:#94a3b8;text-align:center;line-height:1.5;';
+    lbl.textContent = comp.label || comp.id;
+    if (comp.pin !== undefined && comp.pin !== '') {
+      var pinSpan = document.createElement('span');
+      pinSpan.style.cssText = 'display:block;font-size:9px;font-weight:400;color:#64748b;';
+      pinSpan.textContent = 'Pin ' + comp.pin;
+      lbl.appendChild(pinSpan);
+    }
+    return lbl;
+  }
+
   function buildCol(comp) {
     var col = document.createElement('div');
     col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
@@ -161,21 +246,47 @@ window.SimEngine = (function () {
       case 'switch':  wrap.innerHTML = switchSVG(comp.id); break;
       case 'buzzer':  wrap.innerHTML = buzzerSVG(comp.id); break;
       case 'timer':   wrap.innerHTML = timerSVG(comp.id);  break;
+      case 'sonar': {
+        wrap.innerHTML = sonarSVG(comp.id);
+        /* Distance readout + zone badge */
+        var readoutDiv = document.createElement('div');
+        readoutDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:1px;margin-top:2px;';
+        var distReadout = document.createElement('div');
+        distReadout.id = comp.id + '-readout';
+        distReadout.style.cssText = 'font-size:14px;font-weight:700;font-family:"Courier New",monospace;color:#00ff88;';
+        distReadout.textContent = '80 cm';
+        var zoneTag = document.createElement('div');
+        zoneTag.id = comp.id + '-zone';
+        zoneTag.style.cssText = 'font-size:9px;font-weight:700;letter-spacing:1px;color:#00ff88;';
+        zoneTag.textContent = '🟢 SAFE';
+        readoutDiv.appendChild(distReadout);
+        readoutDiv.appendChild(zoneTag);
+        /* Slider */
+        var sliderWrap = document.createElement('div');
+        sliderWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:5px;';
+        var sliderEl = document.createElement('input');
+        sliderEl.type = 'range';
+        sliderEl.id = comp.id + '-slider';
+        sliderEl.min = '0';
+        sliderEl.max = '100';
+        sliderEl.value = '80';
+        sliderEl.style.cssText = 'width:110px;cursor:pointer;accent-color:#00ff88;';
+        var sliderHints = document.createElement('div');
+        sliderHints.style.cssText = 'display:flex;justify-content:space-between;width:110px;font-size:8px;color:#475569;';
+        sliderHints.innerHTML = '<span>0 cm</span><span>50</span><span>100 cm</span>';
+        sliderWrap.appendChild(sliderEl);
+        sliderWrap.appendChild(sliderHints);
+        col.appendChild(wrap);
+        col.appendChild(readoutDiv);
+        col.appendChild(sliderWrap);
+        col.appendChild(makeLbl(comp));
+        return col;
+      }
       default: return col;
     }
 
-    var lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:10px;font-weight:700;color:#94a3b8;text-align:center;line-height:1.5;';
-    lbl.textContent = comp.label || comp.id;
-    if (comp.pin !== undefined && comp.pin !== '') {
-      var pinSpan = document.createElement('span');
-      pinSpan.style.cssText = 'display:block;font-size:9px;font-weight:400;color:#64748b;';
-      pinSpan.textContent = 'Pin ' + comp.pin;
-      lbl.appendChild(pinSpan);
-    }
-
     col.appendChild(wrap);
-    col.appendChild(lbl);
+    col.appendChild(makeLbl(comp));
     return col;
   }
 
@@ -193,17 +304,20 @@ window.SimEngine = (function () {
     components.forEach(function (c) {
       state[c.id] = (c.type === 'switch') ? 'off'
                   : (c.type === 'button') ? 'released'
+                  : (c.type === 'sonar')  ? 'safe'
                   : 'off';
       if (c.type === 'led') colorMap[c.id] = c.color || 'red';
     });
 
-    /* Sequence + timer handles */
+    /* Sequence + timer + beep handles */
     var seqHandle = null;
     var seqIds    = [];
     var seqIdx    = 0;
     var timerHandle  = null;
     var timerRunning = false;
     var timerStart   = 0;
+    var beepHandle = null;
+    var beepId     = null;
 
     /* ── Build UI ────────────────────────────────────────────────────────── */
     container.innerHTML = '';
@@ -227,6 +341,23 @@ window.SimEngine = (function () {
     container.appendChild(statusBar);
 
     function setStatus(msg) { statusBar.textContent = msg; }
+
+    /* ── Beep helpers ────────────────────────────────────────────────────── */
+    function stopBeep() {
+      if (beepHandle) { clearInterval(beepHandle); beepHandle = null; }
+      if (beepId)     { applyBuzzer(beepId, false); beepId = null; }
+    }
+
+    function startBeep(id, interval) {
+      if (beepHandle && beepId === id) return; /* already beeping this buzzer */
+      stopBeep();
+      beepId = id;
+      var on = true;
+      beepHandle = setInterval(function () {
+        applyBuzzer(id, on);
+        on = !on;
+      }, interval || 400);
+    }
 
     /* ── Sequence helpers ────────────────────────────────────────────────── */
     function stopSequence() {
@@ -289,6 +420,7 @@ window.SimEngine = (function () {
         case 'buzzer': applyBuzzer(id, newState === 'on'); break;
         case 'switch': applySwitch(id, newState === 'on'); break;
         case 'button': applyButton(id, newState === 'pressed'); break;
+        case 'sonar':  applySonar(id, newState); break;
       }
       if (evaluate !== false) evalBehaviors();
     }
@@ -302,16 +434,15 @@ window.SimEngine = (function () {
         if (!match) return;
 
         var then = beh.then;
-        /* Handle special sequence keys first */
-        if (then._sequence) {
-          startSequence(then._sequence, then._interval || 150);
-        }
-        if (then._stop_sequence) {
-          stopSequence();
-        }
+        /* Handle special keys — order matters: stop before start */
+        if (then._stop_sequence) { stopSequence(); }
+        if (then._stop_beep)     { stopBeep(); }
+        if (then._sequence) { startSequence(then._sequence, then._interval || 150); }
+        if (then._beep)     { startBeep(then._beep, then._beep_interval || 400); }
 
         Object.keys(then).forEach(function (id) {
-          if (id === '_sequence' || id === '_stop_sequence' || id === '_interval') return;
+          if (id === '_sequence' || id === '_stop_sequence' || id === '_interval' ||
+              id === '_beep'     || id === '_stop_beep'     || id === '_beep_interval') return;
 
           var val  = then[id];
           var comp = compById(id);
@@ -364,14 +495,31 @@ window.SimEngine = (function () {
           setStatus('Switch ' + (next === 'on' ? 'ON' : 'OFF') + pinDesc(comp, next));
         });
       }
+
+      if (comp.type === 'sonar') {
+        var sliderEl = document.getElementById(comp.id + '-slider');
+        if (sliderEl) {
+          sliderEl.addEventListener('input', function () {
+            var dist = parseInt(sliderEl.value, 10);
+            var zone = dist > 50 ? 'safe' : dist > 20 ? 'warning' : 'danger';
+            var readout = document.getElementById(comp.id + '-readout');
+            if (readout) readout.textContent = dist + ' cm';
+            sonarPingFlash(comp.id);
+            applyState(comp.id, zone);
+            setStatus('Distance: ' + dist + ' cm  ·  ' + (SONAR_ZONE_LABELS[zone] || zone));
+          });
+        }
+      }
     });
 
-    /* ── Apply initial visual state ──────────────────────────────────────── */
+    /* ── Apply initial visual state + fire initial behaviors ─────────────── */
     components.forEach(function (c) { applyState(c.id, state[c.id], false); });
+    evalBehaviors();
 
     /* ── Register cleanup for re-init ────────────────────────────────────── */
     container._simCleanup = function () {
       stopSequence();
+      stopBeep();
       if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
     };
   }

@@ -1,4 +1,5 @@
 import os
+import datetime
 import requests
 from config import SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY
 import bcrypt
@@ -31,6 +32,7 @@ def get_user_by_email(email):
 
 def create_user(email, username, password_hash, is_parent=False):
     token = secrets.token_urlsafe(32)
+    expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
     resp = supabase.table("users").insert({
         "email": email,
         "username": username,
@@ -38,20 +40,55 @@ def create_user(email, username, password_hash, is_parent=False):
         "is_parent": is_parent,
         "is_verified": False,
         "is_admin": False,
-        "verification_token": token
+        "verification_token": token,
+        "verification_token_expires": expires,
+        "first_login_completed": False
     }).execute()
     return resp.data[0] if resp.data else None
+
+def mark_first_login_complete(user_id):
+    try:
+        supabase.table("users").update({"first_login_completed": True}).eq("id", user_id).execute()
+    except Exception:
+        pass
 
 def verify_token(token):
     resp = supabase.table("users").select("*").eq("verification_token", token).execute()
     if not resp.data:
         return False
     user = resp.data[0]
-    supabase.table("users").update({"is_verified": True, "verification_token": None}).eq("id", user['id']).execute()
+    expires = user.get("verification_token_expires")
+    if expires:
+        expires_dt = datetime.datetime.fromisoformat(expires.replace("Z", "+00:00"))
+        if expires_dt.tzinfo is None:
+            expires_dt = expires_dt.replace(tzinfo=datetime.timezone.utc)
+        if datetime.datetime.now(datetime.timezone.utc) > expires_dt:
+            return False
+    supabase.table("users").update({
+        "is_verified": True,
+        "verification_token": None,
+        "verification_token_expires": None
+    }).eq("id", user['id']).execute()
     return True
 
+def resend_verification_email(email):
+    resp = supabase.table("users").select("*").eq("email", email).execute()
+    if not resp.data:
+        return False, "No account found with that email"
+    user = resp.data[0]
+    if user.get("is_verified"):
+        return False, "This account is already verified"
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
+    supabase.table("users").update({
+        "verification_token": token,
+        "verification_token_expires": expires
+    }).eq("id", user["id"]).execute()
+    send_verification_email(email, token)
+    return True, None
+
 def send_verification_email(to_email, token):
-    base_url = os.getenv("BASE_URL", "http://127.0.0.1:5001")
+    base_url = os.getenv("BASE_URL", "http://app.kids-code.ca")
     verify_url = f"{base_url}/verify/{token}"
     requests.post(
         "https://api.resend.com/emails",
@@ -129,8 +166,6 @@ def reset_student_password(student_id, new_password):
     resp = supabase.table("users").update({"password_hash": password_hash}).eq("id", student_id).execute()
     return len(resp.data) > 0
 
-import datetime
-
 def create_reset_token(email):
     """Generate a reset token and save it to the user record."""
     user_resp = supabase.table("users").select("*").eq("email", email).execute()
@@ -144,7 +179,7 @@ def create_reset_token(email):
         return None, "This account does not have a real email address. Ask your parent to reset your password."
     
     token = secrets.token_urlsafe(32)
-    expires = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).isoformat()
+    expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)).isoformat()
     
     supabase.table("users").update({"reset_token": token, "reset_token_expires": expires}).eq("id", user["id"]).execute()
     return token, None

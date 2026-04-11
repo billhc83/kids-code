@@ -1,7 +1,7 @@
 // bb-blocks.js — Block definitions, pin constants, expression utilities, and data helpers
 // Must be loaded FIRST. Creates window._BB shared namespace used by all other BB modules.
 (function () {
-  console.log('[DEBUG] bb-blocks.js: start');
+  ('[DEBUG] bb-blocks.js: start');
 
   // ── Shared state namespace ────────────────────────────────────────────────
   window._BB = {
@@ -15,6 +15,7 @@
     STUDENT_SAVES: [],
     CHECK_FAIL_COUNT: 0,
     SKETCH_ERROR_PATHS: [],
+    STEP_ERROR_IDS: [],
     PALETTE_ALLOWED: null,
     nextBtnState: { ready: false, mode: '', text: 'Complete Step', visible: false, prevVisible: false },
     stepLabel: 'Step',
@@ -40,7 +41,7 @@
   BB.UNO_PWM_PINS        = ['3','5','6','9','10','11'];
 
   BB.EXPR_COLORS = {
-    'analogread': '#1a7f37', 'digitalread': '#1a7f37', 'millis': '#0969da',
+    'analogread': '#1a7f37', 'digitalread': '#1a7f37', 'pulsein': '#1a7f37', 'millis': '#0969da',
     'random': '#e36209', 'math': '#9a6700', 'map': '#6f42c1', 'constrain': '#cf222e', 'value': '#57606a'
   };
 
@@ -119,6 +120,11 @@
       allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
       inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
       genExpr: function (p) { return 'digitalRead(' + (p[0] || '2') + ')'; }
+    },
+    pulsein: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
+      inputs: [{ t: 'vartext', l: 'Pin' }, { t: 'sel', l: 'Value', o: ['HIGH', 'LOW'] }],
+      genExpr: function (p) { return 'pulseIn(' + (p[0] || 'echoPin') + ', ' + (p[1] || 'HIGH') + ')'; }
     },
     delay: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
@@ -329,5 +335,5 @@
     return base;
   };
 
-  console.log('[DEBUG] bb-blocks.js: done');
+  ('[DEBUG] bb-blocks.js: done');
 })();

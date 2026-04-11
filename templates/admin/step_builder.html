@@ -579,11 +579,11 @@ function updatePreview() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         }).then(function(r) { 
-    console.log('Preview status:', r.status);
+    ('Preview status:', r.status);
             return r.blob(); 
         })
         .catch(function(err) { 
-            console.log('Preview error:', err); 
+            ('Preview error:', err); 
         })
         .then(function(blob) {
             var url = URL.createObjectURL(blob);

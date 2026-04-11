@@ -1,10 +1,11 @@
-from flask import Blueprint, request, session, render_template, redirect, url_for, flash
+from flask import Blueprint, request, session, render_template, redirect, url_for, flash, jsonify
 from utils.decorators import login_required
 from utils.progression import get_user_progression, get_completed_lessons
 from utils.badges import get_user_badges, BADGE_DEFINITIONS
 from utils.feedback import get_threads_for_user, CATEGORIES, create_thread, add_message, notify_discord_feedback
 from utils.activity import log_activity
 from utils.lessons import LESSONS
+from utils.auth import mark_first_login_complete
 
 main_bp = Blueprint('main', __name__)
 
@@ -47,8 +48,16 @@ def dashboard():
         completed=completed,
         current_lesson=current_lesson,
         badges=badges,
-        total_lessons=14
+        total_lessons=14,
+        show_welcome=session.get("show_welcome", False)
     )
+
+@main_bp.route("/api/welcome-complete", methods=["POST"])
+@login_required
+def welcome_complete():
+    mark_first_login_complete(session["user_id"])
+    session["show_welcome"] = False
+    return jsonify({"ok": True})
 
 @main_bp.route("/api/log-activity", methods=["POST"])
 @login_required

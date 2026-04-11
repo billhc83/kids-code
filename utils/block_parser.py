@@ -211,6 +211,10 @@ class BlockTransformer(Transformer):
         if full_name == "Serial.available": return {'type': 'serialavailable', 'params': [], 'children': []}
         if full_name == "analogRead": return {'type': 'analogread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
         if full_name == "digitalRead": return {'type': 'digitalread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
+        if full_name == "pulseIn":
+            pin = str(args[0]['params'][0]) if args else ''
+            val = str(args[1]['params'][0]) if len(args) > 1 else 'HIGH'
+            return {'type': 'pulsein', 'params': [pin, val], 'children': []}
         if full_name == "random": return {'type': 'random', 'params': [str(a['params'][0]) if a else '' for a in args], 'children': []}
         if full_name == "map":
              return {
@@ -257,6 +261,7 @@ def strip_expr_values(node):
     if t == 'value': return None
     if t in ('millis', 'serialavailable', 'serialreadstring'): return node
     if t in ('analogread', 'digitalread'): return {'type': t, 'params': [''], 'children': []}
+    if t == 'pulsein': return {'type': 'pulsein', 'params': ['', 'HIGH'], 'children': []}
     if t == 'random': return {'type': 'random', 'params': ['', ''], 'children': []}
     if t == 'math':
         op = node['params'][1] if len(node['params']) > 1 else '+'
@@ -348,6 +353,12 @@ def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_co
                         'exChildren': tmpl.get('exChildren', []) if isinstance(tmpl, dict) else [],
                         'condition': tmpl.get('condition') if isinstance(tmpl, dict) else None,
                         'expectedExTypes': [e['type'] if e else None for e in master.get('exChildren', [])] if isinstance(master, dict) and 'exChildren' in master else None,
+                        'expectedCondTypes': (lambda c: {
+                            'left':  c['leftExpr']['type']  if c.get('leftExpr')  else None,
+                            'right': c['rightExpr']['type'] if c.get('rightExpr') else None,
+                            'left2': c['leftExpr2']['type'] if c.get('leftExpr2') else None,
+                            'right2':c['rightExpr2']['type'] if c.get('rightExpr2') else None,
+                        })(master['condition']) if isinstance(master, dict) and master.get('condition') else None,
                         'ifbody': tmpl.get('ifbody', []) if isinstance(tmpl, dict) else [],
                         'elseifs': tmpl.get('elseifs', []) if isinstance(tmpl, dict) else [],
                         'elsebody': tmpl.get('elsebody') if isinstance(tmpl, dict) else None,
@@ -426,8 +437,14 @@ def collect_types(blocks):
         if b['type'] == 'slot':
             pm = b['phantom_meta']
             types.add(pm['expects'])
-            if pm.get('expectedExTypes'):
-                types.update([t for t in pm['expectedExTypes'] if t])
+            # Add 'value' whenever any expression slot exists — values are always needed
+            # as leaf nodes. Specific expr types (math, pulsein, etc.) are NOT added to
+            # PALETTE_ALLOWED; they are already constrained per-slot via expectedType.
+            has_exprs = any(t for t in (pm.get('expectedExTypes') or []) if t)
+            if not has_exprs and pm.get('exChildren'):
+                has_exprs = bool(collect_expr_types(pm['exChildren']))
+            if has_exprs:
+                types.add('value')
             if pm.get('expectedCondTypes'):
                 for val in pm['expectedCondTypes'].values():
                     if val: types.add(val)

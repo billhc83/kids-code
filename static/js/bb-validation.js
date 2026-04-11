@@ -1,8 +1,11 @@
 // bb-validation.js — Validation, hint generation, sketch checking, and tutorial/progression
 // Requires: bb-blocks.js and bb-render.js loaded first
 (function () {
-  console.log('[DEBUG] bb-validation.js: start');
+  ('[DEBUG] bb-validation.js: start');
   var BB = window._BB;
+
+  BB.SKETCH_ERROR_PATHS = [];
+  BB.STEP_ERROR_IDS = [];
 
   // ── Phantom / incomplete counters ─────────────────────────────────────────
   BB.countPhantoms = function (arr) {
@@ -54,6 +57,7 @@
         if (inp.t === 'expr') {
           if (!currentBlock.exChildren || !currentBlock.exChildren[j]) n++;
         } else if (inp.t === 'text' || inp.t === 'number' || inp.t === 'vartext') {
+          if (currentBlock.type === 'tone' && j === 2) return; // Duration is optional
           if (!currentBlock.params || !currentBlock.params[j] || currentBlock.params[j] === '') n++;
         }
       });
@@ -90,6 +94,7 @@
   // ── Hint generators ───────────────────────────────────────────────────────
   BB.generateExprHint = function (u, t, tier) {
     if (!u && !t) return null; if (!u) return 'Missing value';
+    if (!t) return 'Unexpected value';
     if (u.type !== t.type) return 'Wrong type: use ' + t.type;
     var def = BB.BLOCKS[u.type];
     if (u.type === 'value') {
@@ -135,9 +140,11 @@
     if (u.type !== pm.expects) return 'Wrong block. Should be ' + pm.expects;
     var def = BB.BLOCKS[u.type];
     if (!def) return '';
-    for (var i = 0; i < (pm.params || []).length; i++) {
+    var masterParams = (tm && tm.params) || pm.params || [];
+    for (var i = 0; i < masterParams.length; i++) {
       if (!def.inputs[i]) continue;
-      var up = u.params[i] || '', tp = pm.params[i] || '';
+      var up = u.params[i] || '', tp = masterParams[i] || '';
+      if (u.type === 'tone' && i === 2 && tp.trim() === '') continue; // Ignore duration mismatch if master is empty
       if (up.trim() !== tp.trim()) {
         var lbl = def.inputs[i].l || 'field';
         return tier === 3 ? 'Check ' + lbl + ': expected "' + tp + '"' : 'Check ' + lbl;
@@ -201,6 +208,7 @@
       var masterParams = (t.master && t.master.params) || pm.params || [];
       for (var i = 0; i < masterParams.length; i++) {
         var up = u.params[i] || '', tp = masterParams[i] || '';
+        if (u.type === 'tone' && i === 2 && tp.trim() === '') continue; // Ignore duration mismatch if master is empty
         if (up.trim() !== tp.trim()) return false;
       }
       var uex = u.exChildren || [];
@@ -255,13 +263,9 @@
   };
 
   BB.applySketchHighlights = function () {
-    document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block').forEach(function (el) { el.classList.remove('error-block'); });
+    document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block,.phantom-block').forEach(function (el) { el.classList.remove('error-block'); });
     document.querySelectorAll('.block-hint').forEach(function (el) { el.remove(); });
-    if (BB.SKETCH_ERROR_PATHS.length > 0) {
-      var sb = document.getElementById('statusbar');
-      if (sb) { sb.style.transition = 'background 0.2s'; sb.style.background = '#ffebe9'; setTimeout(function () { sb.style.background = ''; }, 400); }
-    }
-    BB.SKETCH_ERROR_PATHS.forEach(function (entry) {
+    (BB.SKETCH_ERROR_PATHS || []).forEach(function (entry) {
       var res = BB.SECTIONS[entry.section];
       if (!res) return;
       for (var i = 0; i < entry.path.length; i++) {
@@ -274,6 +278,7 @@
           el.classList.add('error-block');
           if (entry.hint) {
             var hd = document.createElement('div'); hd.className = 'block-hint'; hd.textContent = entry.hint;
+            hd.style.display = 'block';
             var target = el.querySelector('.if-header, .for-header, .while-header') || el;
             target.appendChild(hd);
           }
@@ -283,33 +288,37 @@
   };
 
   BB.validateSketch = function () {
-    console.log('[DEBUG] validateSketch() invoked.');
+    ('[DEBUG] validateSketch() invoked.');
     if (!BB.MASTER_SKETCH) return { valid: true };
     var badIds = [];
     ['global', 'setup', 'loop'].forEach(function (sec) {
       BB.checkSketchFields(BB.SECTIONS[sec], BB.MASTER_SKETCH[sec], badIds, [], sec);
     });
     BB.SKETCH_ERROR_PATHS = badIds;
+    if (badIds.length > 0) {
+      var sb = document.getElementById('statusbar');
+      if (sb) { sb.style.transition = 'background 0.2s'; sb.style.background = '#ffebe9'; setTimeout(function () { sb.style.background = ''; }, 400); }
+    }
     BB.applySketchHighlights();
     return { valid: badIds.length === 0, errorCount: badIds.length, errors: badIds };
   };
   window.validateSketch = BB.validateSketch;
 
   window.dumpDebug = function () {
-    console.log('--- BLOCK BUILDER DEBUG DUMP ---');
-    console.log('MASTER_SKETCH:', BB.MASTER_SKETCH);
-    console.log('SECTIONS (Current State):', BB.SECTIONS);
-    console.log('SKETCH_ERROR_PATHS:', BB.SKETCH_ERROR_PATHS);
-    console.log('--------------------------------');
+    ('--- BLOCK BUILDER DEBUG DUMP ---');
+    ('MASTER_SKETCH:', BB.MASTER_SKETCH);
+    ('SECTIONS (Current State):', BB.SECTIONS);
+    ('SKETCH_ERROR_PATHS:', BB.SKETCH_ERROR_PATHS);
+    ('--------------------------------');
   };
 
   // ── Step completion check ─────────────────────────────────────────────────
   BB.checkStepComplete = function () {
-    console.log('[DEBUG] checkStepComplete called, PROGRESSION_MODE:', BB.PROGRESSION_MODE);
+    ('[DEBUG] checkStepComplete called, PROGRESSION_MODE:', BB.PROGRESSION_MODE);
     if (!BB.PROGRESSION_MODE) return;
-    console.log('[DEBUG] checkStepComplete past guard');
+    ('[DEBUG] checkStepComplete past guard');
     var phantoms = BB.countPhantoms(BB.SECTIONS.global) + BB.countPhantoms(BB.SECTIONS.setup) + BB.countPhantoms(BB.SECTIONS.loop);
-    console.log('[DEBUG] phantoms:', phantoms);
+    ('[DEBUG] phantoms:', phantoms);
     var incomplete = BB.countIncomplete(BB.SECTIONS.global) + BB.countIncomplete(BB.SECTIONS.setup) + BB.countIncomplete(BB.SECTIONS.loop);
     var total = phantoms + incomplete;
     var step = BB.STEPS && BB.STEPS[BB.CURRENT_STEP] ? BB.STEPS[BB.CURRENT_STEP] : null;
@@ -376,22 +385,39 @@
     return true;
   };
 
+  // ── Step highlights (called by render() on every redraw) ─────────────────
+  BB.applyStepHighlights = function () {
+    document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block,.phantom-block').forEach(function (el) { el.classList.remove('error-block'); });
+    document.querySelectorAll('.block-hint').forEach(function (el) { el.remove(); });
+    (BB.STEP_ERROR_IDS || []).forEach(function (bid) {
+      var el = document.querySelector('[data-id="' + bid.id + '"]');
+      if (el) {
+        el.classList.add('error-block');
+        if (bid.hint) { 
+          var hd = document.createElement('div'); hd.className = 'block-hint'; hd.textContent = bid.hint; 
+          hd.style.display = 'block';
+          var target = el.querySelector('.if-header, .for-header, .while-header') || el;
+          target.appendChild(hd);
+        }
+      }
+    });
+  };
+
   // ── Step validation ───────────────────────────────────────────────────────
   BB.validateStep = function () {
     if (!BB.STEPS || !BB.STEPS[BB.CURRENT_STEP]) return true;
     var tmpl = BB.STEPS[BB.CURRENT_STEP];
-    var valid = true; var tier = 1; if (BB.CHECK_FAIL_COUNT >= 2) tier = 2; if (BB.CHECK_FAIL_COUNT >= 4) tier = 3;
+    var valid = true; var tier = 2; if (BB.CHECK_FAIL_COUNT >= 3) tier = 3;
     var badIds = [];
     ['global', 'setup', 'loop'].forEach(function (sec) { BB.collectBadIds(BB.SECTIONS[sec], tmpl[sec], tier, badIds); });
     if (badIds.length > 0) valid = false;
-    document.querySelectorAll('.ws-block,.if-block,.for-block,.while-block').forEach(function (el) { el.classList.remove('error-block'); });
-    document.querySelectorAll('.block-hint').forEach(function (el) { el.remove(); });
     if (!valid) {
-      BB.CHECK_FAIL_COUNT++; badIds.forEach(function (bid) {
-        var el = document.querySelector('[data-id="' + bid.id + '"]');
-        if (el) { el.classList.add('error-block'); if (bid.hint) { var hd = document.createElement('div'); hd.className = 'block-hint'; hd.textContent = bid.hint; el.appendChild(hd); } }
-      });
+      BB.CHECK_FAIL_COUNT++;
+      BB.STEP_ERROR_IDS = badIds;
+    } else {
+      BB.STEP_ERROR_IDS = [];
     }
+    BB.applyStepHighlights();
     return valid;
   };
 
@@ -417,6 +443,8 @@
     window.dispatchEvent(new CustomEvent('stepchange', { detail: window.CURRENT_STEP_META }));
     var activeId = (step.active === 'global') ? 'gs' : (step.active === 'setup' ? 'ss' : 'ls');
     BB.expandSection(activeId);
+    BB.STEP_ERROR_IDS = [];
+    BB.CHECK_FAIL_COUNT = 0;
     BB.nextBtnState.visible  = !(stepIdx >= BB.STEPS.length - 1);
     BB.nextBtnState.ready    = false; BB.nextBtnState.mode = ''; BB.nextBtnState.text = 'Complete Step'; BB.nextBtnState.prevVisible = stepIdx > 0;
     window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: false, 'check-mode': false, 'next-mode': false, hidden: !BB.nextBtnState.visible, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible } } }));
@@ -429,11 +457,6 @@
   window.bbNext = function () {
     if (!BB.nextBtnState.ready) return;
     if (BB.nextBtnState.mode === 'check-mode') {
-      if (BB.validateStep()) {
-        BB.nextBtnState.text = 'Next Step \u2192'; BB.nextBtnState.mode = 'next-mode';
-        window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: true, 'check-mode': false, 'next-mode': true, hidden: false, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible } } }));
-        BB.CHECK_FAIL_COUNT = 0;
-      }
       if (BB.validateStep()) {
         BB.nextBtnState.text = 'Next Step \u2192';
         BB.nextBtnState.mode = 'next-mode';
@@ -474,5 +497,5 @@
 
   window.getCurrentStepMeta = function () { return window.CURRENT_STEP_META || {}; };
 
-  console.log('[DEBUG] bb-validation.js: done');
+  ('[DEBUG] bb-validation.js: done');
 })();

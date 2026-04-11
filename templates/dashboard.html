@@ -2,6 +2,164 @@
 {% block title %}Dashboard — KidsCode{% endblock %}
 
 {% block content %}
+
+{% if show_welcome %}
+<div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-modal">
+        <div class="welcome-hero">
+            <div class="welcome-icon">🚀</div>
+            <h1>Welcome to KidsCode!</h1>
+            <p class="welcome-tagline">Your coding adventure starts right here.</p>
+        </div>
+
+        <div class="welcome-sections">
+            <div class="welcome-section">
+                <div class="welcome-section-icon">📚</div>
+                <div>
+                    <h3>What You'll Learn</h3>
+                    <p>You'll build real projects using block-based coding — from animations and games to interactive stories. Each lesson builds on the last, so you'll grow step by step.</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">🗺️</div>
+                <div>
+                    <h3>How It Works</h3>
+                    <p>There are <strong>14 projects</strong> to complete. Each one unlocks the next. Take your time — you can always come back to review what you've built.</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">🎯</div>
+                <div>
+                    <h3>Get Started</h3>
+                    <p>Click <strong>your first project in the sidebar</strong> on the left to begin. Follow the steps, build your project, and hit Complete when you're done!</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">🏅</div>
+                <div>
+                    <h3>Earn Badges</h3>
+                    <p>Complete projects and milestones to unlock badges that show up right here on your dashboard. How many can you collect?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="welcome-cta">
+            <button class="welcome-btn" id="welcomeDismiss">
+                Let's Start Coding! →
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.welcome-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    animation: slideUp 0.35s ease;
+}
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.welcome-hero {
+    background: linear-gradient(135deg, #2ea44f 0%, #1a7f37 100%);
+    color: white;
+    text-align: center;
+    padding: 36px 32px 28px;
+    border-radius: 16px 16px 0 0;
+}
+.welcome-icon { font-size: 48px; margin-bottom: 12px; }
+.welcome-hero h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
+.welcome-tagline { margin: 0; font-size: 15px; opacity: 0.9; }
+
+.welcome-sections {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.welcome-section {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.welcome-section-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    background: #f6f8fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.welcome-section h3 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2328;
+}
+.welcome-section p {
+    margin: 0;
+    font-size: 13px;
+    color: #57606a;
+    line-height: 1.5;
+}
+
+.welcome-cta {
+    padding: 4px 28px 28px;
+    text-align: center;
+}
+.welcome-btn {
+    background: #2ea44f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+}
+.welcome-btn:hover { background: #2c974b; }
+</style>
+
+<script>
+document.getElementById('welcomeDismiss').addEventListener('click', function() {
+    fetch('/api/welcome-complete', { method: 'POST' })
+        .finally(function() {
+            document.getElementById('welcomeOverlay').style.opacity = '0';
+            document.getElementById('welcomeOverlay').style.transition = 'opacity 0.25s';
+            setTimeout(function() {
+                document.getElementById('welcomeOverlay').remove();
+            }, 250);
+        });
+});
+</script>
+{% endif %}
+
 <div class="dashboard-wrap">
 
     <!-- Welcome -->

@@ -87,13 +87,6 @@ STEPS =[
     build_step(
         "Place one end of the wire in Arduino Pin 9.<br>Place the other end in row 24, column F.",
         "",
-        line((493, 483), (1421, 483), (1418, 423), width=10),
-        greyout=True,
-    ),
-
-    build_step(
-        "Place one end of the wire in Arduino Pin 6.<br>Place the other end in row 6, column A.",
-        "",
         line((512, 582), (935, 584), (935, 625), width=10),
         greyout=True,
     ),
@@ -144,7 +137,8 @@ STEPS =[
 
 DRAWER_CONTENT = {
 
- "project_fifteen": [
+ "project_fifteen": {
+  "steps": [
 
 {
     "title": "Step 1 — System Memory 📦",
@@ -388,15 +382,43 @@ DRAWER_CONTENT = {
         "logic": {
             "label": "🧠 What You Learned",
             "content": "<p>This project brought together everything you’ve been learning:</p><ul><li>📦 Variables to store important information</li><li>⚙️ Setup to prepare your system</li><li>📡 Sensors to collect real-world data</li><li>🧠 Logic to make decisions (if / else if / else)</li><li>💡 Outputs to respond with lights and sound</li><li>🔁 Loops to keep everything running continuously</li></ul><br><p>This is how real systems work — input → thinking → output.</p><p>You are now thinking like an engineer. 🚀</p>"
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "components": [
+                    {"type": "sonar",  "id": "sonar1",    "label": "Distance Sensor", "pin_trig": 9, "pin_echo": 10},
+                    {"type": "led",    "id": "greenLED",  "color": "green",  "pin": 4, "label": "Safe"},
+                    {"type": "led",    "id": "yellowLED", "color": "yellow", "pin": 5, "label": "Warning"},
+                    {"type": "led",    "id": "redLED",    "color": "red",    "pin": 6, "label": "Danger"},
+                    {"type": "buzzer", "id": "buz1",                         "pin": 3, "label": "Buzzer"},
+                ],
+                "behaviors": [
+                    {
+                        "when": {"sonar1": "safe"},
+                        "then": {"greenLED": "on", "yellowLED": "off", "redLED": "off", "buz1": "off", "_stop_beep": "yes"}
+                    },
+                    {
+                        "when": {"sonar1": "warning"},
+                        "then": {"greenLED": "off", "yellowLED": "on", "redLED": "off", "_stop_beep": "yes", "_beep": "buz1", "_beep_interval": 400}
+                    },
+                    {
+                        "when": {"sonar1": "danger"},
+                        "then": {"greenLED": "off", "yellowLED": "off", "redLED": "on", "buz1": "on", "_stop_beep": "yes"}
+                    },
+                ]
+            }
         }
     }
-}
-    ],
+ }
+    ]
+  }
 }
 
 SKETCH_PRESET = {   
         'sketch': """
-//>> Step 1 - Define Global Variables | guided
+//>> Step 1 - Define Global Variables | guided | blocks | filter:true
 
 //?? Define trigPin
 int trigPin = 9;
@@ -417,10 +439,10 @@ int yellowLED = 5;
 int redLED = 6;
 
 //?? Define duration
-long duration;
+long duration = 0;
 
 //?? Define distance
-int distance;
+int distance = 0;
 
 void setup() {
     }
@@ -493,7 +515,7 @@ void loop() {
   duration = pulseIn(echoPin, HIGH);
 }
 
-//>> Step 6 - Calculate Distance | guided
+//>> Step 6 - Calculate Distance | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -507,7 +529,7 @@ void loop() {
   distance = duration * 0.034 / 2;
 }
 
-//>> Step 7 - Safe Zone Check | guided
+//>> Step 7 - Safe Zone Check | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
