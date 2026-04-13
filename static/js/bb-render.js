@@ -351,6 +351,24 @@
             id: (Date.now() + Math.random()).toString(), type: 'ifblock',
             condition: cond, ifbody: ib, elseifs: eifs, elsebody: eb
           };
+        } else if (type === 'elseifclause') {
+          var cond = { leftExpr: null, op: '==', rightExpr: null, joiner: 'none', leftExpr2: null, op2: '==', rightExpr2: null };
+          if (ph.condition && (isPartial || (isMatchingPhantom && config.fill === false))) {
+            cond.op = ph.condition.op || '==';
+            cond.joiner = ph.condition.joiner || 'none';
+            cond.op2 = ph.condition.op2 || '==';
+            cond._expectedCond = ph.expectedCondTypes || {
+              left: ph.condition.leftExpr ? ph.condition.leftExpr.type : null,
+              right: ph.condition.rightExpr ? ph.condition.rightExpr.type : null,
+              left2: ph.condition.leftExpr2 ? ph.condition.leftExpr2.type : null,
+              right2: ph.condition.rightExpr2 ? ph.condition.rightExpr2.type : null
+            };
+          }
+          var bd = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseifclause', condition: cond, body: bd };
+        } else if (type === 'elseclause') {
+          var bd = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseclause', body: bd };
         } else if (type === 'forloop') {
           var ib = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
           var fi = isPartial ? (ph.forinit || 'int i = 0') : 'int i = 0';
@@ -465,6 +483,7 @@
           if (containsTarget(b)) anc.push(b.id);
           walk(b.ifbody); b.elseifs.forEach(function (ei) { walk(ei.body); }); if (b.elsebody) walk(b.elsebody);
         } else if (b.type === 'forloop' || b.type === 'whileloop') { if (b.body && isDescendantOf(b.body, BB.sel.targetArr)) anc.push(b.id); if (b.body) walk(b.body); }
+        else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) { if (isDescendantOf(b.body, BB.sel.targetArr)) anc.push(b.id); walk(b.body); }
       }
     }
     walk(BB.SECTIONS[BB.sel.section]); return anc;
@@ -511,10 +530,12 @@
   BB.renderSection = renderSection;
 
   function renderBlock(block, idx, parentArr, section, pathStr, anc) {
-    if (block.type === 'ifblock')   return renderIfBlock(block, idx, parentArr, section, pathStr, anc);
-    if (block.type === 'forloop')   return renderForBlock(block, idx, parentArr, section, pathStr, anc);
-    if (block.type === 'whileloop') return renderWhileBlock(block, idx, parentArr, section, pathStr, anc);
-    if (block.type === 'slot')      return renderSlot(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'ifblock')      return renderIfBlock(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'elseifclause') return renderElseIfClause(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'elseclause')   return renderElseClause(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'forloop')      return renderForBlock(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'whileloop')    return renderWhileBlock(block, idx, parentArr, section, pathStr, anc);
+    if (block.type === 'slot')         return renderSlot(block, idx, parentArr, section, pathStr, anc);
     return renderActionBlock(block, idx, parentArr);
   }
   BB.renderBlock = renderBlock;
@@ -727,6 +748,49 @@
     return wrap;
   }
   BB.renderIfBlock = renderIfBlock;
+
+  function renderElseIfClause(block, idx, parentArr, section, parentPathStr, anc) {
+    if (!block.body) block.body = [];
+    if (!block.condition) block.condition = { leftExpr: null, op: '>', rightExpr: null, joiner: 'none', leftExpr2: null, op2: '==', rightExpr2: null };
+    var wrap = document.createElement('div');
+    wrap.className = 'if-block' + (anc.indexOf(block.id) !== -1 ? ' ancestor' : '');
+    wrap.setAttribute('data-id', block.id);
+    var hdr = document.createElement('div'); hdr.className = 'elseif-header';
+    hdr.appendChild(kw('else if (')); appendCondFields(hdr, block.condition); hdr.appendChild(kw(')'));
+    if (!BB.READONLY_MODE) {
+      hdr.appendChild(mkact('\u00D7', function () {
+        if (parentArr[idx] && parentArr[idx].type === 'slot') { parentArr[idx].content = null; }
+        else { parentArr.splice(idx, 1); }
+        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render();
+        BB.checkStepComplete();
+      }));
+    }
+    wrap.appendChild(hdr);
+    wrap.appendChild(makeBodyZone(block.body, section, parentPathStr + ' \u2192 else if', true, anc));
+    return wrap;
+  }
+  BB.renderElseIfClause = renderElseIfClause;
+
+  function renderElseClause(block, idx, parentArr, section, parentPathStr, anc) {
+    if (!block.body) block.body = [];
+    var wrap = document.createElement('div');
+    wrap.className = 'if-block' + (anc.indexOf(block.id) !== -1 ? ' ancestor' : '');
+    wrap.setAttribute('data-id', block.id);
+    var hdr = document.createElement('div'); hdr.className = 'else-header';
+    hdr.appendChild(kw('else'));
+    if (!BB.READONLY_MODE) {
+      hdr.appendChild(mkact('\u00D7', function () {
+        if (parentArr[idx] && parentArr[idx].type === 'slot') { parentArr[idx].content = null; }
+        else { parentArr.splice(idx, 1); }
+        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render();
+        BB.checkStepComplete();
+      }));
+    }
+    wrap.appendChild(hdr);
+    wrap.appendChild(makeBodyZone(block.body, section, parentPathStr + ' \u2192 else', true, anc));
+    return wrap;
+  }
+  BB.renderElseClause = renderElseClause;
 
   function renderForBlock(block, idx, parentArr, section, parentPathStr, anc) {
     var wrap = document.createElement('div'); wrap.className = 'for-block';

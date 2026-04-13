@@ -1,0 +1,48 @@
+{% extends "lessons/project_base.html" %}
+{% set banner_image = "project_sixteen_banner.png" %}
+{% block title %}🔧 Broken Blinker — KidsCode{% endblock %}
+
+{% set project_title = "Project 16 — Broken Blinker 🔧" %}
+{% set circuit_image = "project_sixteen_circuit.png" %}
+
+{% block intro %}
+<h2>🚨 Emergency Mission!</h2>
+<p>The head engineer has a BIG problem. The new drones keep their lights ON all the time — they never blink! 🛸</p>
+<p>The pilots can't tell if the drone is really on. You have been called in to fix the code! 🔧</p>
+
+<h3>New ideas 💭</h3>
+<hr>
+
+<h4>💡 HIGH and LOW — On and Off</h4>
+<p>When you write <strong>HIGH</strong>, the LED turns ON. When you write <strong>LOW</strong>, it turns OFF.</p>
+<p>To make a light blink, you need BOTH — just like flicking a light switch up AND down! 🔄</p>
+<hr>
+
+<h4>⏱️ delay() — The Waiting Game</h4>
+<p><strong>delay(1000)</strong> tells your Arduino to wait 1 second before doing the next thing.</p>
+<p>Think of it like counting to one before flipping the switch again! 🕐</p>
+<hr>
+
+<h4>🔍 Be a Code Detective</h4>
+<p>When code is broken, read it line by line and look for clues. 🕵️</p>
+<p>Ask yourself: <em>"Does every ON have an OFF?"</em></p>
+{% endblock %}
+
+{% block parts %}
+<h2>🛸 Drone Light Circuit</h2>
+<h4>What parts are in the drone light system?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — The drone's tiny computer brain!</li>
+    <li>💡 <strong>LED (any colour)</strong> — This is the blinking drone light!</li>
+    <li>🟫 <strong>220Ω Resistor</strong> — Protects the LED from too much power!</li>
+    <li>🔌 <strong>Jumper wires</strong> — Connect everything together!</li>
+</ul>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>🔍 <strong>Detective Tip:</strong> Look at the two <code>digitalWrite</code> lines in the code. Are they the same or different?</p>
+    <p>💡 <strong>Blink Rule:</strong> Every blink needs one HIGH and one LOW — like breathing in AND out! 🫁</p>
+    <p>🛸 <strong>Test it:</strong> After you fix the code, the drone light should blink on and off every second!</p>
+</div>
+{% endblock %}

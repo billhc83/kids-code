@@ -14,3 +14,12 @@ venv/
 
 # Flask instance folder
 instance/
+
+# Claude Code — local settings override (personal, not shared)
+.claude/settings.local.json
+
+# Claude Code — commands/skills ARE committed (shared with the team)
+# .claude/commands/ is intentionally NOT ignored
+
+# Lesson generation — temp spec file written during /generate-lesson
+lesson_spec.json

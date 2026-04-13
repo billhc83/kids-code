@@ -157,6 +157,14 @@ LESSONS = [
         "part": "Backup Alarm",
         "block_builder": "project_fifteen"  # ← update to correct preset
     },
+    {
+        "key": "project_sixteen",
+        "title": "🔧 Broken Blinker",
+        "template": "lessons/project_sixteen.html",
+        "part": None,
+        "block_builder": "project_sixteen"
+    },
+
 ]
 
 # Quick lookups

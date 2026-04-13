@@ -36,7 +36,9 @@
 
 <!-- Top bar -->
     <div id="topbar">
-        <a href="{{ url_for('main.index') }}" class="logo">🧑‍💻 KidsCode</a>
+        <a href="{{ url_for('main.index') }}" class="logo">
+            <img src="{{ url_for('static', filename='graphics/logo.png') }}" alt="KidsCode" class="logo-img">
+        </a>
 
         <div class="top-links">
         {% if session.is_admin %}

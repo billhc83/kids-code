@@ -1,4 +1,4 @@
-block_list: (block | directive | statement)*
+block_list: (block | directive | statement | phantom_else_if | phantom_else_clause)*
 
 ?block: if_block
       | while_loop
@@ -7,6 +7,8 @@ block_list: (block | directive | statement)*
 if_block: "if" "(" condition ")" "{" block_list "}" else_if_clause* else_clause?
 else_if_clause: "else" "if" "(" condition ")" "{" block_list "}"
 else_clause: "else" "{" block_list "}"
+phantom_else_if: PHANTOM_DIR "else" "if" "(" condition ")" "{" block_list "}"
+phantom_else_clause: PHANTOM_DIR "else" "{" block_list "}"
 
 while_loop: "while" "(" condition ")" "{" block_list "}"
 

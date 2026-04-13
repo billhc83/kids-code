@@ -94,7 +94,18 @@ class BlockTransformer(Transformer):
         }
 
     def else_if_clause(self, items):
-        return {'_is_elseif': True, 'condition': items[0], 'body': items[1]}
+        return {'type': 'elseifclause', '_is_elseif': True, 'condition': items[0], 'body': items[1]}
+
+    def phantom_else_if(self, items):
+        hint = str(items[0]).replace('//??', '').strip()
+        condition = items[1]
+        body = items[2] if len(items) > 2 else []
+        return {'_is_phantom_elseif': True, 'hint': hint, 'condition': condition, 'body': body}
+
+    def phantom_else_clause(self, items):
+        hint = str(items[0]).replace('//??', '').strip()
+        body = items[1] if len(items) > 1 else []
+        return {'_is_phantom_elseclause': True, 'hint': hint, 'body': body}
 
     def else_clause(self, items):
         return items[0] # Returns the block_list (list)
@@ -321,62 +332,123 @@ def strip_block_values(block):
     
     return res
 
+def _make_slot(hint, master, initial_fill_content):
+    """Build a phantom slot dict from a master block and hint string."""
+    tmpl = strip_block_values(master)
+    cond = master.get('condition') if isinstance(master, dict) else None
+    return {
+        'type': 'slot',
+        'id': str(random.random() * 1000000000000000),
+        'content': master if initial_fill_content else None,
+        'master': master,
+        'phantom_meta': {
+            'hint': hint,
+            'expects': master['type'] if isinstance(master, dict) else 'codeblock',
+            'params': tmpl.get('params', []) if isinstance(tmpl, dict) else [],
+            'exChildren': tmpl.get('exChildren', []) if isinstance(tmpl, dict) else [],
+            'condition': tmpl.get('condition') if isinstance(tmpl, dict) else None,
+            'expectedExTypes': [e['type'] if e else None for e in master.get('exChildren', [])] if isinstance(master, dict) and 'exChildren' in master else None,
+            'expectedCondTypes': (lambda c: {
+                'left':  c['leftExpr']['type']  if c.get('leftExpr')  else None,
+                'right': c['rightExpr']['type'] if c.get('rightExpr') else None,
+                'left2': c['leftExpr2']['type'] if c.get('leftExpr2') else None,
+                'right2':c['rightExpr2']['type'] if c.get('rightExpr2') else None,
+            })(cond) if cond else None,
+            'ifbody': tmpl.get('ifbody', []) if isinstance(tmpl, dict) else [],
+            'elseifs': tmpl.get('elseifs', []) if isinstance(tmpl, dict) else [],
+            'elsebody': tmpl.get('elsebody') if isinstance(tmpl, dict) else None,
+            'body': tmpl.get('body', []) if isinstance(tmpl, dict) else [],
+            'forinit': tmpl.get('forinit') if isinstance(tmpl, dict) else '',
+            'forcond': tmpl.get('forcond') if isinstance(tmpl, dict) else '',
+            'forincr': tmpl.get('forincr') if isinstance(tmpl, dict) else '',
+        }
+    }
+
+
+def _resolve_nested_bodies(item, fill_values=False, initial_fill_content=False):
+    """
+    Recursively resolve phantom directives inside the bodies of ifblock/whileloop/forloop items.
+    Returns a new dict with resolved bodies; returns item unchanged for other types.
+    """
+    if not isinstance(item, dict):
+        return item
+    t = item.get('type')
+    if t == 'ifblock':
+        ifbody = resolve_phantom_items(item.get('ifbody') or [], fill_values, initial_fill_content)
+        elseifs = []
+        for ei in item.get('elseifs') or []:
+            ei_copy = dict(ei)
+            ei_copy['body'] = resolve_phantom_items(ei.get('body') or [], fill_values, initial_fill_content)
+            elseifs.append(ei_copy)
+        elsebody = item.get('elsebody')
+        if elsebody:
+            elsebody = resolve_phantom_items(elsebody, fill_values, initial_fill_content)
+        return {**item, 'ifbody': ifbody, 'elseifs': elseifs, 'elsebody': elsebody}
+    if t in ('whileloop', 'forloop'):
+        body = resolve_phantom_items(item.get('body') or [], fill_values, initial_fill_content)
+        return {**item, 'body': body}
+    return item
+
+
+def resolve_phantom_items(raw_items, fill_values=False, initial_fill_content=False):
+    """
+    Walk a list of raw BlockTransformer items and resolve //?? phantom directives
+    into slot dicts. Handles phantom_else_if and phantom_else_clause by recursing
+    into their bodies so nested phantoms inside else/else-if bodies are also resolved.
+    """
+    final_blocks = []
+    current_phantom_hint = None
+
+    for item in raw_items:
+        if isinstance(item, dict) and item.get('_is_phantom_dir'):
+            current_phantom_hint = item['hint']
+            continue
+
+        if isinstance(item, dict) and item.get('_is_phantom_elseif'):
+            # phantom_else_if → elseifclause block
+            resolved_body = resolve_phantom_items(item.get('body', []), fill_values, initial_fill_content)
+            master = {
+                'type': 'elseifclause',
+                'condition': item.get('condition'),
+                'body': resolved_body,
+            }
+            final_blocks.append(_make_slot(item['hint'], master, initial_fill_content))
+            current_phantom_hint = None
+            continue
+
+        if isinstance(item, dict) and item.get('_is_phantom_elseclause'):
+            # phantom_else_clause → elseclause block
+            resolved_body = resolve_phantom_items(item.get('body', []), fill_values, initial_fill_content)
+            master = {
+                'type': 'elseclause',
+                'body': resolved_body,
+            }
+            final_blocks.append(_make_slot(item['hint'], master, initial_fill_content))
+            current_phantom_hint = None
+            continue
+
+        item = _resolve_nested_bodies(item, fill_values, initial_fill_content)
+
+        if current_phantom_hint:
+            final_blocks.append(_make_slot(current_phantom_hint, item, initial_fill_content))
+            current_phantom_hint = None
+        else:
+            if not fill_values:
+                final_blocks.append(strip_block_values(item))
+            else:
+                final_blocks.append(item)
+
+    return final_blocks
+
+
 def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_content=False):
     code = code.strip()
     if not code: return []
-    
+
     try:
         tree = arduino_parser.parse(code, start='block_list')
         raw_items = BlockTransformer().transform(tree)
-        
-        final_blocks = []
-        current_phantom_hint = None
-        
-        for item in raw_items:
-            if isinstance(item, dict) and item.get('_is_phantom_dir'):
-                current_phantom_hint = item['hint']
-                continue
-            
-            if current_phantom_hint:
-                master = item
-                tmpl = strip_block_values(item)
-                
-                final_blocks.append({
-                    'type': 'slot',
-                    'id': str(random.random() * 1000000000000000),
-                    'content': master if initial_fill_content else None,
-                    'master': master,
-                    'phantom_meta': {
-                        'hint': current_phantom_hint,
-                        'expects': master['type'] if isinstance(master, dict) else 'codeblock',
-                        'params': tmpl.get('params', []) if isinstance(tmpl, dict) else [],
-                        'exChildren': tmpl.get('exChildren', []) if isinstance(tmpl, dict) else [],
-                        'condition': tmpl.get('condition') if isinstance(tmpl, dict) else None,
-                        'expectedExTypes': [e['type'] if e else None for e in master.get('exChildren', [])] if isinstance(master, dict) and 'exChildren' in master else None,
-                        'expectedCondTypes': (lambda c: {
-                            'left':  c['leftExpr']['type']  if c.get('leftExpr')  else None,
-                            'right': c['rightExpr']['type'] if c.get('rightExpr') else None,
-                            'left2': c['leftExpr2']['type'] if c.get('leftExpr2') else None,
-                            'right2':c['rightExpr2']['type'] if c.get('rightExpr2') else None,
-                        })(master['condition']) if isinstance(master, dict) and master.get('condition') else None,
-                        'ifbody': tmpl.get('ifbody', []) if isinstance(tmpl, dict) else [],
-                        'elseifs': tmpl.get('elseifs', []) if isinstance(tmpl, dict) else [],
-                        'elsebody': tmpl.get('elsebody') if isinstance(tmpl, dict) else None,
-                        'body': tmpl.get('body', []) if isinstance(tmpl, dict) else [],
-                        'forinit': tmpl.get('forinit') if isinstance(tmpl, dict) else '',
-                        'forcond': tmpl.get('forcond') if isinstance(tmpl, dict) else '',
-                        'forincr': tmpl.get('forincr') if isinstance(tmpl, dict) else '',
-                    }
-                })
-                current_phantom_hint = None
-            else:
-                 # Normal block
-                 if not fill_values:
-                     final_blocks.append(strip_block_values(item))
-                 else:
-                     final_blocks.append(item)
-        
-        return final_blocks
+        return resolve_phantom_items(raw_items, fill_values, initial_fill_content)
     except (UnexpectedToken, UnexpectedCharacters) as e:
         # Enhanced fallback: Include error column/line info if available
         error_meta = {'line': getattr(e, 'line', None), 'column': getattr(e, 'column', None)}
@@ -514,27 +586,36 @@ def parse_steps(sketch_code):
         label = parts[0]
         guidance = parts[1].lower() if len(parts) > 1 else 'guided'
         view = parts[2].lower() if len(parts) > 2 else 'blocks'
-        palette_filter = parts[3].lower() if len(parts) > 3 else 'nofilter'
         reset = any(p.lower() == 'reset' for p in parts)
         aside = any(p.lower() == 'aside' for p in parts)
 
         # 1. Base Mapping from Guidance Mode
-        if guidance in ['free', 'open']:
+        if guidance == 'open':
+            structure = "none"
+            validation = "none"
+            fill = False
+            is_filter = False
+            is_readonly = False
+        elif guidance == 'free':
             structure = "none"
             validation = "none"
             fill = True
+            is_filter = True
+            is_readonly = True
         elif guidance == 'full':
             structure = "full"
             validation = "step"
             fill = True
+            is_filter = True
+            is_readonly = True
         else:  # default to guided
             structure = "partial"
             validation = "step"
             fill = False
+            is_filter = True
+            is_readonly = True
 
         # 2. Explicit Overrides (key:value)
-        is_filter = (palette_filter == 'filter')
-        is_readonly = (guidance not in ['free', 'open']) # Default
         for p in parts:
             p_low = p.lower()
             if p_low.startswith('fill:'):

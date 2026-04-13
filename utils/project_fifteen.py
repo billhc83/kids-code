@@ -146,7 +146,7 @@ DRAWER_CONTENT = {
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Before your backup alarm can work, it needs to know what parts it is using. We store this information in <b>variables</b>.</p><br><p>Each variable acts like a label for a part of your system:</p><ul><li>📡 <b>trigPin</b> → sends out a signal to measure distance<br><br></li><li>👂 <b>echoPin</b> → listens for the signal bouncing back<br><br></li><li>🔊 <b>buzzerPin</b> → makes sound when objects are close<br><br></li><li>💡 <b>greenLED</b>, <b>yellowLED</b>, <b>redLED</b> → show safe, warning, and danger zones<br><br></li><li>⏱ <b>duration</b> → stores how long the signal takes to return<br><br></li><li>📏 <b>distance</b> → stores how far away an object is</li></ul><p>Without these, your system wouldn’t know what anything is!</p>"
+            "content": "<p>Before your backup alarm can work, it needs to know what parts it is using. We store this information in <b>variables</b>.</p><br><p>Each variable acts like a label for a part of your system:</p><ul><li>📡 <b>trigPin</b> → sends out a signal to measure distance - Pin 9<br><br></li><li>👂 <b>echoPin</b> → listens for the signal bouncing back - Pin 10<br><br></li><li>🔊 <b>buzzerPin</b> → makes sound when objects are close - Pin 3<br><br></li><li>💡 <b>greenLED</b>, <b>yellowLED</b>, <b>redLED</b> → show safe, warning, and danger zones - Pins 4, 5 and 6<br><br></li><li>⏱ <b>duration</b> → stores how long the signal takes to return - Set to 0<br><br></li><li>📏 <b>distance</b> → stores how far away an object is - Set to 0</li></ul><p>Without these, your system wouldn’t know what anything is!</p>"
         },
         "howto": {
             "label": "🔧 How To",
@@ -188,7 +188,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Inside the loop, turn the trigger pin OFF.</p><p>2. Add a very short delay so the sensor resets properly.</p><p>This prepares the sensor for a clean measurement.</p>"
+            "content": "<p>1. Inside the loop, turn the trigger pin OFF.</p><p>2. Add a very short delay so the sensor resets properly. Lets use 2 microseconds.</p><p>This prepares the sensor for a clean measurement.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -207,11 +207,11 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Turn the trigger pin ON.</p><p>2. Wait a very short time (just enough for the signal to send).</p><p>3. Turn the trigger pin OFF again.</p><p>This creates the pulse that tells the sensor to begin measuring distance.</p>"
+            "content": "<p>1. Turn the trigger pin ON.</p><p>2. Wait a very short time (just enough for the signal to send). Lets use 10 microseconds.</p><p>3. Turn the trigger pin OFF again.</p><p>This creates the pulse that tells the sensor to begin measuring distance.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Think of this like shouting \"Hello!\" into a canyon. The shout is quick, but it travels far. If you shout too long or too short, the echo won’t be clear.</p>"
+            "content": "<p>Like using a walkie-talkie:  You press the button and say something quickly, then you let go to listen If you hold the button down the whole time, you can’t hear the other person at all.</p><p>👉 The trigger pulse is like pressing the button quickly, then letting go so you can listen.</p>"
         }
     }
 },
@@ -241,15 +241,15 @@ DRAWER_CONTENT = {
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Now we turn the time measurement into distance!</p><br><p>Sound travels at a known speed through the air. By using this speed, we can convert the time into how far away something is.</p><br><p>We divide the result by 2 because the sound travels to the object <b>and back</b>.</p><p>This final value is stored in the <b>distance</b> variable.</p>"
+            "content": "<p>Now we turn the time measurement into distance!</p><br><p>Sound travels at a known speed through the air. By using this speed, we can convert the time into how far away something is.</p><br><p>We divide the result by 2 because the sound travels to the object <b>and back</b>.</p><br><p><b>But what if we don’t hear anything back?</b></p><p>If no echo is received, it means nothing was detected. In that case, we treat the object as being very far away.</p><br><p>This final value is stored in the <b>distance</b> variable.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Take the duration value you measured.</p><p>2. Convert it into distance using the correct formula.</p><p>3. Store the result in the <b>distance</b> variable.</p><p>This gives your system real-world information it can react to.</p>"
+            "content": "<p>1. Check if a duration was received.</p><p>2. If not, set distance to a large value (like 999).</p><p>3. Otherwise, convert duration into distance using the formula.</p><p>4. Store the result in the <b>distance</b> variable.</p><p>This gives your system real-world information it can react to.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Imagine timing how long it takes for a ball to bounce off a wall and come back. If you know how fast it moves, you can figure out how far away the wall is.</p>"
+            "content": "<p>Imagine timing how long it takes for a ball to bounce off a wall and come back.</p><p>If you hear the bounce, you can calculate how far away the wall is.</p><p><b>If you don’t hear anything</b>, it probably means the wall is too far away — so you assume it's far.</p>"
         }
     }
 },
@@ -264,7 +264,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Create an <b>if</b> condition.</p><p>2. Check if the distance is greater than the safe value.</p><p>3. Open the block where your safe actions will go.</p><p>This tells your system when everything is safe.</p>"
+            "content": "<p>1. Create an <b>if</b> condition.</p><p>2. Check if the distance is greater than the safe value.</p><p>We chose 50 because it’s a middle distance that makes the alarm react at a useful time — not too early and not too late.</p><p>3. Open the block where your safe actions will go.</p><p>This tells your system when everything is safe.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -302,7 +302,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Add an <b>else if</b> after your first condition.</p><p>2. Check if the distance is greater than the warning threshold.</p><p>3. Open the block where your warning actions will go.</p><p>This creates a second level of awareness in your system.</p>"
+            "content": "<p>1. Add an <b>else if</b> after your first condition.</p><p>2. Check if the distance is greater than the warning threshold.</p><p>3. Let use 20 for this number.  That means its closer than 50 but not too close.</p><p>This creates a second level of awareness in your system.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -321,7 +321,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Turn the buzzer ON using a tone.</p><p>2. Wait for a short amount of time.</p><p>3. Turn the buzzer OFF.</p><p>4. Wait again.</p><p>5. Set the LEDs so only the yellow light is ON.</p><p>This creates a repeating warning signal.</p>"
+            "content": "<p>1. Turn the buzzer ON using a tone.  We will use a frequency of 1000 Hz. This frequency decided the tone the buzzer will make.</p><p>2. Wait for a short amount of time. 300 ms.</p><p>3. Turn the buzzer OFF.</p><p>4. Wait again.  300 ms.</p><p>5. Set the LEDs so only the yellow light is ON. and the other two are off.</p><p>This creates a repeating warning signal.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -340,7 +340,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Add an <b>else</b> block for when no other conditions are true.</p><p>2. Turn the buzzer ON and keep it ON.</p><p>3. Turn the red LED ON.</p><p>4. Turn the other LEDs OFF.</p><p>This creates a strong, clear danger signal.</p>"
+            "content": "<p>1. Add an <b>else</b> block for when no other conditions are true.</p><p>2. Turn the buzzer ON and keep it ON. Lets use a frequency of 1500 now so our buzzer makes a higher pitched sound.</p><p>3. Turn the red LED ON.</p><p>4. Turn the other LEDs OFF.</p><p>This creates a strong, clear danger signal.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -359,7 +359,7 @@ DRAWER_CONTENT = {
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. At the end of the loop, add a small delay.</p><p>2. This delay should be short — just enough to stabilize the system.</p><p>3. The loop will then repeat automatically.</p><p>This keeps your system running smoothly.</p>"
+            "content": "<p>1. At the end of the loop, add a small delay. Lets use 50 ms.</p><p>2. This delay should be short — just enough to stabilize the system.</p><p>3. The loop will then repeat automatically.</p><p>This keeps your system running smoothly.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
@@ -502,7 +502,7 @@ void loop() {
   digitalWrite(trigPin, LOW);
 }
 
-//>> Step 5 - Read Echo | guided
+//>> Step 5 - Read Echo | free
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -511,7 +511,7 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
 
-  //?? Read duration from echoPin
+  //## Read duration from echoPin
   duration = pulseIn(echoPin, HIGH);
 }
 
@@ -525,8 +525,14 @@ void loop() {
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
 
-  //?? Convert duration to distance
-  distance = duration * 0.034 / 2;
+  //?? If no echo received
+  if (duration == 0) {
+    //?? Set distance to a far value
+    distance = 999;
+  }
+  else {
+    //## distance = duration * 0.034 / 2;
+  }
 }
 
 //>> Step 7 - Safe Zone Check | guided | blocks | filter:true
@@ -538,7 +544,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
 
   //?? If distance > 50
   if (distance > 50) {
@@ -554,7 +565,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
 
   //?? Turn buzzer OFF
@@ -572,7 +588,7 @@ void loop() {
   //## }
 }
 
-//>> Step 9 - Warning Zone Check | guided
+//>> Step 9 - Warning Zone Check | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -581,7 +597,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
   //##   noTone(buzzerPin);
   //##   digitalWrite(greenLED, HIGH);
@@ -594,7 +615,7 @@ void loop() {
   }
 }
 
-//>> Step 10 - Warning Zone Output | guided
+//>> Step 10 - Warning Zone Output | guided | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -603,7 +624,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
   //##   noTone(buzzerPin);
   //##   digitalWrite(greenLED, HIGH);
@@ -636,7 +662,7 @@ void loop() {
   //## }
 }
 
-//>> Step 11 - Danger Zone | guided
+//>> Step 11 - Danger Zone | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -645,7 +671,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
   //##   noTone(buzzerPin);
   //##   digitalWrite(greenLED, HIGH);
@@ -665,8 +696,8 @@ void loop() {
   //?? Else (very close)
   else {
 
-    //?? Turn buzzer ON (2000 Hz)
-    tone(buzzerPin, 2000);
+    //?? Turn buzzer ON (1500 Hz)
+    tone(buzzerPin, 1500);
 
     //?? Turn green LED OFF
     digitalWrite(greenLED, LOW);
@@ -688,7 +719,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
   //##   noTone(buzzerPin);
   //##   digitalWrite(greenLED, HIGH);
@@ -705,7 +741,7 @@ void loop() {
   //##   digitalWrite(redLED, LOW);
   //## }
   //## else {
-  //##   tone(buzzerPin, 2000);
+  //##   tone(buzzerPin, 1500);
   //##   digitalWrite(greenLED, LOW);
   //##   digitalWrite(yellowLED, LOW);
   //##   digitalWrite(redLED, HIGH);
@@ -715,7 +751,7 @@ void loop() {
   delay(50);
 }
 
-//>> Step 13 - Complete System | locked
+//>> Step 13 - Complete System | open
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -724,7 +760,12 @@ void loop() {
   //## delayMicroseconds(10);
   //## digitalWrite(trigPin, LOW);
   //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
+  //## if (duration == 0) {
+  //##   distance = 999;
+  //## }
+  //## else {
+  //##   distance = duration * 0.034 / 2;
+  //## }
   //## if (distance > 50) {
   //##   noTone(buzzerPin);
   //##   digitalWrite(greenLED, HIGH);
@@ -741,7 +782,7 @@ void loop() {
   //##   digitalWrite(redLED, LOW);
   //## }
   //## else {
-  //##   tone(buzzerPin, 2000);
+  //##   tone(buzzerPin, 1500);
   //##   digitalWrite(greenLED, LOW);
   //##   digitalWrite(yellowLED, LOW);
   //##   digitalWrite(redLED, HIGH);

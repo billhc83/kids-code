@@ -28,10 +28,14 @@ body {
 }
 
 #topbar .logo {
-    font-size: 20px;
-    font-weight: 800;
-    color: #0969da;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+#topbar .logo .logo-img {
+    height: 88px;
+    width: auto;
 }
 
 #topbar .top-links {

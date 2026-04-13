@@ -606,8 +606,6 @@ async function fetchPorts() {
       
       if(p.board_name){
         option.textContent = p.board_name + ' (' + p.port + ')';
-      } else if(p.fqbn && BOARD_NAMES[p.fqbn]){
-        option.textContent = BOARD_NAMES[p.fqbn] + ' (' + p.port + ')';
       } else {
         option.textContent = p.port;
       }
@@ -626,21 +624,57 @@ async function connectSerial() {
   const port = document.getElementById('port-select').value;
   if (!port) return alert("Select port");
 
-  if (ws) ws.close();
+  if (ws) { ws.close(); ws = null; }
 
+  // Stop any existing agent session first
+  try { await fetch('http://127.0.0.1:3210/serial/stop', { method: 'POST' }); } catch (_) {}
+
+  // Start the serial session BEFORE opening the WebSocket —
+  // the agent only streams to clients that connect after /serial/start is running
+  try {
+    const res = await fetch('http://127.0.0.1:3210/serial/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port, baudRate: 9600 })
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      logToSerial("Serial start failed (" + res.status + "): " + body, true);
+      return;
+    }
+  } catch (err) {
+    logToSerial("Could not start serial — is Arduino Agent running?", true);
+    return;
+  }
+
+  // Now open the WebSocket — agent will stream to this new client
   ws = new WebSocket('ws://127.0.0.1:3211');
 
-  ws.onmessage = (event) => {
-    logToSerial(event.data);
+  ws.onopen = () => {
+    logToSerial("Connected to " + port);
   };
 
-  await fetch('http://127.0.0.1:3210/serial/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ port, baudRate: 9600 })
-  });
+  ws.onmessage = async (event) => {
+    let text;
+    if (typeof event.data === 'string') {
+      text = event.data;
+    } else if (event.data instanceof Blob) {
+      text = await event.data.text();
+    } else if (event.data instanceof ArrayBuffer) {
+      text = new TextDecoder().decode(event.data);
+    } else {
+      text = String(event.data);
+    }
+    logToSerial(text);
+  };
 
-  logToSerial("Connected to " + port);
+  ws.onerror = () => {
+    logToSerial("Serial connection failed — is Arduino Agent running?", true);
+  };
+
+  ws.onclose = () => {
+    if (serialMonitorOpen) logToSerial("Serial connection closed.", true);
+  };
 }
 
 // Compile
@@ -761,8 +795,7 @@ async function loadBlockBuilder() {
     window._bbCheckInterval = null;
   }
 
-  // Clear stale globals so the init check below waits for the freshly-loaded
-  // scripts to initialize rather than firing immediately on the old values.
+  // Wipe stale globals so nothing downstream uses leftover state
   window.BB_CONFIG = null;
   window.getGeneratedCode = null;
 
@@ -772,40 +805,66 @@ async function loadBlockBuilder() {
     const preset = urlParams.get('preset') || pathParts[pathParts.length - 1] || 'codebreaker';
     const page = urlParams.get('page') || '';
 
-    (`[DEBUG] loadBlockBuilder: Fetching /builder for preset=${preset}, page=${page}`);
     const response = await fetch('/builder?preset=' + preset + '&page=' + page);
     if (!response.ok) throw new Error('Failed to fetch block builder');
     const html = await response.text();
-    (`[DEBUG] loadBlockBuilder: HTML received, length=${html.length}`);
 
-    const range = document.createRange();
-    const fragment = range.createContextualFragment(html);
-    blocksView.innerHTML = '';
-    blocksView.appendChild(fragment);
+    // Parse into a temp element using innerHTML — this does NOT execute scripts,
+    // which is exactly what we want so we can control the load order ourselves.
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
 
-    // Wait for the components to initialize (BB_CONFIG set by inline script,
-    // getGeneratedCode set by block_builder.js after all scripts have run).
-    window._bbCheckInterval = setInterval(() => {
-  if (!window.BB_CONFIG || !window.getGeneratedCode) return;
-  ("[DEBUG] loadBlockBuilder: Components initialized.");
-  clearInterval(window._bbCheckInterval);
-  window._bbCheckInterval = null;
+    // Pull all script elements out before injecting, so the browser never
+    // tries to run them via the normal (unreliable async) dynamic-insert path.
+    const scripts = [...temp.querySelectorAll('script')];
+    scripts.forEach(s => s.remove());
 
-  const cfg = window.BB_CONFIG;
-  setMode(cfg.default_view || 'blocks');
-  const isProg = window.isProgressionMode && window.isProgressionMode();
-  const toggleBtn = document.getElementById('mode-toggle-btn');
-  if(toggleBtn){
-    toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
-  }
+    // Inject the script-free HTML (link stylesheet + block builder markup)
+    blocksView.innerHTML = temp.innerHTML;
 
-  var stepNav = document.getElementById('step-nav');
-  if(stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+    // Execute inline scripts first (e.g. the BB_CONFIG = {...} assignment)
+    for (const s of scripts) {
+      if (!s.getAttribute('src')) {
+        try { (new Function(s.textContent))(); }
+        catch (e) { console.error('[BB] inline script error:', e); }
+      }
+    }
 
-  if(cfg.readonly_mode && editor){
-    editor.updateOptions({ readOnly: true });
-  }
-}, 50);
+    // Load each external script sequentially, awaiting onload before the next.
+    // This guarantees bb-blocks → bb-render → bb-validation → block_builder
+    // always executes in the correct dependency order.
+    for (const s of scripts) {
+      const rawSrc = s.getAttribute('src');
+      if (!rawSrc) continue;
+      const src = new URL(rawSrc, window.location.href).href;
+
+      // Remove any previously injected copy so the browser re-executes the
+      // script rather than silently skipping it as a duplicate URL.
+      const prev = document.head.querySelector(`script[data-bb-src="${src}"]`);
+      if (prev) prev.parentNode.removeChild(prev);
+
+      await new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.setAttribute('data-bb-src', src);
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('[BB] failed to load: ' + src));
+        document.head.appendChild(el);
+      });
+    }
+
+    // All scripts have now run in the correct order — configure the UI
+    const cfg = window.BB_CONFIG;
+    if (!cfg) throw new Error('[BB] BB_CONFIG missing after script load');
+
+    setMode(cfg.default_view || 'blocks');
+    const isProg = window.isProgressionMode && window.isProgressionMode();
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (toggleBtn) toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
+    const stepNav = document.getElementById('step-nav');
+    if (stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+    if (cfg.readonly_mode && editor) editor.updateOptions({ readOnly: true });
+
   } catch (err) {
     console.error('Block Builder Load Error:', err);
     blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';

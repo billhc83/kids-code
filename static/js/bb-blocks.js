@@ -103,7 +103,7 @@
     },
     digitalwrite: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Value', o: ['HIGH', 'LOW'] }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Value', o: ['HIGH', 'LOW'] }],
       genStmt: function (p) { return 'digitalWrite(' + (p[0]) + ', ' + (p[1]) + ');'; }
     },
     analogwrite: {
@@ -144,7 +144,7 @@
     },
     tone: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'expr', l: 'Freq', fallback: '440' }, { t: 'number', l: 'Duration' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'expr', l: 'Freq', fallback: '440' }, { t: 'number', l: 'Duration' }],
       genStmt: function (p, ex) {
         var pin = (p[0] || 5), f = genExpr(ex && ex[1], p[1], '440'), d = p[2];
         return (d !== '' && d !== null && d !== undefined) ? ('tone(' + pin + ', ' + f + ', ' + d + ');') : ('tone(' + pin + ', ' + f + ');');
@@ -219,6 +219,14 @@
       genStmt: function (p) { return (p[0] || ''); }
     },
     ifblock: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
+      inputs: [], genStmt: function () { return ''; }
+    },
+    elseifclause: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
+      inputs: [], genStmt: function () { return ''; }
+    },
+    elseclause: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
       inputs: [], genStmt: function () { return ''; }
     },

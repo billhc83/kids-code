@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Step Config Flag Reference</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a1a; padding: 32px 24px; }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 32px; }
+
+  /* ── Header format box ──────────────────────────────────────────── */
+  .header-box {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 10px;
+    padding: 18px 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+  .header-box .seg { padding: 2px 6px; border-radius: 4px; margin: 0 2px; }
+  .seg-label   { background: #45475a; color: #cdd6f4; }
+  .seg-guide   { background: #89b4fa; color: #1e1e2e; font-weight: 700; }
+  .seg-view    { background: #a6e3a1; color: #1e1e2e; }
+  .seg-kv      { background: #f38ba8; color: #1e1e2e; }
+  .seg-flags   { background: #fab387; color: #1e1e2e; }
+
+  .legend-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* ── Guidance branches ──────────────────────────────────────────── */
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px; }
+
+  .branches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+
+  .branch {
+    background: #fff;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .branch.is-default { border-color: #89b4fa; }
+
+  .branch-header {
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .branch-header .default-badge {
+    font-family: sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    background: #89b4fa;
+    color: #1e1e2e;
+    border-radius: 4px;
+    padding: 1px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .guided-hdr  { background: #dbeafe; color: #1d4ed8; }
+  .full-hdr    { background: #dcfce7; color: #15803d; }
+  .free-hdr    { background: #fef9c3; color: #92400e; }
+  .open-hdr    { background: #fef9c3; color: #92400e; }
+
+  .branch-flags { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .flag-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .flag-name { color: #555; font-family: 'Courier New', monospace; font-size: 12px; }
+  .flag-val  { font-weight: 700; font-family: 'Courier New', monospace; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+
+  .val-partial  { background: #dbeafe; color: #1d4ed8; }
+  .val-full     { background: #dcfce7; color: #15803d; }
+  .val-none     { background: #f3f4f6; color: #6b7280; }
+  .val-step     { background: #ede9fe; color: #6d28d9; }
+  .val-true-good{ background: #dcfce7; color: #15803d; }
+  .val-false-warn{ background: #fee2e2; color: #991b1b; }
+  .val-true-warn { background: #fff7ed; color: #92400e; }
+  .val-false-ok  { background: #f3f4f6; color: #6b7280; }
+
+  /* ── Overrides table ──────────────────────────────────────────── */
+  .overrides-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .override-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .override-header {
+    padding: 10px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .override-header .ov-key { color: #d6336c; }
+  .override-header .ov-values { color: #888; font-weight: 400; font-size: 11px; }
+  .override-body { padding: 12px 16px; font-size: 13px; line-height: 1.6; color: #444; }
+  .override-body strong { color: #1a1a1a; }
+  .override-body code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: 'Courier New', monospace; }
+
+  /* ── Boolean flags ──────────────────────────────────────────── */
+  .bool-flags { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+
+  .bool-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .bool-badge {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    background: #fab387;
+    color: #1e1e2e;
+    border-radius: 5px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .bool-text { font-size: 13px; color: #444; line-height: 1.6; }
+  .bool-text strong { color: #1a1a1a; }
+
+  /* ── What each flag actually does ──────────────────────────────── */
+  .effects-table {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 32px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .effects-table th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #888;
+  }
+  .effects-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .effects-table tr:last-child td { border-bottom: none; }
+  .effects-table td:first-child { font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #d6336c; white-space: nowrap; }
+  .effects-table td:nth-child(2) { color: #555; max-width: 500px; line-height: 1.6; }
+  .effects-table td:nth-child(3) { color: #888; font-size: 12px; font-family: 'Courier New', monospace; }
+
+  /* ── Filter change callout ──────────────────────────────────────── */
+  .callout {
+    background: #fff8e1;
+    border: 2px solid #f59e0b;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .callout-title { font-weight: 700; font-size: 14px; color: #92400e; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .callout code { background: #fef3c7; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: 'Courier New', monospace; color: #92400e; }
+
+  /* ── Quick reference full table ──────────────────────────────────── */
+  .combo-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 12px; }
+  .combo-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: hidden;
+    font-size: 12px;
+    margin-bottom: 32px;
+  }
+  .combo-table th {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .combo-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    font-family: 'Courier New', monospace;
+    vertical-align: middle;
+  }
+  .combo-table tr:last-child td { border-bottom: none; }
+  .combo-table tr:nth-child(even) td { background: #fafafa; }
+  .t { color: #15803d; font-weight: 700; }
+  .f { color: #9ca3af; }
+  .hl { color: #1d4ed8; font-weight: 700; }
+  .hr { color: #6d28d9; }
+  .changed { background: #fef9c3 !important; }
+
+  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 8px 0 24px; }
+</style>
+</head>
+<body>
+
+<h1>Step Config Flag Reference</h1>
+<p class="subtitle">How every flag in a <code>//&gt;&gt;</code> step header is determined — from header to final config</p>
+
+<!-- ── Step Header Format ──────────────────────────────────────────── -->
+<div class="section-title">Step Header Format</div>
+<div class="header-box">
+  //&gt;&gt;&nbsp;
+  <span class="seg seg-label">Label</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-guide">guidance</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-view">view</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-kv">filter:false</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-kv">fill:true</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-flags">reset</span>
+  &nbsp;|&nbsp;
+  <span class="seg seg-flags">aside</span>
+</div>
+<div class="legend-row">
+  <div class="legend-item"><div class="legend-swatch" style="background:#89b4fa"></div> guidance (sets presets)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#a6e3a1"></div> view/interface</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#f38ba8"></div> key:value overrides</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fab387"></div> boolean flags (word alone)</div>
+</div>
+
+<!-- ── Guidance Presets ──────────────────────────────────────────── -->
+<div class="section-title">Step 1 — Pick a Guidance Mode (sets the presets)</div>
+<div class="branches">
+
+  <div class="branch is-default">
+    <div class="branch-header guided-hdr">guided <span class="default-badge">default</span></div>
+    <div class="branch-flags">
+      <div class="flag-row"><span class="flag-name">structure</span><span class="flag-val val-partial">partial</span></div>
+      <div class="flag-row"><span class="flag-name">validation</span><span class="flag-val val-step">step</span></div>
+      <div class="flag-row"><span class="flag-name">fill</span><span class="flag-val val-false-warn">false</span></div>
+      <div class="flag-row"><span class="flag-name">filter</span><span class="flag-val val-true-good">true ★</span></div>
+      <div class="flag-row"><span class="flag-name">readonly</span><span class="flag-val val-true-warn">true</span></div>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="branch-header full-hdr">full</div>
+    <div class="branch-flags">
+      <div class="flag-row"><span class="flag-name">structure</span><span class="flag-val val-full">full</span></div>
+      <div class="flag-row"><span class="flag-name">validation</span><span class="flag-val val-step">step</span></div>
+      <div class="flag-row"><span class="flag-name">fill</span><span class="flag-val val-true-good">true</span></div>
+      <div class="flag-row"><span class="flag-name">filter</span><span class="flag-val val-true-good">true ★</span></div>
+      <div class="flag-row"><span class="flag-name">readonly</span><span class="flag-val val-true-warn">true</span></div>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="branch-header free-hdr">free <span style="font-size:10px;font-weight:400;opacity:0.7">(no validation)</span></div>
+    <div class="branch-flags">
+      <div class="flag-row"><span class="flag-name">structure</span><span class="flag-val val-none">none</span></div>
+      <div class="flag-row"><span class="flag-name">validation</span><span class="flag-val val-none">none</span></div>
+      <div class="flag-row"><span class="flag-name">fill</span><span class="flag-val val-true-good">true</span></div>
+      <div class="flag-row"><span class="flag-name">filter</span><span class="flag-val val-true-good">true</span></div>
+      <div class="flag-row"><span class="flag-name">readonly</span><span class="flag-val val-true-warn">true</span></div>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="branch-header open-hdr">open</div>
+    <div class="branch-flags">
+      <div class="flag-row"><span class="flag-name">structure</span><span class="flag-val val-none">none</span></div>
+      <div class="flag-row"><span class="flag-name">validation</span><span class="flag-val val-none">none</span></div>
+      <div class="flag-row"><span class="flag-name">fill</span><span class="flag-val val-false-warn">false</span></div>
+      <div class="flag-row"><span class="flag-name">filter</span><span class="flag-val val-false-ok">false</span></div>
+      <div class="flag-row"><span class="flag-name">readonly</span><span class="flag-val val-false-ok">false</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Filter callout ──────────────────────────────────────────── -->
+<div class="callout">
+  <div class="callout-title">★ Filter default change</div>
+  <code>filter</code> now defaults to <strong>true</strong> for <code>guided</code>, <code>full</code>, and <code>free</code>. It defaults to <strong>false</strong> for <code>open</code> (since open is a free sandbox with no constraints). Use <code>filter:false</code> to override on any other mode, or <code>filter:true</code> on an open step if you want to restrict the palette.
+</div>
+
+<!-- ── Overrides ──────────────────────────────────────────── -->
+<div class="section-title">Step 2 — Optional key:value Overrides (applied after preset)</div>
+<div class="overrides-grid">
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">filter:true / filter:false</span>
+      <span class="ov-values">default: true</span>
+    </div>
+    <div class="override-body">
+      When <strong>true</strong>, the palette only shows block types that actually appear in this step's code — nothing extra. When <strong>false</strong>, the full palette is available. Use <code>filter:false</code> to override on steps where you want a wide-open palette.
+    </div>
+  </div>
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">fill:true / fill:false</span>
+      <span class="ov-values">default: from guidance</span>
+    </div>
+    <div class="override-body">
+      When <strong>true</strong>, phantom slots are pre-filled with the correct answer (student sees it filled in). When <strong>false</strong>, slots are empty and the student must drag the right block in. Overrides the guidance preset value.
+    </div>
+  </div>
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">structure:partial / :full / :none</span>
+      <span class="ov-values">default: from guidance</span>
+    </div>
+    <div class="override-body">
+      <strong>partial</strong> — palette locks to exactly the expected block type when a slot is active.<br>
+      <strong>full</strong> — palette shows all section-allowed blocks (no type lock).<br>
+      <strong>none</strong> — fully open, no constraints.
+    </div>
+  </div>
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">validation:step / :none</span>
+      <span class="ov-values">default: from guidance</span>
+    </div>
+    <div class="override-body">
+      <strong>step</strong> — the Complete Step button checks block correctness before advancing.<br>
+      <strong>none</strong> — no validation, student can advance freely.
+    </div>
+  </div>
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">readonly:true / :false</span>
+      <span class="ov-values">default: from guidance</span>
+    </div>
+    <div class="override-body">
+      When <strong>true</strong>, existing placed blocks cannot be selected, moved, or deleted. The student can only interact with empty phantom slots. When <strong>false</strong>, all blocks are interactive.
+    </div>
+  </div>
+
+  <div class="override-card">
+    <div class="override-header">
+      <span class="ov-key">view (positional part 3)</span>
+      <span class="ov-values">blocks | editor — default: blocks</span>
+    </div>
+    <div class="override-body">
+      Sets the editor interface for this step. <strong>blocks</strong> shows the drag-and-drop block builder. <strong>editor</strong> shows the raw code editor. This is positional (3rd pipe segment), not a key:value pair.
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Boolean flags ──────────────────────────────────────────── -->
+<div class="section-title">Step 3 — Optional Boolean Flags (word alone, anywhere in the header)</div>
+<div class="bool-flags">
+  <div class="bool-card">
+    <span class="bool-badge">reset</span>
+    <div class="bool-text"><strong>Clears all cumulative blocks</strong> before this step processes. Use when a step should start completely fresh rather than inheriting all locked blocks from previous steps.</div>
+  </div>
+  <div class="bool-card">
+    <span class="bool-badge">aside</span>
+    <div class="bool-text"><strong>Prevents this step from contributing</strong> to the running cumulative block state. Useful for demo or explanation steps that should not leave locked blocks behind for future steps.</div>
+  </div>
+</div>
+
+<!-- ── What each flag does ──────────────────────────────────────────── -->
+<div class="section-title">What each flag actually controls</div>
+<table class="effects-table">
+  <thead>
+    <tr><th>Flag</th><th>What it does in the UI</th><th>Where it's read</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>filter</td>
+      <td>Drives <code>BB.PALETTE_ALLOWED</code>. When true, only block types present in this step's parsed code are shown in the palette. When false, <code>PALETTE_ALLOWED</code> is null and everything appears.</td>
+      <td>bb-validation.js:450<br>bb-render.js:182, 224</td>
+    </tr>
+    <tr>
+      <td>structure</td>
+      <td><strong>partial:</strong> when a phantom slot is active, palette locks to the one expected type. <strong>full:</strong> slot-type lock removed, any section-allowed block works. <strong>none:</strong> fully open palette, no slot constraint.</td>
+      <td>bb-render.js:163, 189</td>
+    </tr>
+    <tr>
+      <td>fill</td>
+      <td>Controls whether phantom slots start empty (student fills them) or pre-populated with the correct answer. Also controls whether condition/expression values are preserved or stripped in parsing.</td>
+      <td>block_parser.py:632–633</td>
+    </tr>
+    <tr>
+      <td>validation</td>
+      <td><strong>step:</strong> Complete Step button triggers block-level correctness checking. <strong>none:</strong> no checking, student advances freely.</td>
+      <td>bb-validation.js:418–434</td>
+    </tr>
+    <tr>
+      <td>readonly</td>
+      <td>When true, existing blocks in the workspace cannot be clicked, moved, or deleted. Only empty phantom slots are interactive. Prevents students from dismantling scaffolding.</td>
+      <td>bb-validation.js:454<br>bb-render.js:271, 835</td>
+    </tr>
+    <tr>
+      <td>interface</td>
+      <td>Which editor UI is displayed for this step: block builder or raw code editor.</td>
+      <td>bb-validation.js:454</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── Full combo table ──────────────────────────────────────────── -->
+<div class="combo-title">Quick reference — all guidance modes + their defaults</div>
+<table class="combo-table">
+  <thead>
+    <tr>
+      <th>guidance</th>
+      <th>structure</th>
+      <th>validation</th>
+      <th>fill</th>
+      <th>filter ★</th>
+      <th>readonly</th>
+      <th>Typical use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="hl">guided</span> (default)</td>
+      <td class="hl">partial</td>
+      <td class="hr">step</td>
+      <td class="f">false</td>
+      <td class="t">true</td>
+      <td class="t">true</td>
+      <td style="font-family:sans-serif;color:#555">Student fills empty typed slots. Palette filtered to needed blocks only.</td>
+    </tr>
+    <tr>
+      <td><span class="t">full</span></td>
+      <td class="t">full</td>
+      <td class="hr">step</td>
+      <td class="t">true</td>
+      <td class="t">true</td>
+      <td class="t">true</td>
+      <td style="font-family:sans-serif;color:#555">Slots pre-filled. Student sees complete answer. Still validated.</td>
+    </tr>
+    <tr>
+      <td>free</td>
+      <td class="f">none</td>
+      <td class="f">none</td>
+      <td class="t">true</td>
+      <td class="t">true</td>
+      <td class="t">true</td>
+      <td style="font-family:sans-serif;color:#555">Complex code given to the student pre-filled, no validation required. Workspace is locked — student reads/observes, doesn't build.</td>
+    </tr>
+    <tr>
+      <td>open</td>
+      <td class="f">none</td>
+      <td class="f">none</td>
+      <td class="f">false</td>
+      <td class="f">false</td>
+      <td class="f">false</td>
+      <td style="font-family:sans-serif;color:#555">Fully open sandbox. Empty slots, full palette, nothing locked.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="font-size:12px;color:#aaa;text-align:center">★ filter was previously false by default — now true. Only turns off with explicit <code>filter:false</code>.</p>
+
+<!-- ── Minimal forms ──────────────────────────────────────────── -->
+<hr class="divider">
+<div class="section-title">Minimal forms — what you actually need to write</div>
+
+<div style="background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:16px;">
+  <div style="background:#f8f9fa;border-bottom:1px solid #e5e7eb;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;">
+    Two things always default and never need to be written
+  </div>
+  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+      <span style="background:#a6e3a1;color:#1e1e2e;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;margin-top:1px;">view</span>
+      <span style="color:#444;line-height:1.6;"><strong>blocks</strong> is always the default. Only write <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:12px;">editor</code> when you specifically want the code editor. Leave it out otherwise.</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;">
+      <span style="background:#89b4fa;color:#1e1e2e;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;margin-top:1px;">guidance</span>
+      <span style="color:#444;line-height:1.6;"><strong>guided</strong> is always the default. Only write a guidance mode when it's something other than guided.</span>
+    </div>
+  </div>
+</div>
+
+<table class="combo-table" style="margin-bottom:16px;">
+  <thead>
+    <tr>
+      <th>What you write</th>
+      <th>Equivalent to</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="color:#cdd6f4;background:#1e1e2e;">//&gt;&gt; Label</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px;color:#555;">//&gt;&gt; Label | guided | blocks</td>
+      <td style="font-family:sans-serif;color:#555;font-size:12px;">Most common. Guided step, block builder, all defaults apply.</td>
+    </tr>
+    <tr>
+      <td style="color:#cdd6f4;background:#1e1e2e;">//&gt;&gt; Label | free</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px;color:#555;">//&gt;&gt; Label | free | blocks</td>
+      <td style="font-family:sans-serif;color:#555;font-size:12px;">Complex pre-filled code, no validation, locked.</td>
+    </tr>
+    <tr>
+      <td style="color:#cdd6f4;background:#1e1e2e;">//&gt;&gt; Label | full</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px;color:#555;">//&gt;&gt; Label | full | blocks</td>
+      <td style="font-family:sans-serif;color:#555;font-size:12px;">Pre-filled demo step with validation.</td>
+    </tr>
+    <tr>
+      <td style="color:#cdd6f4;background:#1e1e2e;">//&gt;&gt; Label | open</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px;color:#555;">//&gt;&gt; Label | open | blocks</td>
+      <td style="font-family:sans-serif;color:#555;font-size:12px;">Free sandbox, full palette, nothing locked.</td>
+    </tr>
+    <tr>
+      <td style="color:#cdd6f4;background:#1e1e2e;">//&gt;&gt; Label | guided | editor</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px;color:#555;">—</td>
+      <td style="font-family:sans-serif;color:#555;font-size:12px;">Only time you need to write <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px;">editor</code> explicitly.</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

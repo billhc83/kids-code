@@ -19,6 +19,7 @@
         }
       } else if (b.type === 'ifblock') { n += BB.countPhantoms(b.ifbody); b.elseifs.forEach(function (ei) { n += BB.countPhantoms(ei.body); }); if (b.elsebody) n += BB.countPhantoms(b.elsebody); }
       else if ((b.type === 'forloop' || b.type === 'whileloop') && b.body) n += BB.countPhantoms(b.body);
+      else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) n += BB.countPhantoms(b.body);
     });
     return n;
   };
@@ -50,6 +51,14 @@
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       if (currentBlock.type === 'forloop') {
+        if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
+      }
+      if (currentBlock.type === 'elseifclause') {
+        var c = currentBlock.condition;
+        if (c) { if (!c.leftExpr) n++; if (!c.rightExpr) n++; }
+        if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
+      }
+      if (currentBlock.type === 'elseclause') {
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       var def = BB.BLOCKS[currentBlock.type]; if (!def) return;
@@ -150,7 +159,7 @@
         return tier === 3 ? 'Check ' + lbl + ': expected "' + tp + '"' : 'Check ' + lbl;
       }
     }
-    if (pm.expects === 'ifblock' || pm.expects === 'whileloop') {
+    if (pm.expects === 'ifblock' || pm.expects === 'whileloop' || pm.expects === 'elseifclause') {
       var h = BB.generateCondHint(u.condition, pm.condition, tier); if (h) return h;
     }
     if (pm.expects === 'forloop') {
@@ -187,6 +196,7 @@
             if (uc.elseifs && pm.elseifs) uc.elseifs.forEach(function (ei, k) { if (pm.elseifs[k]) BB.collectBadIds(ei.body, pm.elseifs[k].body, tier, badIds); });
             if (uc.elsebody && pm.elsebody) BB.collectBadIds(uc.elsebody, pm.elsebody, tier, badIds);
           } else if (pm.expects === 'forloop' || pm.expects === 'whileloop') { BB.collectBadIds(uc.body, pm.body, tier, badIds); }
+          else if (pm.expects === 'elseifclause' || pm.expects === 'elseclause') { BB.collectBadIds(uc.body, pm.body, tier, badIds); }
         }
       } else if (tb.type === 'codeblock') {
         // No comparison needed for codeblocks
@@ -200,7 +210,7 @@
       var pm = t.phantom_meta;
       if (u.type !== pm.expects) return false;
       var mc = t.master || pm;
-      if (pm.expects === 'ifblock' || pm.expects === 'whileloop') { if (!BB.compareCondition(u.condition, mc.condition)) return false; }
+      if (pm.expects === 'ifblock' || pm.expects === 'whileloop' || pm.expects === 'elseifclause') { if (!BB.compareCondition(u.condition, mc.condition)) return false; }
       if (pm.expects === 'forloop') {
         if ((u.forinit || '') !== (mc.forinit || '')) return false;
         if ((u.forcond || '') !== (mc.forcond || '')) return false; if ((u.forincr || '') !== (mc.forincr || '')) return false;
@@ -257,6 +267,8 @@
         }
         if (mb.elsebody) BB.checkSketchFields(ub.elsebody || [], mb.elsebody, badIds, path.concat([i, 'elsebody']), section);
       } else if (ub.type === 'forloop' || ub.type === 'whileloop') {
+        BB.checkSketchFields(ub.body, mb.body, badIds, path.concat([i, 'body']), section);
+      } else if (ub.type === 'elseifclause' || ub.type === 'elseclause') {
         BB.checkSketchFields(ub.body, mb.body, badIds, path.concat([i, 'body']), section);
       }
     }

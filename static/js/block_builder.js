@@ -63,6 +63,18 @@
       }
       return lines.join('\n');
     }
+    if (blockToGen.type === 'elseifclause') {
+      var lines = [pad + 'else if (' + BB.genCond(blockToGen.condition) + ') {'];
+      lines.push(BB.genBlocks(blockToGen.body || [], indent + 1));
+      lines.push(pad + '}');
+      return lines.join('\n');
+    }
+    if (blockToGen.type === 'elseclause') {
+      var lines = [pad + 'else {'];
+      lines.push(BB.genBlocks(blockToGen.body || [], indent + 1));
+      lines.push(pad + '}');
+      return lines.join('\n');
+    }
     if (blockToGen.type === 'forloop') {
       var init = blockToGen.forinit || 'int i = 0';
       var cond = blockToGen.forcond || 'i < 10';
@@ -109,12 +121,14 @@
             if (b.content.elseifs) b.content.elseifs.forEach(function (ei) { walk(ei.body); });
             if (b.content.elsebody) walk(b.content.elsebody);
           } else if (b.content.type === 'forloop' || b.content.type === 'whileloop') { if (b.content.body) walk(b.content.body); }
+          else if ((b.content.type === 'elseifclause' || b.content.type === 'elseclause') && b.content.body) walk(b.content.body);
         } else if (b.type !== 'slot') {
           if (b.type === 'ifblock') {
             if (b.ifbody) walk(b.ifbody);
             if (b.elseifs) b.elseifs.forEach(function (ei) { walk(ei.body); });
             if (b.elsebody) walk(b.elsebody);
           } else if ((b.type === 'forloop' || b.type === 'whileloop') && b.body) walk(b.body);
+          else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) walk(b.body);
         }
       }
     }
