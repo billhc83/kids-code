@@ -219,7 +219,7 @@ def reset_password_with_token(token, new_password):
 def send_reset_email(to_email, token):
     """Send password reset email via Resend."""
     import os
-    base_url = os.getenv("BASE_URL", "http://127.0.0.1:5001")
+    base_url = os.getenv("BASE_URL", "http://app.kids-code.ca")
     reset_url = f"{base_url}/reset-password/{token}"
     requests.post(
         "https://api.resend.com/emails",
