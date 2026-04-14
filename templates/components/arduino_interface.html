@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Arduino Web IDE</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* TOP BAR */
+  #top-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  select, button {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  #top-bar select {
+  min-width: 200px;
+}
+
+  button {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  /* PRIMARY ACTION */
+  #upload-btn {
+    background: #22c55e;
+    border: none;
+    color: #020617;
+    font-weight: 600;
+  }
+
+  #upload-btn:hover {
+    background: #16a34a;
+  }
+
+  #compile-btn {
+    background: #3b82f6;
+    border: none;
+  }
+
+  #compile-btn:hover {
+    background: #2563eb;
+  }
+
+  .orange-btn {
+    background: #f97316 !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600;
+  }
+
+  .orange-btn:hover {
+    background: #ea580c !important;
+  }
+
+  /* WORKSPACE — fills all space between top-bar and serial monitor */
+  #workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* BLOCKS VIEW — fills workspace */
+  #blocks-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    background: #f8fafc;
+  }
+
+  /* Stretch whatever the block builder injects (iframe, div, etc.) */
+  #blocks-view > * {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* EDITOR VIEW — fills workspace */
+  #editor-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* EDITOR — fills editor-view */
+  #editor {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* SERIAL MONITOR OVERLAY */
+  #serial-monitor-overlay {
+    display: none;
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 220px;
+    background: #ffffff;
+    border-top: 2px solid #e2e8f0;
+    z-index: 200;
+    flex-direction: column;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+  }
+  #serial-monitor-overlay.open {
+    display: flex;
+  }
+  #serial-monitor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  #serial-monitor-toolbar span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    flex: 1;
+  }
+  #serial-monitor {
+    flex: 1;
+    padding: 10px 16px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #475569;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  
+  #agent-status {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  #mode-toggle-btn.has-error {
+    border: 2px solid #ef4444;
+    position: relative;
+  }
+  #mode-toggle-btn.has-error::after {
+    content: '!';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #020617;
+  }
+
+  /* STATUS / ERROR */
+  .error {
+    color: #f97316;
+  }
+  
+  .status-online { color: #22c55e; }
+  .status-offline { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
+  
+  /* GLOBAL DRAWER */
+  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:32px;
+    background:#ef4444; border-left:1px solid #1e293b;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:100; user-select:none; transition:all 0.2s; }
+  #drawer-tab:hover { background: #dc2626; width: 36px; }
+  #drawer-tab span { writing-mode:vertical-rl; text-orientation:mixed;
+    font-size:13px; font-weight: 600; letter-spacing:.1em; color:#ffffff;
+    text-transform:uppercase; transform:rotate(180deg); }
+  #drawer-panel { position:absolute; right:32px; top:48px; bottom:0; width:0;
+    background:#ffffff; border-left:1px solid #e2e8f0;
+    overflow:hidden; z-index:99; transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    display:flex; flex-direction:column; box-shadow: -4px 0 15px rgba(0,0,0,0.2); }
+  #drawer-panel.open { width:600px; }
+  #drawer-inner { width:600px; height:100%; display:flex; flex-direction:column; flex-shrink:0; }
+  .drawer-title { font-size:14px; font-weight:700; color:#1e293b;
+    text-transform:uppercase; letter-spacing:.05em; flex-shrink:0;
+    border-bottom:1px solid #f1f5f9; padding:16px 20px; background: #f8fafc; }
+  .drawer-tip { background:#eff6ff; border-bottom:1px solid #dbeafe;
+    padding:12px 20px; font-size:12px; color:#2563eb; line-height:1.6; flex-shrink:0; }
+  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #f1f5f9; padding: 0 10px; background: #fff; }
+  .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
+    background:none; border:none; border-bottom:2px solid transparent;
+    color:#64748b; cursor:pointer; text-align:center; transition:all 0.2s; font-weight: 600; }
+  .drawer-tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+  .drawer-tab-panels { flex:1; overflow-y:auto; }
+  .drawer-tab-panel { display:none; padding:20px; color:#1e293b; }
+  .drawer-tab-panel.active { display:block; }
+  .drawer-tab-panel p { font-size:15px; line-height:1.7; white-space:pre-wrap; margin-bottom:12px; }
+  .drawer-tab-panel img { width:100%; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  #step-nav {
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes bb-feedback-pop {
+    0%   { transform: scale(0.7); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #bb-feedback.success {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 3px #bbf7d0, 0 2px 12px rgba(34,197,94,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  #bb-feedback.error {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 3px #fecaca, 0 2px 12px rgba(239,68,68,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+</style>
+
+<!-- Monaco -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+<!-- Sim Engine -->
+<script src="/static/js/sim-engine.js"></script>
+</head>
+
+<body>
+
+<div id="top-bar">
+  <select id="port-select"></select>
+  <button id="refresh-ports-btn">Refresh</button>
+  <button id="connect-btn">Show Monitor</button>
+  <button id="compile-btn">Compile</button>
+  <button id="upload-btn">Upload</button>
+  {% if preset != 'open_coding' %}
+  <button id="save-btn">Save</button>
+  {% endif %}
+  {% if preset == 'open_coding' %}
+  <button id="download-pc-btn" class="orange-btn">Download</button>
+  <button id="load-pc-btn" class="orange-btn">Load</button>
+  <input type="file" id="load-pc-input" accept=".ino" style="display: none;">
+  {% endif %}
+  <button id="copy-btn">Copy</button>
+  {% if preset != 'open_coding' %}
+  <button id="reset-btn">Reset</button>
+  {% endif %}
+  <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
+  <div id="agent-status" class="status-offline">Checking Agent...</div>
+</div>
+
+<div id="main-content-wrapper" style="flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="step-nav" style="display:none; align-items:center; gap:10px; padding:6px 15px; background:#0969da; color:white; flex-shrink:0;">
+    <span id="step-label" style="flex:1; font-weight:700; font-size:12px;"></span>
+    <span id="step-progress" style="font-size:11px; opacity:0.8;"></span>
+    <span id="bb-feedback" style="display:none; font-size:16px; font-weight:900; padding:5px 18px; border-radius:8px; letter-spacing:0.5px; animation:bb-feedback-pop 0.3s ease;"></span>
+    <button id="prev-step-btn" style="display:none">← Prev</button>
+    <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
+  </div>
+
+  <div id="workspace">
+    <div id="blocks-view"></div>
+    <div id="editor-view" style="display: none;">
+      <div id="editor"></div>
+    </div>
+  </div>
+
+  <!-- SERIAL MONITOR OVERLAY -->
+  <div id="serial-monitor-overlay">
+    <div id="serial-monitor-toolbar">
+      <span>Serial Monitor</span>
+      <button id="clear-serial-overlay-btn">Clear</button>
+      <button id="close-serial-btn">Hide Monitor</button>
+    </div>
+    <div id="serial-monitor"></div>
+  </div>
+
+  <!-- GLOBAL DRAWER -->
+  <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
+    <div id="drawer-inner">
+      <div class="drawer-title">Info</div>
+      <div class="drawer-tabs"></div>
+      <div class="drawer-tab-panels"></div>
+    </div>
+  </div>
+  <div id="drawer-tab"><span>📖 Info</span></div>
+</div>
+
+<script>
+let editor;
+let ws;
+let connectedPort;
+let currentMode = 'blocks';
+const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
+let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
+
+function switchTab(btn, panelId) {
+  const inner = document.getElementById('drawer-inner');
+  inner.querySelectorAll('.drawer-tab-btn').forEach(b => b.classList.remove('active'));
+  inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+window.flash = function(txt) {
+  const mEl = document.getElementById('msg');
+  if (mEl) {
+     mEl.textContent = txt; mEl.classList.add('show');
+     setTimeout(() => mEl.classList.remove('show'), 2500);
+  }
+  logToSerial(txt);
+};
+
+// Handle view changes from the block builder (e.g. on step change)
+window.addEventListener('stepchange', function(e) {
+  if (e.detail && e.detail.view) {
+    setMode(e.detail.view);
+  }
+  if (e.detail && e.detail.readOnly !== undefined && editor) {
+    editor.updateOptions({ readOnly: e.detail.readOnly });
+  }
+});
+
+function syncStepNavPadding() {
+  const stepNav = document.getElementById('step-nav');
+  if (!stepNav) return;
+  // Panel width (600) + Tab width (32) + original padding (15) = 647px
+  stepNav.style.paddingRight = drawerOpen ? '647px' : '47px';
+}
+
+window.openDrawer = function() {
+  drawerOpen = true;
+  document.getElementById('drawer-panel').classList.add('open');
+  syncStepNavPadding();
+};
+
+window.updateDrawer = function(stepIdx) {
+  if (!DRAWER_STEPS || !DRAWER_STEPS[stepIdx]) return;
+  const c = DRAWER_STEPS[stepIdx];
+  const inner = document.getElementById('drawer-inner');
+  
+  inner.querySelector('.drawer-title').textContent = c.title || 'Info';
+  
+  let tipEl = inner.querySelector('.drawer-tip');
+  if (c.tip) {
+    if (!tipEl) {
+      tipEl = document.createElement('div'); tipEl.className = 'drawer-tip';
+      inner.querySelector('.drawer-title').after(tipEl);
+    }
+    tipEl.innerHTML = c.tip;
+  } else if (tipEl) tipEl.remove();
+
+  const tabsC = inner.querySelector('.drawer-tabs');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  tabsC.innerHTML = ''; pansC.innerHTML = '';
+
+  const tabsRaw = c.tabs || [];
+  const tabs = Array.isArray(tabsRaw)
+    ? tabsRaw
+    : Object.entries(tabsRaw).map(([id, v]) => ({ id, ...v }));
+  tabs.forEach((tab, i) => {
+    const k = tab.id || tab.label || i;
+    const btn = document.createElement('button');
+    btn.className = 'drawer-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = tab.label || k;
+    btn.onclick = () => switchTab(btn, `dtab-${k}`);
+    tabsC.appendChild(btn);
+
+    const p = document.createElement('div');
+    p.className = 'drawer-tab-panel' + (i === 0 ? ' active' : '');
+    p.id = `dtab-${k}`;
+
+    if (tab.type === 'sim' && tab.sim_config) {
+      const simDiv = document.createElement('div');
+      simDiv.style.padding = '8px 0';
+      p.appendChild(simDiv);
+      pansC.appendChild(p);
+      setTimeout(() => {
+        if (window.SimEngine) SimEngine.init(simDiv, tab.sim_config);
+      }, 0);
+    } else {
+      p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
+      pansC.appendChild(p);
+    }
+  });
+};
+
+document.getElementById('drawer-tab').onclick = () => {
+  drawerOpen = !drawerOpen;
+  document.getElementById('drawer-panel').classList.toggle('open', drawerOpen);
+  syncStepNavPadding();
+};
+
+// Listen for FAB save requests
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'bb_save_request') {
+    if (window.saveBlocks) window.saveBlocks();
+    // Give it a moment to complete the fetch then tell parent to close
+    setTimeout(() => window.parent.postMessage({type: 'bb_close'}, '*'), 500);
+  }
+});
+
+// Monaco
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: "",
+    language: 'cpp',
+    theme: 'vs',
+    fontSize: 14,
+    minimap: { enabled: false },
+    automaticLayout: true
+  });
+
+  // If the editor finishes loading after the block builder, 
+  // and we are in editor mode, sync the code now.
+  if (currentMode === 'editor' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  // Clear markers whenever the user types in the editor
+  editor.onDidChangeModelContent(() => {
+    if (typeof monaco !== 'undefined') monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+  });
+});
+
+async function toggleMode() {
+  setMode(currentMode === 'blocks' ? 'editor' : 'blocks');
+};
+
+async function setMode(mode) {
+  if (mode === currentMode) return;
+  
+  const blocksEl = document.getElementById('blocks-view');
+  const editorEl = document.getElementById('editor-view');
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+  const workspaceWrapper = document.getElementById('workspace');
+
+  // Update UI and state immediately for responsiveness
+  currentMode = mode;
+
+  var bbUI = document.getElementById('block-builder-ui');
+  if(bbUI){
+    var palette = bbUI.querySelector('#palette');
+    var workspace = bbUI.querySelector('#workspace');
+    if(palette) palette.style.display = mode === 'editor' ? 'none' : '';
+    if(workspace) workspace.style.display = mode === 'editor' ? 'none' : '';
+  }
+  editorEl.style.display = mode === 'editor' ? 'flex' : 'none';
+
+  if (mode === 'editor') {
+    workspaceWrapper.style.flexDirection = 'row-reverse';
+    blocksEl.style.flex = '0 0 252px';
+    editorEl.style.flex = '1';
+  } else {
+    workspaceWrapper.style.flexDirection = 'column';
+    blocksEl.style.flex = '1';
+    editorEl.style.flex = '1';
+  }
+
+  if (mode === 'blocks') {
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Switch to Editor';
+      toggleBtn.classList.remove('has-error');
+    }
+  } else {
+    if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
+    if (editor) {
+      const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+      editor.updateOptions({ readOnly: !!meta.readOnly });
+      // Trigger layout multiple times to ensure we catch the final container size 
+      // after the browser finishes the flexbox reflow.
+      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
+    }
+  }
+
+  if (mode === 'blocks') {
+    // Sync Editor -> Blocks
+    const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+    if (!meta.readOnly && editor) {
+      const code = editor.getValue();
+      try {
+        const res = await fetch('/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (window.setBlockData) window.setBlockData(data);
+      } catch (e) {
+        console.error("Failed to parse code into blocks:", e);
+      }
+    }
+  } else {
+    // Sync Blocks -> Editor
+    if (window.getGeneratedCode && editor) {
+      const code = window.getGeneratedCode();
+      editor.setValue(code);
+    }
+  }
+}
+
+// UI helpers
+function logToSerial(msg, isError = false) {
+  const monitor = document.getElementById('serial-monitor');
+  const line = document.createElement('div');
+  line.textContent = msg;
+  if (isError) line.classList.add('error');
+  monitor.appendChild(line);
+  monitor.scrollTop = monitor.scrollHeight;
+}
+
+function parseAgentErrors(errorString) {
+  if (!errorString) return [];
+  var lines = errorString.split('\n');
+  var errors = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.indexOf('temp_sketch.ino:') === -1) continue;
+
+    var afterFile = line.split('temp_sketch.ino:')[1];
+    var segments = afterFile.split(':');
+    var lineNum = parseInt(segments[0], 10);
+    var colNum = parseInt(segments[1], 10);
+
+    if (isNaN(lineNum)) continue;
+
+    var message = segments.slice(2).join(':').trim();
+    var lowerMsg = message.toLowerCase();
+    if (lowerMsg.indexOf('error') === 0) {
+      message = message.substring(5).trim();
+    } else if (lowerMsg.indexOf('warning') === 0) {
+      message = message.substring(7).trim();
+    }
+    if (message.indexOf(':') === 0) {
+      message = message.substring(1).trim();
+    }
+
+    errors.push({
+      line: lineNum,
+      col: isNaN(colNum) ? 0 : colNum,
+      message: message
+    });
+  }
+  return errors;
+}
+
+// Heartbeat to check if Agent is running
+async function checkAgentStatus() {
+  const statusEl = document.getElementById('agent-status');
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    
+    const res = await fetch('http://127.0.0.1:3210/status', { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    statusEl.textContent = "● Agent Online";
+    statusEl.className = "status-online";
+  } catch (err) {
+    statusEl.textContent = "⚠ Offline: Open Arduino Agent";
+    statusEl.className = "status-offline";
+  }
+}
+
+// Fetch ports
+async function fetchPorts() {
+  try {
+    const res = await fetch('http://127.0.0.1:3210/ports');
+    const ports = await res.json();
+
+    const select = document.getElementById('port-select');
+    select.innerHTML = '';
+
+    ports.forEach(p => {
+      const option = document.createElement('option');
+      option.value = p.port;
+      
+      if(p.board_name){
+        option.textContent = p.board_name + ' (' + p.port + ')';
+      } else {
+        option.textContent = p.port;
+      }
+      
+      select.appendChild(option);
+    });
+
+    logToSerial("Ports refreshed");
+  } catch (err) {
+    logToSerial("Agent not detected", true);
+  }
+}
+
+// Serial
+async function connectSerial() {
+  const port = document.getElementById('port-select').value;
+  if (!port) return alert("Select port");
+
+  if (ws) { ws.close(); ws = null; }
+
+  // Stop any existing agent session first
+  try { await fetch('http://127.0.0.1:3210/serial/stop', { method: 'POST' }); } catch (_) {}
+
+  // Start the serial session BEFORE opening the WebSocket —
+  // the agent only streams to clients that connect after /serial/start is running
+  try {
+    const res = await fetch('http://127.0.0.1:3210/serial/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port, baudRate: 9600 })
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      logToSerial("Serial start failed (" + res.status + "): " + body, true);
+      return;
+    }
+  } catch (err) {
+    logToSerial("Could not start serial — is Arduino Agent running?", true);
+    return;
+  }
+
+  // Now open the WebSocket — agent will stream to this new client
+  ws = new WebSocket('ws://127.0.0.1:3211');
+
+  ws.onopen = () => {
+    logToSerial("Connected to " + port);
+  };
+
+  ws.onmessage = async (event) => {
+    let text;
+    if (typeof event.data === 'string') {
+      text = event.data;
+    } else if (event.data instanceof Blob) {
+      text = await event.data.text();
+    } else if (event.data instanceof ArrayBuffer) {
+      text = new TextDecoder().decode(event.data);
+    } else {
+      text = String(event.data);
+    }
+    logToSerial(text);
+  };
+
+  ws.onerror = () => {
+    logToSerial("Serial connection failed — is Arduino Agent running?", true);
+  };
+
+  ws.onclose = () => {
+    if (serialMonitorOpen) logToSerial("Serial connection closed.", true);
+  };
+}
+
+// Compile
+async function compileSketch() {
+  // Ensure editor is up to date if we are currently in blocks mode
+  if (currentMode === 'blocks' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  const code = editor.getValue();
+
+  const res = await fetch('http://127.0.0.1:3210/compile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    logToSerial("Compile success");
+  } else {
+    const errors = parseAgentErrors(data.error);
+    if (errors.length > 0) {
+      errors.forEach(err => {
+        logToSerial(`Line ${err.line}: ${err.message}`, true);
+      });
+    } else {
+      logToSerial(data.error, true);
+    }
+  }
+}
+
+// Upload
+async function uploadSketch() {
+  if (currentMode === 'blocks' && window.getGeneratedCode && editor) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  if (window.validateSketch) {
+    const result = window.validateSketch();
+    ('validateSketch result:', JSON.stringify(result));
+    ('MASTER_SKETCH:', window.MASTER_SKETCH ? 'loaded' : 'null');
+
+    if (typeof monaco !== 'undefined' && editor) {
+      if (!result.valid) {
+        const lines = editor.getValue().split('\n');
+        const markers = result.errors.map(err => {
+          let lineNo = 1;
+          const snippet = window.getBlockCode ? window.getBlockCode(err.id) : null;
+          if (snippet) {
+            const idx = lines.findIndex(l => l.trim().includes(snippet));
+            if (idx !== -1) lineNo = idx + 1;
+          }
+          return {
+            severity: monaco.MarkerSeverity.Error,
+            message: err.hint || 'Block needs attention',
+            startLineNumber: lineNo, startColumn: 1, endLineNumber: lineNo, endColumn: 1000
+          };
+        });
+        monaco.editor.setModelMarkers(editor.getModel(), 'arduino', markers);
+      } else {
+        monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+      }
+    }
+
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (!result.valid) {
+      if (currentMode === 'blocks') {
+        const msg = "Some blocks need attention — check the highlighted ones before uploading.";
+        if (window.flash) window.flash(msg);
+        else alert(msg);
+        logToSerial(msg, true);
+        return;
+      } else if (toggleBtn) {
+        toggleBtn.classList.add('has-error');
+      }
+    } else if (toggleBtn) {
+      toggleBtn.classList.remove('has-error');
+    }
+  }
+
+  const port = document.getElementById('port-select').value;
+  const code = editor.getValue();
+
+  if (!port) return alert("Select port");
+
+  logToSerial("Uploading...");
+
+  const res = await fetch('http://127.0.0.1:3210/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ port, code })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    logToSerial("Upload success");
+  } else {
+    const errors = parseAgentErrors(data.error);
+    if (errors.length > 0) {
+      errors.forEach(err => {
+        logToSerial(`Line ${err.line}: ${err.message}`, true);
+      });
+    } else {
+      logToSerial(data.error, true);
+    }
+  }
+}
+
+async function loadBlockBuilder() {
+  const blocksView = document.getElementById('blocks-view');
+
+  // Cancel any previous init poll that may still be running
+  if (window._bbCheckInterval) {
+    clearInterval(window._bbCheckInterval);
+    window._bbCheckInterval = null;
+  }
+
+  // Wipe stale globals so nothing downstream uses leftover state
+  window.BB_CONFIG = null;
+  window.getGeneratedCode = null;
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pathParts = window.location.pathname.split('/');
+    const preset = urlParams.get('preset') || pathParts[pathParts.length - 1] || 'codebreaker';
+    const page = urlParams.get('page') || '';
+
+    const response = await fetch('/builder?preset=' + preset + '&page=' + page);
+    if (!response.ok) throw new Error('Failed to fetch block builder');
+    const html = await response.text();
+
+    // Parse into a temp element using innerHTML — this does NOT execute scripts,
+    // which is exactly what we want so we can control the load order ourselves.
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Pull all script elements out before injecting, so the browser never
+    // tries to run them via the normal (unreliable async) dynamic-insert path.
+    const scripts = [...temp.querySelectorAll('script')];
+    scripts.forEach(s => s.remove());
+
+    // Inject the script-free HTML (link stylesheet + block builder markup)
+    blocksView.innerHTML = temp.innerHTML;
+
+    // Execute inline scripts first (e.g. the BB_CONFIG = {...} assignment)
+    for (const s of scripts) {
+      if (!s.getAttribute('src')) {
+        try { (new Function(s.textContent))(); }
+        catch (e) { console.error('[BB] inline script error:', e); }
+      }
+    }
+
+    // Load each external script sequentially, awaiting onload before the next.
+    // This guarantees bb-blocks → bb-render → bb-validation → block_builder
+    // always executes in the correct dependency order.
+    for (const s of scripts) {
+      const rawSrc = s.getAttribute('src');
+      if (!rawSrc) continue;
+      const src = new URL(rawSrc, window.location.href).href;
+
+      // Remove any previously injected copy so the browser re-executes the
+      // script rather than silently skipping it as a duplicate URL.
+      const prev = document.head.querySelector(`script[data-bb-src="${src}"]`);
+      if (prev) prev.parentNode.removeChild(prev);
+
+      await new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.setAttribute('data-bb-src', src);
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('[BB] failed to load: ' + src));
+        document.head.appendChild(el);
+      });
+    }
+
+    // All scripts have now run in the correct order — configure the UI
+    const cfg = window.BB_CONFIG;
+    if (!cfg) throw new Error('[BB] BB_CONFIG missing after script load');
+
+    setMode(cfg.default_view || 'blocks');
+    const isProg = window.isProgressionMode && window.isProgressionMode();
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (toggleBtn) toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
+    const stepNav = document.getElementById('step-nav');
+    if (stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+    if (cfg.readonly_mode && editor) editor.updateOptions({ readOnly: true });
+
+  } catch (err) {
+    console.error('Block Builder Load Error:', err);
+    blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';
+  }
+}
+
+// Events
+let serialMonitorOpen = false;
+
+function openSerialMonitor() {
+  serialMonitorOpen = true;
+  document.getElementById('serial-monitor-overlay').classList.add('open');
+  document.getElementById('connect-btn').textContent = 'Hide Monitor';
+  connectSerial();
+}
+
+function closeSerialMonitor() {
+  serialMonitorOpen = false;
+  document.getElementById('serial-monitor-overlay').classList.remove('open');
+  document.getElementById('connect-btn').textContent = 'Show Monitor';
+  if (ws) { ws.close(); ws = null; }
+}
+
+document.getElementById('refresh-ports-btn').onclick = fetchPorts;
+document.getElementById('connect-btn').onclick = function() {
+  if (serialMonitorOpen) closeSerialMonitor();
+  else openSerialMonitor();
+};
+document.getElementById('compile-btn').onclick = compileSketch;
+document.getElementById('upload-btn').onclick = uploadSketch;
+const saveBtn = document.getElementById('save-btn');
+if (saveBtn) {
+  saveBtn.onclick = function() {
+    if (window.saveBlocks) window.saveBlocks();
+  };
+}
+{% if preset == 'open_coding' %}
+document.getElementById('download-pc-btn').onclick = function() {
+  let code;
+  if (currentMode === 'blocks' && window.getGeneratedCode) {
+    code = window.getGeneratedCode();
+  } else if (editor) {
+    code = editor.getValue();
+  }
+  if (!code) return;
+  const blob = new Blob([code], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my_project.ino';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.flash && window.flash("Project downloaded to PC");
+};
+document.getElementById('load-pc-btn').onclick = function() {
+  document.getElementById('load-pc-input').click();
+};
+document.getElementById('load-pc-input').onchange = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  if (editor) {
+    editor.setValue(text);
+  }
+  if (currentMode === 'blocks') {
+    try {
+      const res = await fetch('/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: text })
+      });
+      const data = await res.json();
+      if (window.setBlockData) window.setBlockData(data);
+      window.flash && window.flash("Project loaded from PC");
+    } catch (err) {
+      console.error("Failed to parse code into blocks:", err);
+      logToSerial("Error loading blocks from file.", true);
+    }
+  } else {
+    window.flash && window.flash("Project loaded from PC");
+  }
+  e.target.value = '';
+};
+{% endif %}
+document.getElementById('copy-btn').onclick = function() {
+  if (window.copyCode) window.copyCode();
+  else {
+    const code = window.getGeneratedCode ? window.getGeneratedCode() : editor.getValue();
+    navigator.clipboard.writeText(code).then(() => logToSerial('Copied!'));
+  }
+};
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+  resetBtn.onclick = function() {
+    if (window.resetBlocks) window.resetBlocks();
+  };
+}
+document.getElementById('clear-serial-overlay-btn').onclick = () => {
+  document.getElementById('serial-monitor').innerHTML = '';
+};
+document.getElementById('close-serial-btn').onclick = closeSerialMonitor;
+
+// Init
+checkAgentStatus();
+setInterval(checkAgentStatus, 5000); // Poll every 5 seconds
+fetchPorts();
+loadBlockBuilder();
+if (DRAWER_STEPS) updateDrawer(0);
+
+document.getElementById('next-step-btn').onclick = function(){
+  if(window.bbNext) window.bbNext();
+};
+document.getElementById('prev-step-btn').onclick = function(){
+  if(window.bbPrev) window.bbPrev();
+};
+
+window.addEventListener('bb_next_state', function(e){
+  var btn = document.getElementById('next-step-btn');
+  var prevBtn = document.getElementById('prev-step-btn');
+  var nav = document.getElementById('step-nav');
+  var fbEl = document.getElementById('bb-feedback');
+  var d = e.detail.state; // Accessing the state object from the detail
+
+  // Ensure the navigation bar is visible if we are receiving state updates
+  nav.style.display = 'flex';
+
+  btn.textContent = d.text || 'Complete Step';
+  btn.style.opacity = d.ready ? '1' : '0.5';
+  btn.style.pointerEvents = d.ready ? 'auto' : 'none';
+
+  if(d.hidden) btn.style.display = 'none';
+  else btn.style.display = '';
+
+  if(d.prevVisible) prevBtn.style.display = '';
+  else prevBtn.style.display = 'none';
+
+  // Show feedback message to the left of the nav buttons
+  if (d.feedback) {
+    fbEl.textContent = d.feedback.text;
+    fbEl.className = d.feedback.type; // 'success' or 'error'
+    fbEl.style.display = '';
+    // Re-trigger animation by forcing reflow
+    fbEl.style.animation = 'none';
+    fbEl.offsetHeight;
+    fbEl.style.animation = '';
+  } else if (d.hasOwnProperty('feedback')) {
+    // feedback: null means clear it
+    fbEl.style.display = 'none';
+    fbEl.textContent = '';
+    fbEl.className = '';
+  }
+});
+
+window.addEventListener('bb_step_update', function(e){
+  document.getElementById('step-nav').style.display = 'flex';
+  document.getElementById('step-label').textContent = e.detail.label || '';
+  document.getElementById('step-progress').textContent = e.detail.progress || '';
+});
+
+// Initial sync for step nav padding based on default drawer state
+syncStepNavPadding();
+</script>
+
+</body>
+</html>

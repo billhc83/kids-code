@@ -579,11 +579,11 @@ function updatePreview() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         }).then(function(r) { 
-    console.log('Preview status:', r.status);
+    ('Preview status:', r.status);
             return r.blob(); 
         })
         .catch(function(err) { 
-            console.log('Preview error:', err); 
+            ('Preview error:', err); 
         })
         .then(function(blob) {
             var url = URL.createObjectURL(blob);
@@ -705,16 +705,31 @@ function endpointFields(prefix) {
     return '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
         '<div class="tpl-field">' +
         '<span class="tpl-label">Type</span>' +
-        '<select id="' + prefix + '-type" class="tpl-select" onchange="updateInstructionPreview()">' +
+        '<select id="' + prefix + '-type" class="tpl-select" onchange="onEndpointTypeChange(\'' + prefix + '\')">' +
         '<option value="pin">Arduino Pin</option>' +
         '<option value="board">Breadboard</option>' +
         '<option value="rail">Rail</option>' +
         '</select></div>' +
-        '<div class="tpl-field"><span class="tpl-label">Pin / Row</span>' +
+        '<div class="tpl-field" id="' + prefix + '-pin-field"><span class="tpl-label">Pin / Row</span>' +
         '<input type="text" id="' + prefix + '-pin" class="tpl-input" placeholder="e.g. 9 or 14" oninput="updateInstructionPreview()"></div>' +
-        '<div class="tpl-field"><span class="tpl-label">Col / Rail</span>' +
-        '<input type="text" id="' + prefix + '-col" class="tpl-input" placeholder="e.g. E or -" oninput="updateInstructionPreview()"></div>' +
+        '<div class="tpl-field" id="' + prefix + '-col-field"><span class="tpl-label">Col</span>' +
+        '<input type="text" id="' + prefix + '-col" class="tpl-input" placeholder="e.g. E" oninput="updateInstructionPreview()"></div>' +
+        '<div class="tpl-field" id="' + prefix + '-polarity-field" style="display:none"><span class="tpl-label">Rail</span>' +
+        '<select id="' + prefix + '-polarity" class="tpl-select" onchange="updateInstructionPreview()">' +
+        '<option value="+">+ (positive)</option>' +
+        '<option value="-">- (negative)</option>' +
+        '</select></div>' +
         '</div>';
+}
+
+function onEndpointTypeChange(prefix) {
+    var type = val(prefix + '-type');
+    var isRail = type === 'rail';
+    var isPin = type === 'pin';
+    document.getElementById(prefix + '-pin-field').style.display = isRail ? 'none' : '';
+    document.getElementById(prefix + '-col-field').style.display = (isRail || isPin) ? 'none' : '';
+    document.getElementById(prefix + '-polarity-field').style.display = isRail ? '' : 'none';
+    updateInstructionPreview();
 }
 
 function getEndpoint(prefix) {
@@ -723,7 +738,7 @@ function getEndpoint(prefix) {
     var col = val(prefix + '-col') || '__';
     if (type === 'pin') return 'Arduino Pin ' + pin;
     if (type === 'board') return 'row ' + pin + ', column ' + col;
-    if (type === 'rail') return col === '-' || col === '' ? 'the negative / - rail' : 'the positive / + rail';
+    if (type === 'rail') return val(prefix + '-polarity') === '-' ? 'the negative / - rail' : 'the positive / + rail';
     return '__';
 }
 

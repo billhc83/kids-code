@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+{% block title %}Sim Builder — Admin{% endblock %}
+
+{% block content %}
+<div style="max-width:1400px;">
+
+<div class="dash-header">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1>🎮 Simulation Builder</h1>
+      <p class="dash-sub">Add components, configure pins, define behaviors, then copy the Python dict into your project file.</p>
+    </div>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="next-btn" style="text-decoration:none;font-size:14px;">← Admin</a>
+  </div>
+</div>
+
+<style>
+  .sb-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:16px; }
+  .sb-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:14px; }
+  .sb-input { padding:6px 10px; border:1.5px solid #dbeafe; border-radius:6px; font-family:inherit; font-size:13px; color:#1e293b; background:#fff; width:100%; box-sizing:border-box; }
+  .sb-input:focus { outline:none; border-color:#3b82f6; }
+  .sb-btn { padding:7px 16px; border-radius:7px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; border:1.5px solid #dbeafe; background:#f8fafc; color:#475569; transition:all .15s; }
+  .sb-btn:hover { background:#eff6ff; border-color:#93c5fd; }
+  .sb-btn.primary { background:#0969da; color:#fff; border-color:#0969da; }
+  .sb-btn.primary:hover { background:#0757b8; }
+  .sb-btn.danger { background:#ffebe9; color:#cf222e; border-color:#cf222e; }
+  .sb-btn.danger:hover { background:#ffd4d0; }
+  .sb-btn.success { background:#1a7f37; color:#fff; border-color:#1a7f37; }
+  .sb-btn.success:hover { background:#155e2b; }
+
+  /* Library cards */
+  .lib-card { display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px 18px;
+    border:2px solid #e2e8f0; border-radius:10px; cursor:pointer; transition:all .15s;
+    background:#fafbfc; min-width:90px; user-select:none; }
+  .lib-card:hover { border-color:#3b82f6; background:#eff6ff; transform:translateY(-2px); box-shadow:0 4px 12px rgba(59,130,246,.15); }
+  .lib-card span { font-size:12px; font-weight:700; color:#475569; }
+
+  /* Component rows */
+  .comp-row { display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border:1.5px solid #e2e8f0; border-radius:8px; margin-bottom:8px; background:#fafbfc; }
+  .comp-type-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    padding:3px 8px; border-radius:4px; flex-shrink:0; }
+  .comp-row label { font-size:12px; font-weight:600; color:#64748b; white-space:nowrap; }
+  .comp-row .sb-input { width:auto; }
+
+  /* Behavior rows */
+  .beh-row { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid #e2e8f0;
+    border-radius:8px; margin-bottom:8px; background:#fafbfc; flex-wrap:wrap; }
+  .beh-section { display:flex; flex-direction:column; gap:6px; flex:1; min-width:220px; }
+  .beh-section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; }
+  .cond-chip, .eff-chip { display:flex; align-items:center; gap:5px; padding:4px 8px;
+    background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:6px; font-size:12px; }
+  .eff-chip { background:#f0fdf4; border-color:#bbf7d0; }
+  .chip-select { font-size:12px; font-family:inherit; border:none; background:transparent; color:#1e293b; cursor:pointer; padding:0; }
+  .chip-select:focus { outline:none; }
+  .chip-del { background:none; border:none; cursor:pointer; color:#94a3b8; font-size:14px; line-height:1; padding:0 2px; }
+  .chip-del:hover { color:#ef4444; }
+  .add-chip-btn { font-size:11px; padding:4px 8px; border-radius:5px; background:#f1f5f9; border:1.5px dashed #cbd5e1; cursor:pointer; color:#64748b; font-family:inherit; font-weight:600; }
+  .add-chip-btn:hover { background:#e2e8f0; border-color:#94a3b8; }
+
+  /* Preview canvas */
+  .preview-canvas { background:#1a1a2e; border-radius:12px; padding:24px 16px; display:flex;
+    flex-wrap:wrap; gap:28px; align-items:flex-end; justify-content:center; min-height:180px; }
+  .prev-comp { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .prev-label { font-size:10px; font-weight:700; color:#94a3b8; text-align:center; line-height:1.4; }
+  .prev-pin { font-size:9px; color:#64748b; }
+
+  /* Output */
+  #output { width:100%; height:220px; font-family:monospace; font-size:12px; line-height:1.6;
+    padding:14px; border:2px solid #dbeafe; border-radius:8px; background:#f6f8fa; color:#1f2328;
+    resize:vertical; box-sizing:border-box; }
+</style>
+
+<!-- ── PROJECT NAME ── -->
+<div class="sb-card" style="display:flex;align-items:center;gap:14px;padding:14px 20px;">
+  <div class="sb-label" style="margin:0;white-space:nowrap;">Project Name</div>
+  <input id="project-name" class="sb-input" placeholder="e.g. Project 11: Engine System Start" style="flex:1;">
+</div>
+
+<!-- ── PHASE 1: Component Library ── -->
+<div class="sb-card">
+  <div class="sb-label">Step 1 — Add Components</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+
+    <div class="lib-card" onclick="addComponent('led','red')">
+      <svg width="44" height="60" viewBox="-22 -10 44 60" style="overflow:visible">
+        <circle cx="0" cy="10" r="22" fill="#ff2222" opacity=".18"/>
+        <path d="M -10,10 A 10,10 0 0,1 10,10 Z" fill="#7a1010"/>
+        <rect x="-10" y="10" width="20" height="13" fill="#7a1010"/>
+        <rect x="-10" y="21" width="20" height="5" rx="1.5" fill="#4d0a0a"/>
+        <line x1="-5" y1="26" x2="-5" y2="44" stroke="#999" stroke-width="1.5"/>
+        <line x1="5" y1="26" x2="5" y2="50" stroke="#999" stroke-width="1.5"/>
+      </svg>
+      <span>LED</span>
+    </div>
+
+    <div class="lib-card" onclick="addComponent('button')">
+      <svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible">
+        <rect x="-19" y="-19" width="38" height="38" rx="4" fill="#267326" stroke="#1a5c1a" stroke-width="1"/>
+        <circle cx="0" cy="0" r="13" fill="#5a5a5a"/>
+        <circle cx="0" cy="1" r="11" fill="#333"/>
+        <circle cx="0" cy="-1" r="10" fill="#d2cac0"/>
+      </svg>
+      <span>Button</span>
+    </div>
+
+    <div class="lib-card" onclick="addComponent('switch')">
+      <svg width="52" height="36" viewBox="-26 -18 52 36" style="overflow:visible">
+        <rect x="-22" y="-10" width="44" height="20" rx="10" fill="#555" stroke="#333" stroke-width="1"/>
+        <circle cx="-9" cy="0" r="9" fill="#bbb" stroke="#888" stroke-width="1"/>
+        <line x1="-7" y1="10" x2="-7" y2="26" stroke="#999" stroke-width="1.5"/>
+        <line x1="7" y1="10" x2="7" y2="26" stroke="#999" stroke-width="1.5"/>
+      </svg>
+      <span>Switch</span>
+    </div>
+
+    <div class="lib-card" onclick="addComponent('buzzer')">
+      <svg width="48" height="54" viewBox="-24 -14 48 54" style="overflow:visible">
+        <circle cx="0" cy="0" r="20" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
+        <circle cx="0" cy="0" r="14" fill="#1a1a1a"/>
+        <circle cx="0" cy="0" r="9" fill="none" stroke="#555" stroke-width="1.5"/>
+        <circle cx="0" cy="0" r="4" fill="#444"/>
+        <line x1="-6" y1="20" x2="-6" y2="36" stroke="#999" stroke-width="1.5"/>
+        <line x1="6" y1="20" x2="6" y2="36" stroke="#999" stroke-width="1.5"/>
+      </svg>
+      <span>Buzzer</span>
+    </div>
+
+    <div class="lib-card" onclick="addComponent('resistor')">
+      <svg width="60" height="28" viewBox="-30 -14 60 28" style="overflow:visible">
+        <line x1="-30" y1="0" x2="-18" y2="0" stroke="#999" stroke-width="1.5"/>
+        <line x1="18" y1="0" x2="30" y2="0" stroke="#999" stroke-width="1.5"/>
+        <rect x="-18" y="-8" width="36" height="16" rx="4" fill="#c8a96e"/>
+        <rect x="-10" y="-8" width="4" height="16" fill="#8B4513"/>
+        <rect x="-2" y="-8" width="4" height="16" fill="#8B4513"/>
+        <rect x="6" y="-8" width="4" height="16" fill="#ef4444"/>
+      </svg>
+      <span>Resistor</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── COMPONENTS + PREVIEW ── -->
+<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;margin-bottom:16px;">
+
+  <div class="sb-card" style="margin-bottom:0;">
+    <div class="sb-label">Configured Components</div>
+    <div id="component-list"></div>
+    <div id="no-components" style="color:#94a3b8;font-size:13px;padding:16px 0;text-align:center;">
+      No components yet — click a component above to add it.
+    </div>
+  </div>
+
+  <div class="sb-card" style="margin-bottom:0;background:#0f1020;border-color:#1e2a4a;">
+    <div class="sb-label" style="color:#475569;">Live Preview</div>
+    <div class="preview-canvas" id="preview-canvas">
+      <div style="color:#334155;font-size:12px;text-align:center;">Components will appear here</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── PHASE 2: Behaviors ── -->
+<div class="sb-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div class="sb-label" style="margin:0;">Step 2 — Define Behaviors</div>
+    <button class="sb-btn primary" onclick="addBehavior()">+ Add Rule</button>
+  </div>
+  <div id="behavior-list"></div>
+  <div id="no-behaviors" style="color:#94a3b8;font-size:13px;padding:8px 0;text-align:center;">
+    No rules yet — add components first, then define how they interact.
+  </div>
+</div>
+
+<!-- ── PHASE 3: Output ── -->
+<div class="sb-card" id="output-card" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div class="sb-label" style="margin:0;">Step 3 — Generated Python</div>
+    <button class="sb-btn primary" onclick="copyOutput()">📋 Copy to Clipboard</button>
+  </div>
+  <textarea id="output" readonly></textarea>
+</div>
+
+<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:40px;">
+  <button class="sb-btn" onclick="resetAll()">↺ Reset All</button>
+  <button class="sb-btn success" onclick="generateOutput()">Generate Python Dict →</button>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var components = [];   // [{type, id, label, pin, color}]
+var behaviors  = [];   // [{conditions:[{id,state}], effects:[{id,state}]}]
+
+var typeCounters = { led:0, button:0, switch:0, buzzer:0, resistor:0 };
+
+// ── COMPONENT META ────────────────────────────────────────────────────────────
+var TYPE_META = {
+  led:      { prefix:'led',  badge:'#fef3c7', badgeText:'#92400e', label:'LED',      hasPin:true,  hasColor:true,  inputStates:[], outputStates:['on','off'] },
+  button:   { prefix:'btn',  badge:'#dcfce7', badgeText:'#166534', label:'Button',   hasPin:true,  hasColor:false, inputStates:['pressed','released'], outputStates:[] },
+  switch:   { prefix:'sw',   badge:'#dbeafe', badgeText:'#1e40af', label:'Switch',   hasPin:true,  hasColor:false, inputStates:['on','off'], outputStates:[] },
+  buzzer:   { prefix:'buz',  badge:'#fce7f3', badgeText:'#9d174d', label:'Buzzer',   hasPin:true,  hasColor:false, inputStates:[], outputStates:['on','off'] },
+  resistor: { prefix:'r',    badge:'#f1f5f9', badgeText:'#475569', label:'Resistor', hasPin:false, hasColor:false, inputStates:[], outputStates:[] },
+};
+
+var LED_COLORS = ['red','yellow','green','blue'];
+
+// ── ADD / REMOVE COMPONENT ────────────────────────────────────────────────────
+function addComponent(type, defaultColor) {
+  typeCounters[type]++;
+  var meta = TYPE_META[type];
+  var id = meta.prefix + typeCounters[type];
+  components.push({
+    type:  type,
+    id:    id,
+    label: meta.label + ' ' + typeCounters[type],
+    pin:   '',
+    color: defaultColor || (type === 'led' ? 'red' : ''),
+  });
+  renderAll();
+}
+
+function removeComponent(id) {
+  components = components.filter(function(c){ return c.id !== id; });
+  // Remove references from behaviors
+  behaviors.forEach(function(b){
+    b.conditions = b.conditions.filter(function(c){ return c.id !== id; });
+    b.effects    = b.effects.filter(function(e){ return e.id !== id; });
+  });
+  renderAll();
+}
+
+function compField(id, field, value) {
+  var c = components.find(function(c){ return c.id === id; });
+  if (c) { c[field] = value; renderPreview(); }
+}
+
+// ── BEHAVIORS ─────────────────────────────────────────────────────────────────
+function addBehavior() {
+  behaviors.push({ conditions:[], effects:[] });
+  renderBehaviors();
+}
+
+function removeBehavior(i) {
+  behaviors.splice(i, 1);
+  renderBehaviors();
+}
+
+function addCondition(i) {
+  var eligible = components.filter(function(c){
+    return TYPE_META[c.type].inputStates.length > 0;
+  });
+  if (!eligible.length) { alert('Add an input component (button or switch) first.'); return; }
+  var c = eligible[0];
+  behaviors[i].conditions.push({ id: c.id, state: TYPE_META[c.type].inputStates[0] });
+  renderBehaviors();
+}
+
+function addEffect(i) {
+  var eligible = components.filter(function(c){
+    return TYPE_META[c.type].outputStates.length > 0;
+  });
+  if (!eligible.length) { alert('Add an output component (LED or buzzer) first.'); return; }
+  var c = eligible[0];
+  behaviors[i].effects.push({ id: c.id, state: TYPE_META[c.type].outputStates[0] });
+  renderBehaviors();
+}
+
+function removeCondition(bi, ci) {
+  behaviors[bi].conditions.splice(ci, 1);
+  renderBehaviors();
+}
+
+function removeEffect(bi, ei) {
+  behaviors[bi].effects.splice(ei, 1);
+  renderBehaviors();
+}
+
+function setCondition(bi, ci, field, value) {
+  var cond = behaviors[bi].conditions[ci];
+  cond[field] = value;
+  if (field === 'id') {
+    // Reset state to first valid for this component
+    var comp = components.find(function(c){ return c.id === value; });
+    if (comp) cond.state = TYPE_META[comp.type].inputStates[0] || '';
+  }
+  renderBehaviors();
+}
+
+function setEffect(bi, ei, field, value) {
+  var eff = behaviors[bi].effects[ei];
+  eff[field] = value;
+  if (field === 'id') {
+    var comp = components.find(function(c){ return c.id === value; });
+    if (comp) eff.state = TYPE_META[comp.type].outputStates[0] || '';
+  }
+  renderBehaviors();
+}
+
+// ── RENDER COMPONENT LIST ─────────────────────────────────────────────────────
+function renderComponentList() {
+  var list = document.getElementById('component-list');
+  var none = document.getElementById('no-components');
+  none.style.display = components.length ? 'none' : '';
+
+  list.innerHTML = '';
+  components.forEach(function(c) {
+    var meta = TYPE_META[c.type];
+    var row  = document.createElement('div');
+    row.className = 'comp-row';
+
+    var badge = '<span class="comp-type-badge" style="background:' + meta.badge + ';color:' + meta.badgeText + ';">' + meta.label + '</span>';
+
+    var idField = '<label>ID</label><input class="sb-input" style="width:70px;" value="' + esc(c.id) + '" onchange="compField(\'' + c.id + '\',\'id\',this.value)">';
+
+    var labelField = '<label>Label</label><input class="sb-input" style="width:130px;" value="' + esc(c.label) + '" oninput="compField(\'' + c.id + '\',\'label\',this.value)">';
+
+    var pinField = meta.hasPin
+      ? '<label>Pin</label><input class="sb-input" type="number" min="0" max="53" style="width:64px;" value="' + esc(c.pin) + '" oninput="compField(\'' + c.id + '\',\'pin\',this.value)">'
+      : '';
+
+    var colorField = meta.hasColor
+      ? '<label>Color</label><select class="sb-input" style="width:90px;" onchange="compField(\'' + c.id + '\',\'color\',this.value)">'
+          + LED_COLORS.map(function(col){
+              return '<option value="' + col + '"' + (c.color === col ? ' selected' : '') + '>' + col + '</option>';
+            }).join('')
+          + '</select>'
+      : '';
+
+    var delBtn = '<button class="sb-btn danger" style="margin-left:auto;padding:4px 10px;font-size:12px;" onclick="removeComponent(\'' + c.id + '\')">✕</button>';
+
+    row.innerHTML = badge + idField + labelField + pinField + colorField + delBtn;
+    list.appendChild(row);
+  });
+}
+
+// ── RENDER BEHAVIORS ──────────────────────────────────────────────────────────
+function renderBehaviors() {
+  var list  = document.getElementById('behavior-list');
+  var none  = document.getElementById('no-behaviors');
+  none.style.display = behaviors.length ? 'none' : '';
+  list.innerHTML = '';
+
+  var inputComps  = components.filter(function(c){ return TYPE_META[c.type].inputStates.length > 0; });
+  var outputComps = components.filter(function(c){ return TYPE_META[c.type].outputStates.length > 0; });
+
+  behaviors.forEach(function(beh, bi) {
+    var row = document.createElement('div');
+    row.className = 'beh-row';
+
+    // ─ WHEN section
+    var whenHtml = '<div class="beh-section"><div class="beh-section-label">When (ALL must be true)</div>';
+    beh.conditions.forEach(function(cond, ci) {
+      var comp = components.find(function(c){ return c.id === cond.id; }) || inputComps[0];
+      var states = comp ? TYPE_META[comp.type].inputStates : [];
+
+      var compSel = '<select class="chip-select" onchange="setCondition(' + bi + ',' + ci + ',\'id\',this.value)">'
+        + inputComps.map(function(c){ return '<option value="' + c.id + '"' + (c.id === cond.id ? ' selected' : '') + '>' + c.id + ' (' + c.label + ')</option>'; }).join('')
+        + '</select>';
+
+      var stateSel = '<select class="chip-select" onchange="setCondition(' + bi + ',' + ci + ',\'state\',this.value)">'
+        + states.map(function(s){ return '<option value="' + s + '"' + (s === cond.state ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+        + '</select>';
+
+      whenHtml += '<div class="cond-chip">' + compSel + '<span style="color:#64748b;font-size:11px;">is</span>' + stateSel + '<button class="chip-del" onclick="removeCondition(' + bi + ',' + ci + ')">✕</button></div>';
+    });
+    whenHtml += '<button class="add-chip-btn" onclick="addCondition(' + bi + ')">+ condition</button></div>';
+
+    // ─ ARROW
+    var arrow = '<div style="font-size:20px;color:#94a3b8;padding-top:22px;">→</div>';
+
+    // ─ THEN section
+    var thenHtml = '<div class="beh-section"><div class="beh-section-label">Then (apply all)</div>';
+    beh.effects.forEach(function(eff, ei) {
+      var comp = components.find(function(c){ return c.id === eff.id; }) || outputComps[0];
+      var states = comp ? TYPE_META[comp.type].outputStates : [];
+
+      var compSel = '<select class="chip-select" onchange="setEffect(' + bi + ',' + ei + ',\'id\',this.value)">'
+        + outputComps.map(function(c){ return '<option value="' + c.id + '"' + (c.id === eff.id ? ' selected' : '') + '>' + c.id + ' (' + c.label + ')</option>'; }).join('')
+        + '</select>';
+
+      var stateSel = '<select class="chip-select" onchange="setEffect(' + bi + ',' + ei + ',\'state\',this.value)">'
+        + states.map(function(s){ return '<option value="' + s + '"' + (s === eff.state ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+        + '</select>';
+
+      thenHtml += '<div class="eff-chip">' + compSel + '<span style="color:#64748b;font-size:11px;">→</span>' + stateSel + '<button class="chip-del" onclick="removeEffect(' + bi + ',' + ei + ')">✕</button></div>';
+    });
+    thenHtml += '<button class="add-chip-btn" style="background:#f0fdf4;border-color:#bbf7d0;" onclick="addEffect(' + bi + ')">+ effect</button></div>';
+
+    // ─ Delete rule button
+    var delBtn = '<button class="sb-btn danger" style="margin-left:auto;padding:5px 11px;align-self:flex-start;font-size:12px;" onclick="removeBehavior(' + bi + ')">✕ Rule</button>';
+
+    row.innerHTML = whenHtml + arrow + thenHtml + delBtn;
+    list.appendChild(row);
+  });
+}
+
+// ── RENDER PREVIEW ────────────────────────────────────────────────────────────
+var LED_SVG_COLORS = {
+  red:    { off:'#7a1010', collar:'#4d0a0a', glow:'#ff0000' },
+  yellow: { off:'#6e5500', collar:'#453400', glow:'#ffcc00' },
+  green:  { off:'#0a4a0a', collar:'#063506', glow:'#00ff44' },
+  blue:   { off:'#0a1a5a', collar:'#060e3a', glow:'#0088ff' },
+};
+
+function ledSvg(color) {
+  var cfg = LED_SVG_COLORS[color] || LED_SVG_COLORS.red;
+  return '<svg width="52" height="72" viewBox="-26 -12 52 72" style="overflow:visible">'
+    + '<circle cx="0" cy="10" r="28" fill="' + cfg.glow + '" opacity=".12"/>'
+    + '<circle cx="0" cy="10" r="20" fill="' + cfg.glow + '" opacity=".18"/>'
+    + '<path d="M -13,10 A 13,13 0 0,1 13,10 Z" fill="' + cfg.off + '"/>'
+    + '<rect x="-13" y="10" width="26" height="16" fill="' + cfg.off + '"/>'
+    + '<rect x="-13" y="24" width="26" height="6" rx="2" fill="' + cfg.collar + '"/>'
+    + '<path d="M -6,1 A 13,13 0 0,1 6,1 L 4,10 L -4,10 Z" fill="white" opacity=".18" pointer-events="none"/>'
+    + '<line x1="-7" y1="30" x2="-7" y2="52" stroke="#666" stroke-width="1.5"/>'
+    + '<line x1="7" y1="30" x2="7" y2="58" stroke="#666" stroke-width="1.5"/>'
+    + '</svg>';
+}
+
+function buttonSvg() {
+  return '<svg width="56" height="56" viewBox="-28 -28 56 56" style="overflow:visible">'
+    + '<rect x="-22" y="-22" width="44" height="44" rx="4" fill="#267326" stroke="#1a5c1a" stroke-width="1.2"/>'
+    + '<line x1="-22" y1="-10" x2="-14" y2="-10" stroke="#48c248" stroke-width="1" opacity=".5"/>'
+    + '<line x1="14" y1="-10" x2="22" y2="-10" stroke="#48c248" stroke-width="1" opacity=".5"/>'
+    + '<line x1="-22" y1="10" x2="-14" y2="10" stroke="#48c248" stroke-width="1" opacity=".5"/>'
+    + '<line x1="14" y1="10" x2="22" y2="10" stroke="#48c248" stroke-width="1" opacity=".5"/>'
+    + '<rect x="-26" y="-14" width="6" height="4" rx="1" fill="#c9a000"/>'
+    + '<rect x="20" y="-14" width="6" height="4" rx="1" fill="#c9a000"/>'
+    + '<rect x="-26" y="10" width="6" height="4" rx="1" fill="#c9a000"/>'
+    + '<rect x="20" y="10" width="6" height="4" rx="1" fill="#c9a000"/>'
+    + '<circle cx="0" cy="0" r="16" fill="#5a5a5a"/>'
+    + '<circle cx="0" cy="1" r="13" fill="#333"/>'
+    + '<circle cx="0" cy="-1" r="12" fill="#d2cac0"/>'
+    + '<ellipse cx="-2" cy="-4" rx="4" ry="2.5" fill="white" opacity=".22"/>'
+    + '</svg>';
+}
+
+function switchSvg() {
+  return '<svg width="60" height="48" viewBox="-30 -18 60 48" style="overflow:visible">'
+    + '<rect x="-24" y="-12" width="48" height="24" rx="12" fill="#444" stroke="#333" stroke-width="1"/>'
+    + '<circle cx="-10" cy="0" r="10" fill="#bbb" stroke="#888" stroke-width="1.2"/>'
+    + '<ellipse cx="-12" cy="-3" rx="4" ry="2.5" fill="white" opacity=".2"/>'
+    + '<line x1="-8" y1="12" x2="-8" y2="28" stroke="#666" stroke-width="1.5"/>'
+    + '<line x1="8" y1="12" x2="8" y2="28" stroke="#666" stroke-width="1.5"/>'
+    + '</svg>';
+}
+
+function buzzerSvg() {
+  return '<svg width="52" height="58" viewBox="-26 -16 52 58" style="overflow:visible">'
+    + '<circle cx="0" cy="0" r="22" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>'
+    + '<circle cx="0" cy="0" r="16" fill="#1a1a1a"/>'
+    + '<circle cx="0" cy="0" r="10" fill="none" stroke="#555" stroke-width="1.5"/>'
+    + '<circle cx="0" cy="0" r="4" fill="#444"/>'
+    + '<line x1="-6" y1="22" x2="-6" y2="40" stroke="#666" stroke-width="1.5"/>'
+    + '<line x1="6" y1="22" x2="6" y2="40" stroke="#666" stroke-width="1.5"/>'
+    + '</svg>';
+}
+
+function resistorSvg() {
+  return '<svg width="72" height="28" viewBox="-36 -14 72 28" style="overflow:visible">'
+    + '<line x1="-36" y1="0" x2="-20" y2="0" stroke="#666" stroke-width="1.5"/>'
+    + '<line x1="20" y1="0" x2="36" y2="0" stroke="#666" stroke-width="1.5"/>'
+    + '<rect x="-20" y="-9" width="40" height="18" rx="4" fill="#c8a96e"/>'
+    + '<rect x="-12" y="-9" width="5" height="18" fill="#8B4513"/>'
+    + '<rect x="-3" y="-9" width="5" height="18" fill="#8B4513"/>'
+    + '<rect x="6" y="-9" width="5" height="18" fill="#ef4444"/>'
+    + '</svg>';
+}
+
+function COMP_SVG(c) {
+  switch(c.type) {
+    case 'led':      return ledSvg(c.color);
+    case 'button':   return buttonSvg();
+    case 'switch':   return switchSvg();
+    case 'buzzer':   return buzzerSvg();
+    case 'resistor': return resistorSvg();
+  }
+  return '';
+}
+
+function renderPreview() {
+  var canvas = document.getElementById('preview-canvas');
+  if (!components.length) {
+    canvas.innerHTML = '<div style="color:#334155;font-size:12px;text-align:center;">Components will appear here</div>';
+    return;
+  }
+  canvas.innerHTML = components.map(function(c) {
+    var pinTxt = c.pin !== '' && c.pin !== undefined ? 'Pin ' + c.pin : 'no pin';
+    return '<div class="prev-comp">' + COMP_SVG(c)
+      + '<div class="prev-label">' + esc(c.label) + '<br><span class="prev-pin">' + pinTxt + '</span></div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── GENERATE OUTPUT ───────────────────────────────────────────────────────────
+function generateOutput() {
+  var lines = [];
+  var projectName = document.getElementById('project-name').value.trim();
+  if (projectName) {
+    lines.push('# --- ' + projectName + ' ---');
+  }
+  lines.push('"simulation": {');
+
+  // components
+  lines.push('    "components": [');
+  components.forEach(function(c, i) {
+    var comma = i < components.length - 1 ? ',' : '';
+    var parts = [
+      '"type": "' + c.type + '"',
+      '"id": "' + c.id + '"',
+    ];
+    if (c.type === 'led') parts.push('"color": "' + c.color + '"');
+    if (TYPE_META[c.type].hasPin) parts.push('"pin": ' + (parseInt(c.pin) || 0));
+    parts.push('"label": "' + c.label.replace(/"/g, '\\"') + '"');
+    lines.push('        {' + parts.join(', ') + '}' + comma);
+  });
+  lines.push('    ],');
+
+  // behaviors
+  lines.push('    "behaviors": [');
+  behaviors.forEach(function(b, bi) {
+    var comma = bi < behaviors.length - 1 ? ',' : '';
+    if (!b.conditions.length && !b.effects.length) return;
+    var whenParts = b.conditions.map(function(c){ return '"' + c.id + '": "' + c.state + '"'; }).join(', ');
+    var thenParts = b.effects.map(function(e){ return '"' + e.id + '": "' + e.state + '"'; }).join(', ');
+    lines.push('        {"when": {' + whenParts + '}, "then": {' + thenParts + '}}' + comma);
+  });
+  lines.push('    ]');
+  lines.push('}');
+
+  var output = document.getElementById('output');
+  output.value = lines.join('\n');
+  document.getElementById('output-card').style.display = '';
+  output.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function copyOutput() {
+  var output = document.getElementById('output');
+  navigator.clipboard.writeText(output.value).then(function() {
+    var btn = event.target;
+    var orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(function(){ btn.textContent = orig; }, 1800);
+  });
+}
+
+function resetAll() {
+  if (!confirm('Reset everything?')) return;
+  components = [];
+  behaviors  = [];
+  typeCounters = { led:0, button:0, switch:0, buzzer:0, resistor:0 };
+  renderAll();
+  document.getElementById('output-card').style.display = 'none';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderAll() {
+  renderComponentList();
+  renderPreview();
+  renderBehaviors();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+
+{% endblock %}

@@ -1,0 +1,209 @@
+<div class="cipher-builder">
+
+  <style>
+    .cipher-builder {
+      width: 100%;
+      margin: 0;
+      padding: 20px;
+      background: #0d0d0d;
+      color: #eaeaea;
+      border-radius: 12px;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 0 15px rgba(0,255,150,0.1);
+    }
+
+    .cipher-builder h2 {
+      color: #00ff9c;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: none;
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #00ff9c;
+      color: #000;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #00cc7a;
+    }
+
+    .grid-box {
+      background: #000;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      min-height: 80px;
+    }
+
+    .grid-box div {
+      letter-spacing: 3px;
+      margin-bottom: 5px;
+      color: #00ff9c;
+    }
+
+    .placeholder {
+      color: #666;
+    }
+
+    .hint {
+      font-size: 0.9em;
+      color: #aaa;
+    }
+
+    .controls button {
+      margin-right: 10px;
+    }
+  </style>
+
+  <!-- TITLE -->
+  <h2>🛠️ Cipher Builder Tool</h2>
+  <p>Create your own code-breaking puzzle for other agents.</p>
+
+  <hr>
+
+  <!-- WORD INPUT -->
+  <div class="section">
+    <h3>✏️ Add a Word to Hide</h3>
+    <input type="text" id="wordInput" placeholder="Enter a 5-letter word">
+    <button onclick="addWord()">Add to Grid</button>
+    <p class="hint">Example: BLACK, SPARK, LIGHT</p>
+  </div>
+
+  <hr>
+
+  <!-- GRID DISPLAY -->
+  <div class="section">
+    <h3>📋 Puzzle Grid</h3>
+    <div id="gridOutput" class="grid-box">
+      <p class="placeholder">Your generated rows will appear here...</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ANSWER INPUT -->
+  <div class="section">
+    <h3>🔐 Set the Secret Answer</h3>
+    <input type="text" id="answerInput" placeholder="Enter the correct answer" oninput="formatAnswer()">
+  </div>
+
+  <hr>
+
+  <!-- CODE OUTPUT -->
+  <div class="section">
+    <h3>📄 Arduino Code Output</h3>
+    <textarea id="codeOutput" rows="8" readonly></textarea>
+  </div>
+
+  <hr>
+
+  <!-- CONTROLS -->
+  <div class="section controls">
+    <button onclick="clearGrid()">Clear Grid</button>
+    <button onclick="copyCode()">Copy Code</button>
+  </div>
+
+  <script>
+    let rows = [];
+
+    function addWord() {
+      let input = document.getElementById("wordInput");
+      let word = input.value.trim().toUpperCase();
+
+      if (word.length !== 5 || !/^[A-Z]+$/.test(word)) {
+        alert("Enter a valid 5-letter word.");
+        return;
+      }
+
+      let rowLength = 10;
+      let row = new Array(rowLength).fill("");
+
+      let start = Math.floor(Math.random() * (rowLength - word.length + 1));
+
+      // place word
+      for (let i = 0; i < word.length; i++) {
+        row[start + i] = word[i];
+      }
+
+      // fill remaining letters
+      for (let i = 0; i < rowLength; i++) {
+        if (row[i] === "") {
+          row[i] = randomLetter();
+        }
+      }
+
+      let formattedRow = row.join(" ");
+      rows.push(formattedRow);
+
+      renderGrid();
+      renderCode();
+
+      input.value = "";
+    }
+
+    function randomLetter() {
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+
+    function renderGrid() {
+      let grid = document.getElementById("gridOutput");
+
+      if (rows.length === 0) {
+        grid.innerHTML = '<p class="placeholder">Your generated rows will appear here...</p>';
+        return;
+      }
+
+      grid.innerHTML = "";
+      rows.forEach(r => {
+        let div = document.createElement("div");
+        div.textContent = r;
+        grid.appendChild(div);
+      });
+    }
+
+    function renderCode() {
+      let output = document.getElementById("codeOutput");
+      let code = rows.map(r => `Serial.println("${r}");`).join("\n");
+      output.value = code;
+    }
+
+    function clearGrid() {
+      rows = [];
+      renderGrid();
+      renderCode();
+    }
+
+    function copyCode() {
+      let output = document.getElementById("codeOutput");
+      output.select();
+      document.execCommand("copy");
+      alert("Code copied!");
+    }
+
+    function formatAnswer() {
+      let input = document.getElementById("answerInput");
+      input.value = input.value.toUpperCase();
+    }
+  </script>
+
+</div>

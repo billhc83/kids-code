@@ -42,22 +42,13 @@
 
 {% block code_section %}{% endblock %}
 
-<div class="info-box">
-    <h2>How to Move Your Code 🔌</h2>
-    <p><strong>Copy it: 📋</strong><br>Find the code box and click the Copy button.</p>
-    <p><strong>Open Arduino: ♾️</strong><br>Open the Arduino app. It is the blue circle icon.</p>
-    <p><strong>Clean the page: 🧹</strong><br>Hold Ctrl and tap A, then hit Backspace.</p>
-    <p><strong>Paste it: 📥</strong><br>Hold Ctrl and tap V. Your code will pop up!</p>
-    <p><strong>Send it: 🚀</strong><br>Plug your board in. Click the Arrow button (➔). When it says "Done" your code is ready!</p>
-</div>
-
 {% block wiring_notes %}{% endblock %}
 
 {% block tips %}{% endblock %}
 
 <hr>
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
-    <form method="POST" action="{{ url_for('complete_lesson_route') }}">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
         <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
         <button type="submit" class="next-btn">Next Project →</button>
     </form>

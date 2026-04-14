@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"fill_conditions\\\\|fill_values\" /c/kids-code/kids-code/utils/*.py --include=\"*.py\")",
+      "Bash(venv/Scripts/pip list:*)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python verify_parser.py)",
+      "Bash(venv/Scripts/python -c ':*)",
+      "Bash(python -c ':*)",
+      "Bash(find /c/kids-code/kids-code/templates/lessons -name \"*.html\" -exec grep -l \"drawer_steps\\\\|block_builder\" {} \\\\;)",
+      "Bash(mkdir -p \"c:/kids-code/kids-code/.claude/commands\")",
+      "Bash(mv \"c:/kids-code/kids-code/.claude/skills/lesson-landing.md\" \"c:/kids-code/kids-code/.claude/commands/lesson-landing.md\")",
+      "Bash(mv \"c:/kids-code/kids-code/.claude/skills/lesson-sketch.md\" \"c:/kids-code/kids-code/.claude/commands/lesson-sketch.md\")",
+      "Bash(mv \"c:/kids-code/kids-code/.claude/skills/lesson-drawer.md\" \"c:/kids-code/kids-code/.claude/commands/lesson-drawer.md\")",
+      "Bash(rmdir \"c:/kids-code/kids-code/.claude/skills\")",
+      "Bash(mv \"c:/kids-code/kids-code/.claude/skills/generate-lesson.md\" \"c:/kids-code/kids-code/.claude/commands/generate-lesson.md\")",
+      "Bash(find /c/kids-code/kids-code -type f -name \"*.py\" -exec grep -l \"WebSocket\\\\|3211\\\\|3210\\\\|serial\" {} \\\\;)",
+      "Bash(xargs grep:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\kids-code\\kids-code\\.claude"
+    ]
+  }
+}

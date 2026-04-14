@@ -1,0 +1,167 @@
+{% extends "lessons/project_base.html" %}
+
+{% block title %}Project 14: Codebreaker — Go Further{% endblock %}
+
+{% block content %}
+<img src="{{ url_for('static', filename='graphics/code_cracker.png') }}"
+     alt="Code Cracker Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+<div class="project-container">
+
+  <!-- HEADER -->
+  <h1>🕵️ Agent Upgrade: Modify Your Codebreaker</h1>
+  <br>
+  <p>
+    Excellent work, Agent. Your training device is now complete.
+  </p>
+  <p>
+    But real agents don’t stop at building systems… they improve them.
+  </p>
+  <br>
+  <hr>
+  <br>
+  <!-- FULL CODE -->
+  <h2>📋 Your Completed Code</h2>
+  <p>Copy this code into your Arduino to run your full Codebreaker system:</p>
+
+  <div class="code-block copyable">
+<pre>
+// --- CODEBREAKER SYSTEM ---
+
+String answer = "SPARK";
+int likeness = 0;
+bool solved = false;
+
+void setup() {
+  Serial.begin(9600);
+
+  Serial.println("================================");
+  Serial.println("     C O D E  B R E A K E R    ");
+  Serial.println("================================");
+  Serial.println("Find the hidden 5-letter word.");
+  Serial.println("");
+
+  Serial.println("X K Q S P A R K M Z");
+  Serial.println("B R T F L A M E Q X");
+  Serial.println("P Q S P A R K T Z R");
+  Serial.println("W Z X B R A N D T P");
+  Serial.println("S P A R K X Q Z B M");
+  Serial.println("T R X N G L O W K B");
+  Serial.println("Q Z B S P A R K X T");
+  Serial.println("M X T R B L A Z E P");
+  Serial.println("B T Z X Q M R N V K");
+  Serial.println("P N V Q Z B X T M R");
+
+  Serial.println("");
+  Serial.println("Enter your guess:");
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+
+    String guess = Serial.readString();
+    guess.trim();
+    guess.toUpperCase();
+
+    likeness = 0;
+
+    for (int i = 0; i < 5; i++) {
+      if (guess[i] == answer[i]) {
+        likeness++;
+      }
+    }
+
+    Serial.print("Likeness = ");
+    Serial.println(likeness);
+
+    if (likeness == 5) {
+      Serial.println("CODE CRACKED! ACCESS GRANTED.");
+      solved = true;
+    } else {
+      Serial.println("Try again:");
+    }
+  }
+}
+</pre>
+  </div>
+
+  <hr>
+
+  <!-- MODIFY SECTION -->
+  <h2>🛠️ Upgrade Your Cipher</h2>
+  <br>
+  <p>
+    Right now, your system always uses the same secret word and grid.
+    That means once someone solves it… they already know the answer.
+  </p>
+
+  <p><b>Real agents change their systems to stay ahead.</b></p>
+  <br>
+  <h3>🔄 Change the Secret Code</h3>
+  <ul>
+    <li>Pick a new 5-letter word</li>
+    <li>Make sure it matches the format (all letters)</li>
+    <li>Update the hidden answer in your system</li>
+  </ul>
+  <br>
+  <h3>🧩 Change the Grid</h3>
+  <ul>
+    <li>Hide your new word inside the letter grid</li>
+    <li>Mix in random letters to confuse the player</li>
+    <li>Make sure your word appears clearly at least once</li>
+  </ul>
+  <br>
+  <h3>🎯 Make It Harder</h3>
+  <ul>
+    <li>Use tricky letters (Z, X, Q)</li>
+    <li>Add multiple fake patterns</li>
+    <li>When you change the cipher make sure you use CAPITAL letters</li>
+  </ul>
+  <br>
+  <hr>
+  <div class="tool-section">
+    {% include "components/cipher_builder.html" %}
+  </div>
+  <br>
+  <!-- CHALLENGES -->
+  <h2>🚀 Agent Challenges</h2>
+  <br>
+  <div class="challenge-box">
+    <h3>🟢 Challenge 1 — New Code</h3>
+    <p>Create a completely new puzzle using a different 5-letter word.</p>
+  </div>
+  <br>
+  <div class="challenge-box">
+    <h3>🟡 Challenge 2 — Trick Your Friends</h3>
+    <p>Design a grid that makes the wrong word look correct.</p>
+  </div>
+  <br>
+  <div class="challenge-box">
+    <h3>🔵 Challenge 3 — Hard Mode</h3>
+    <p>Make a grid where the answer only appears once and is hard to spot.</p>
+  </div>
+  <br>
+  <div class="challenge-box">
+    <h3>🔴 Challenge 4 — Super Agent</h3>
+    <p>
+      Modify your system so it only allows 3 guesses before locking out the player.
+    </p>
+  </div>
+  <br>
+  <hr>
+  <br>
+  <!-- CLOSING -->
+  <h2>📡 Final Transmission</h2>
+  <p>
+    "Agent, your system is now active in the field."
+  </p>
+  <p>
+    "Others will attempt to break it… but only the best will succeed."
+  </p>
+  <p>
+    "Your next mission will require even more advanced systems."
+  </p>
+
+</div>
+
+{% endblock %}

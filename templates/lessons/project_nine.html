@@ -1,5 +1,5 @@
 {% extends "lessons/project_base.html" %}
-
+{% set banner_image = "project_nine_banner.png" %}
 {% block title %}Project 9: The Universal Power Slot — KidsCode{% endblock %}
 
 {% set project_title = "🛠️ Project 9 - The Universal Power Slot!" %}
@@ -7,8 +7,17 @@
 
 {% block intro %}
 <p>👷 <strong>Welcome, Senior Systems Engineer!</strong></p>
-<p>Today you will learn about <strong>Variables</strong> — special slots that hold information.</p>
-<p>But be careful… the <strong>wrong item in the slot</strong> can break the system! ⚠️</p>
+<p>Welcome to the Design Lab, **Senior Systems Engineer**! 👷‍♂️👷‍♀️</p>
+
+<p>Today, we are mastering **Variable Slots**. In engineering, a "Variable" is just a slot designed to hold a specific part. But you have to be careful—the **Part** must match the **Slot**! </p>
+
+<P>We have three futuristic battery types and one very delicious lunch to test:<br>
+<ul>   <b>Zappy-Zucchini Juice 🥒⚡</b><br> 
+   <b>Sparky-Squirrel Static</b> 🐿️💥<br>
+   <b>Mega-Glow Lightening-Milk</b> 🥛🌙<br>
+  <b>The Crusty Club Sandwich</b> 🥪<br></p></ul>
+
+Let's see what happens when we try to power our machine with a sandwich!</p>
 {% endblock %}
 
 {% block parts %}
@@ -19,55 +28,6 @@
     <li>💡 LED</li>
     <li>⚡ 220Ω Resistor</li>
 </ul>
-{% endblock %}
-
-{% block code_section %}
-<div class="code-wrap">
-<div>
-<h2>📜 The Inspection Script</h2>
-<div class="code-block">
-<pre>String powerSlot = "Crusty Club Sandwich"; 
-
-int currentEnergy = 0;
-
-void setup() {
-  pinMode(8, OUTPUT);
-  Serial.begin(9600);
-}
-
-void loop() {
-
-  if (powerSlot == "Mega-Glow Lightening-Milk") {
-    currentEnergy = 100;
-  } 
-  else if (powerSlot == "Sparky-Squirrel Static") {
-    currentEnergy = 50;
-  }
-  else if (powerSlot == "Zappy-Zucchini Juice") {
-    currentEnergy = 10;
-  }
-  else {
-    currentEnergy = 0;
-  }
-
-  if (currentEnergy > 0) {
-    digitalWrite(8, HIGH);
-  } else {
-    digitalWrite(8, LOW);
-  }
-
-  delay(3000);
-}</pre>
-</div>
-</div>
-
-<div class="code-explain">
-<h3>🧠 Key Concept</h3>
-<p><strong>Variables</strong> store information.</p>
-<p><strong>Matching values</strong> decides what happens next.</p>
-<p>If the value is wrong → system does nothing.</p>
-</div>
-</div>
 {% endblock %}
 
 {% block tips %}

@@ -1,5 +1,5 @@
 {% extends "lessons/project_base.html" %}
-
+{% set banner_image = "project_two_banner.png" %}
 {% block title %}Project 2: Blinking Beacon — KidsCode{% endblock %}
 
 {% set project_title = "Project Two - Blinking Beacon 💡💡" %}
@@ -45,34 +45,6 @@ LOW = Electricity stops! (Light OFF)</p>
     <li>✨ <strong>LED (Any Color)</strong> — The Lighthouse Beacon!</li>
     <li>〰️ <strong>Jumper Wires</strong> — The Lighthouse Wiring!</li>
 </ul>
-{% endblock %}
-
-{% block code_section %}
-<div class="code-wrap">
-    <div>
-        <h2>Code</h2>
-        <div class="code-block">
-            <pre>void setup() {
-  pinMode(8, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(8, HIGH);
-  delay(500);
-
-  digitalWrite(8, LOW);
-  delay(500);
-}</pre>
-        </div>
-    </div>
-    <div class="code-explain">
-        <h3>🌟 Pro-Tips!</h3>
-        <p><strong>delay()</strong><br>
-        In Arduino land, 1,000 equals 1 second. If you want the light to stay off for 5 seconds, what number would you use?</p>
-        <p><strong>The Semicolon 🧐</strong><br>
-        Don't forget the <strong>;</strong> at the end of your code lines! It tells the brain to move on to the next thought!</p>
-    </div>
-</div>
 {% endblock %}
 
 {% block tips %}

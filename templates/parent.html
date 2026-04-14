@@ -2,6 +2,169 @@
 {% block title %}Parent Dashboard — KidsCode{% endblock %}
 
 {% block content %}
+
+{% if show_welcome %}
+<div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-modal">
+        <div class="welcome-hero welcome-hero-parent">
+            <div class="welcome-icon">👪</div>
+            <h1>Welcome to KidsCode!</h1>
+            <p class="welcome-tagline">You're all set to get your child started.</p>
+        </div>
+
+        <div class="welcome-sections">
+            <div class="welcome-section">
+                <div class="welcome-section-icon">📚</div>
+                <div>
+                    <h3>About the Course</h3>
+                    <p>KidsCode teaches kids to build real projects using block-based coding — from animations and games to interactive stories. There are <strong>14 guided projects</strong>, each unlocking the next.</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">👤</div>
+                <div>
+                    <h3>Create Accounts for Your Children</h3>
+                    <p>Use the <strong>Create Student Account</strong> form on this dashboard to set up accounts for your kids. You can create up to <strong>3 student accounts</strong>. You choose their username and password.</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">🔑</div>
+                <div>
+                    <h3>How They Log In</h3>
+                    <p>Once you've created an account, your child can go to the login page and sign in using the <strong>username and password you set</strong>. No email required on their end!</p>
+                </div>
+            </div>
+
+            <div class="welcome-section">
+                <div class="welcome-section-icon">📊</div>
+                <div>
+                    <h3>Track Their Progress</h3>
+                    <p>Come back here any time to see how far each child has progressed through the course, and reset their password if needed.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="welcome-cta">
+            <button class="welcome-btn welcome-btn-parent" id="welcomeDismiss">
+                Got It — Let's Go! →
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.welcome-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    animation: slideUp 0.35s ease;
+}
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.welcome-hero {
+    background: linear-gradient(135deg, #2ea44f 0%, #1a7f37 100%);
+    color: white;
+    text-align: center;
+    padding: 36px 32px 28px;
+    border-radius: 16px 16px 0 0;
+}
+.welcome-hero-parent {
+    background: linear-gradient(135deg, #0969da 0%, #0550ae 100%);
+}
+.welcome-icon { font-size: 48px; margin-bottom: 12px; }
+.welcome-hero h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
+.welcome-tagline { margin: 0; font-size: 15px; opacity: 0.9; }
+
+.welcome-sections {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.welcome-section {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.welcome-section-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    background: #f6f8fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.welcome-section h3 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2328;
+}
+.welcome-section p {
+    margin: 0;
+    font-size: 13px;
+    color: #57606a;
+    line-height: 1.5;
+}
+
+.welcome-cta {
+    padding: 4px 28px 28px;
+    text-align: center;
+}
+.welcome-btn {
+    background: #2ea44f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+}
+.welcome-btn:hover { background: #2c974b; }
+.welcome-btn-parent { background: #0969da; }
+.welcome-btn-parent:hover { background: #0550ae; }
+</style>
+
+<script>
+document.getElementById('welcomeDismiss').addEventListener('click', function() {
+    fetch('/api/welcome-complete', { method: 'POST' })
+        .finally(function() {
+            document.getElementById('welcomeOverlay').style.opacity = '0';
+            document.getElementById('welcomeOverlay').style.transition = 'opacity 0.25s';
+            setTimeout(function() {
+                document.getElementById('welcomeOverlay').remove();
+            }, 250);
+        });
+});
+</script>
+{% endif %}
+
 <div class="dashboard-wrap">
 
     <div class="dash-header">

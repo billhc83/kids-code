@@ -28,10 +28,14 @@ body {
 }
 
 #topbar .logo {
-    font-size: 20px;
-    font-weight: 800;
-    color: #0969da;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+#topbar .logo .logo-img {
+    height: 88px;
+    width: auto;
 }
 
 #topbar .top-links {
@@ -1299,8 +1303,8 @@ body {
     bottom: 28px;
     right: 28px;
     z-index: 999999;
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     background: #0969da;
     border: none;

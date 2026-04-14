@@ -36,33 +36,36 @@
 
 <!-- Top bar -->
     <div id="topbar">
-        <a href="{{ url_for('index') }}" class="logo">🧑‍💻 KidsCode</a>
+        <a href="{{ url_for('main.index') }}" class="logo">
+            <img src="{{ url_for('static', filename='graphics/logo.png') }}" alt="KidsCode" class="logo-img">
+        </a>
 
         <div class="top-links">
         {% if session.is_admin %}
-            <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+            <a href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
         {% endif %}
         {% if session.is_parent %}
-            <a href="{{ url_for('parent_dashboard') }}">Parent</a>
+            <a href="{{ url_for('parent.parent_dashboard') }}">Parent</a>
         {% endif %}
         {% if session.user_id and not session.is_parent %}
             {% if "challenge_one" in unlocked_lessons %}
-            <a href="{{ url_for('challenge', challenge_key='challenge_one') }}"
+            <a href="{{ url_for('lessons.challenge', challenge_key='challenge_one') }}"
             class="{% if current_endpoint == 'challenge' %}active{% endif %}"
             style="background:#fff8c5;color:#9a6700;border:2px solid #d4a72c;border-radius:20px;padding:6px 14px;">
                 🎯 Challenge
             </a>
             {% endif %}
+            <a href="{{ url_for('main.open_coding') }}" class="{% if current_endpoint == 'open_coding' %}active{% endif %}">Open Coding</a>
         {% endif %}
-        <a href="{{ url_for('feedback') }}">Feedback</a>
+        <a href="{{ url_for('main.feedback') }}">Feedback</a>
     </div>
 
     <div class="user-info">
         {% if session.username %}
             <span>👋 {{ session.username }}</span>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
-            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('auth.login') }}">Login</a>
         {% endif %}
     </div>
 </div>
@@ -76,7 +79,7 @@
 
 {% for item in sidebar_standalone %}
     {% if item.type == "single" %}
-    <a href="{{ url_for('lesson', lesson_key=item.lesson.key) }}"
+    <a href="{{ url_for('lessons.lesson', lesson_key=item.lesson.key) }}"
        class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == item.lesson.key %}active{% endif %}">
         {{ item.lesson.title }}
     </a>
@@ -85,7 +88,7 @@
     <div class="sidebar-group">
         <div class="nav-section">{{ item.part }}</div>
         {% for step in item.steps %}
-        <a href="{{ url_for('lesson', lesson_key=step.key) }}"
+        <a href="{{ url_for('lessons.lesson', lesson_key=step.key) }}"
            class="{% if current_endpoint == 'lesson' and request.view_args.lesson_key == step.key %}active{% endif %}">
             {{ step.title }}
         </a>
@@ -96,7 +99,7 @@
 
 {% if "challenge_one" in unlocked_lessons %}
 <div class="nav-section">Challenges</div>
-<a href="{{ url_for('challenge', challenge_key='challenge_one') }}"
+<a href="{{ url_for('lessons.challenge', challenge_key='challenge_one') }}"
    class="{% if current_endpoint == 'challenge' %}active{% endif %}">
     🎯 Challenge
 </a>

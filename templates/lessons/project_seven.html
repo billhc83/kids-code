@@ -1,5 +1,5 @@
 {% extends "lessons/project_base.html" %}
-
+{% set banner_image = "project_seven_banner.png" %}
 {% block title %}Project 7: The Automagic Night Light — KidsCode{% endblock %}
 
 {% set project_title = "💡 Project 7 - The Automagic Night Light!" %}
@@ -23,51 +23,6 @@
     <li>⚡ <strong>220Ω Resistor</strong></li>
     <li>⚡ <strong>10kΩ Resistor</strong></li>
 </ul>
-{% endblock %}
-
-{% block code_section %}
-<div class="code-wrap">
-    <div>
-        <h2>💻 The Smart Logic</h2>
-        <div class="code-block">
-<pre>int lightSensor = A0;
-int nightLight = 13;
-
-void setup() {
-  pinMode(nightLight, OUTPUT);
-  Serial.begin(9600);
-}
-
-void loop() {
-  int brightness = analogRead(lightSensor);
-  Serial.println(brightness);
-
-  if (brightness < 300) {
-    digitalWrite(nightLight, HIGH);
-    Serial.println("It's dark! Light ON 🌙");
-  } else {
-    digitalWrite(nightLight, LOW);
-    Serial.println("Sun is up! Light OFF ☀️");
-  }
-
-  delay(100);
-}</pre>
-        </div>
-    </div>
-
-    <div class="code-explain">
-        <h3>🧬 How it Works</h3>
-        <p><strong>Input vs Output</strong><br>
-        The sensor reads light (input), the LED reacts (output).</p>
-
-        <p><strong>If / Else Logic</strong><br>
-        If it's dark → light turns ON.<br>
-        Otherwise → light stays OFF.</p>
-
-        <p><strong>Threshold</strong><br>
-        The number 300 decides when it is "dark".</p>
-    </div>
-</div>
 {% endblock %}
 
 {% block tips %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Open Coding — KidsCode{% endblock %}
+
+{% block content %}
+<div style="height: calc(100vh - 110px); width: 100%; display: flex; flex-direction: column;">
+    <iframe src="{{ url_for('builder.standalone_ide', preset='open_coding') }}" style="flex:1; border: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);"></iframe>
+</div>
+{% endblock %}

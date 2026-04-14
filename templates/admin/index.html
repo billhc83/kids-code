@@ -5,8 +5,17 @@
 <div class="dashboard-wrap">
 
     <div class="dash-header">
-        <h1>🛠️ Admin Dashboard</h1>
-        <p class="dash-sub">Manage users, review submissions, and view usage data.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h1>🛠️ Admin Dashboard</h1>
+                <p class="dash-sub">Manage users, review submissions, and view usage data.</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="{{ url_for('admin.preset_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">📝 Preset Builder</a>
+                <a href="{{ url_for('admin.step_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🔧 Step Builder</a>
+                <a href="{{ url_for('admin.sim_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🎮 Sim Builder</a>
+            </div>
+        </div>
     </div>
 
     {% with messages = get_flashed_messages() %}

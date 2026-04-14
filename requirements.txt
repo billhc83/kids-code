@@ -5,3 +5,9 @@ requests
 Pillow
 flask-limiter
 bcrypt
+pytest
+pytest-flask
+responses
+supabase
+respx
+lark
