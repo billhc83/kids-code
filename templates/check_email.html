@@ -151,8 +151,9 @@
         {% endwith %}
 
         <form method="POST" action="{{ url_for('auth.resend_verification') }}" style="margin-bottom:20px;">
+            {% if email %}
             <input type="hidden" name="email" value="{{ email }}">
-            {% if not email %}
+            {% else %}
             <input type="email" name="email" placeholder="Enter your email address" required
                 style="width:100%;padding:10px 12px;border:2px solid #dbeafe;border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:10px;box-sizing:border-box;">
             {% endif %}
