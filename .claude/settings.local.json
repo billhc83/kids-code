@@ -15,7 +15,12 @@
       "Bash(rmdir \"c:/kids-code/kids-code/.claude/skills\")",
       "Bash(mv \"c:/kids-code/kids-code/.claude/skills/generate-lesson.md\" \"c:/kids-code/kids-code/.claude/commands/generate-lesson.md\")",
       "Bash(find /c/kids-code/kids-code -type f -name \"*.py\" -exec grep -l \"WebSocket\\\\|3211\\\\|3210\\\\|serial\" {} \\\\;)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
     ],
     "additionalDirectories": [
       "c:\\kids-code\\kids-code\\.claude"
