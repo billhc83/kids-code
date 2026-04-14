@@ -88,7 +88,7 @@ def resend_verification_email(email):
     return True, None
 
 def send_verification_email(to_email, token):
-    base_url = os.getenv("BASE_URL", "http://app.kids-code.ca")
+    base_url = os.getenv("BASE_URL", "http://app.kidscode.ca")
     verify_url = f"{base_url}/verify/{token}"
     requests.post(
         "https://api.resend.com/emails",
@@ -219,7 +219,7 @@ def reset_password_with_token(token, new_password):
 def send_reset_email(to_email, token):
     """Send password reset email via Resend."""
     import os
-    base_url = os.getenv("BASE_URL", "http://app.kids-code.ca")
+    base_url = os.getenv("BASE_URL", "http://app.kidscode.ca")
     reset_url = f"{base_url}/reset-password/{token}"
     requests.post(
         "https://api.resend.com/emails",
