@@ -436,7 +436,13 @@
         var exChildren = def.defaults ? def.defaults.map(function (d) { return d ? JSON.parse(JSON.stringify(d)) : null; }) : [];
         block = { id: (Date.now() + Math.random()).toString(), type: type, params: params, exChildren: exChildren };
       }
-      BB.sel.targetArr.push(block); render();
+      if (BB.sel.insertIdx !== null && BB.sel.insertIdx !== undefined) {
+        BB.sel.targetArr.splice(BB.sel.insertIdx, 0, block);
+        BB.sel.insertIdx = null;
+      } else {
+        BB.sel.targetArr.push(block);
+      }
+      render();
     });
   });
 
@@ -521,11 +527,39 @@
   }
   BB.braceDepth = braceDepth;
 
+  // ── Insert strip ──────────────────────────────────────────────────────────
+  function makeInsertStrip(section, targetArr, pathStr, insertIdx) {
+    var strip = document.createElement('div');
+    strip.className = 'insert-strip';
+    var isActive = BB.sel && BB.sel.targetArr === targetArr && BB.sel.insertIdx === insertIdx;
+    if (isActive) strip.classList.add('active');
+    strip.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
+      var guidance = step && step.config ? step.config.guidance : 'open';
+      if (BB.PROGRESSION_MODE && guidance !== 'open') return;
+      BB.sel = { section: section, targetArr: targetArr, pathStr: pathStr, insertIdx: insertIdx };
+      document.getElementById('statusbar').innerHTML = 'inserting into: <span>' + pathStr + '</span>';
+      updatePalette();
+      render();
+    });
+    return strip;
+  }
+  BB.makeInsertStrip = makeInsertStrip;
+
   // ── Section / block rendering ─────────────────────────────────────────────
   function renderSection(elId, sName, anc) {
     var body = document.getElementById(elId + '-body');
-    body.querySelectorAll('.ws-block,.if-block').forEach(function (e) { e.remove(); });
-    BB.SECTIONS[sName].forEach(function (block, idx) { body.appendChild(renderBlock(block, idx, BB.SECTIONS[sName], sName, sName, anc)); });
+    body.querySelectorAll('.ws-block,.if-block,.insert-strip').forEach(function (e) { e.remove(); });
+    var arr = BB.SECTIONS[sName];
+    var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
+    var guidance = step && step.config ? step.config.guidance : 'open';
+    var canInsert = !BB.READONLY_MODE && (!BB.PROGRESSION_MODE || guidance === 'open') && arr.length > 0;
+    if (canInsert) body.appendChild(makeInsertStrip(sName, arr, sName, 0));
+    arr.forEach(function (block, idx) {
+      body.appendChild(renderBlock(block, idx, arr, sName, sName, anc));
+      if (canInsert) body.appendChild(makeInsertStrip(sName, arr, sName, idx + 1));
+    });
   }
   BB.renderSection = renderSection;
 
@@ -919,10 +953,15 @@
     var div = document.createElement('div');
     div.className = 'if-body' + (isLast ? ' last' : '');
     if (BB.sel && BB.sel.targetArr === arr) div.classList.add('selected');
-    arr.forEach(function (block, idx) { div.appendChild(renderBlock(block, idx, arr, section, pathStr, anc)); });
     var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
     var guidance = step && step.config ? step.config.guidance : 'open';
     var canSelect = !BB.PROGRESSION_MODE || guidance === 'open';
+    var canInsert = !BB.READONLY_MODE && canSelect && arr.length > 0;
+    if (canInsert) div.appendChild(makeInsertStrip(section, arr, pathStr, 0));
+    arr.forEach(function (block, idx) {
+      div.appendChild(renderBlock(block, idx, arr, section, pathStr, anc));
+      if (canInsert) div.appendChild(makeInsertStrip(section, arr, pathStr, idx + 1));
+    });
     if (arr.length === 0) {
       var hint = document.createElement('div'); hint.className = 'body-hint';
       hint.textContent = canSelect ? 'click to select, then add blocks' : ''; div.appendChild(hint);

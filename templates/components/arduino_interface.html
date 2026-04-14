@@ -80,6 +80,17 @@
     background: #2563eb;
   }
 
+  .orange-btn {
+    background: #f97316 !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600;
+  }
+
+  .orange-btn:hover {
+    background: #ea580c !important;
+  }
+
   /* WORKSPACE — fills all space between top-bar and serial monitor */
   #workspace {
     flex: 1;
@@ -270,9 +281,18 @@
   <button id="connect-btn">Show Monitor</button>
   <button id="compile-btn">Compile</button>
   <button id="upload-btn">Upload</button>
+  {% if preset != 'open_coding' %}
   <button id="save-btn">Save</button>
+  {% endif %}
+  {% if preset == 'open_coding' %}
+  <button id="download-pc-btn" class="orange-btn">Download</button>
+  <button id="load-pc-btn" class="orange-btn">Load</button>
+  <input type="file" id="load-pc-input" accept=".ino" style="display: none;">
+  {% endif %}
   <button id="copy-btn">Copy</button>
+  {% if preset != 'open_coding' %}
   <button id="reset-btn">Reset</button>
+  {% endif %}
   <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
   <div id="agent-status" class="status-offline">Checking Agent...</div>
 </div>
@@ -304,7 +324,7 @@
   </div>
 
   <!-- GLOBAL DRAWER -->
-  <div id="drawer-panel" class="open">
+  <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
     <div id="drawer-inner">
       <div class="drawer-title">Info</div>
       <div class="drawer-tabs"></div>
@@ -319,8 +339,8 @@ let editor;
 let ws;
 let connectedPort;
 let currentMode = 'blocks';
-let drawerOpen = true;
 const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
+let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
 
 function switchTab(btn, panelId) {
   const inner = document.getElementById('drawer-inner');
@@ -895,9 +915,62 @@ document.getElementById('connect-btn').onclick = function() {
 };
 document.getElementById('compile-btn').onclick = compileSketch;
 document.getElementById('upload-btn').onclick = uploadSketch;
-document.getElementById('save-btn').onclick = function() {
-  if (window.saveBlocks) window.saveBlocks();
+const saveBtn = document.getElementById('save-btn');
+if (saveBtn) {
+  saveBtn.onclick = function() {
+    if (window.saveBlocks) window.saveBlocks();
+  };
+}
+{% if preset == 'open_coding' %}
+document.getElementById('download-pc-btn').onclick = function() {
+  let code;
+  if (currentMode === 'blocks' && window.getGeneratedCode) {
+    code = window.getGeneratedCode();
+  } else if (editor) {
+    code = editor.getValue();
+  }
+  if (!code) return;
+  const blob = new Blob([code], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my_project.ino';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.flash && window.flash("Project downloaded to PC");
 };
+document.getElementById('load-pc-btn').onclick = function() {
+  document.getElementById('load-pc-input').click();
+};
+document.getElementById('load-pc-input').onchange = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  if (editor) {
+    editor.setValue(text);
+  }
+  if (currentMode === 'blocks') {
+    try {
+      const res = await fetch('/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: text })
+      });
+      const data = await res.json();
+      if (window.setBlockData) window.setBlockData(data);
+      window.flash && window.flash("Project loaded from PC");
+    } catch (err) {
+      console.error("Failed to parse code into blocks:", err);
+      logToSerial("Error loading blocks from file.", true);
+    }
+  } else {
+    window.flash && window.flash("Project loaded from PC");
+  }
+  e.target.value = '';
+};
+{% endif %}
 document.getElementById('copy-btn').onclick = function() {
   if (window.copyCode) window.copyCode();
   else {
@@ -905,9 +978,12 @@ document.getElementById('copy-btn').onclick = function() {
     navigator.clipboard.writeText(code).then(() => logToSerial('Copied!'));
   }
 };
-document.getElementById('reset-btn').onclick = function() {
-  if (window.resetBlocks) window.resetBlocks();
-};
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+  resetBtn.onclick = function() {
+    if (window.resetBlocks) window.resetBlocks();
+  };
+}
 document.getElementById('clear-serial-overlay-btn').onclick = () => {
   document.getElementById('serial-monitor').innerHTML = '';
 };

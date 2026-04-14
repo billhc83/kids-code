@@ -4,6 +4,17 @@ from utils.backup_alarm_presets import BACKUP_ALARM_PRESETS
 
 
 PRESETS = {
+    'open_coding': {
+        'sketch': """void setup() {
+
+}
+
+void loop() {
+
+}
+""",
+        'default_view': 'blocks'
+    },
     'engine_start': {
         'sketch': """
 void setup() {

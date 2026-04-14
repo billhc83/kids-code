@@ -112,3 +112,8 @@ def feedback():
         threads=threads,
         categories=CATEGORIES
     )
+
+@main_bp.route("/open-coding")
+@login_required
+def open_coding():
+    return render_template("open_coding.html")

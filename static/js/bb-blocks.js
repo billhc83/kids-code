@@ -93,7 +93,7 @@
     stringvar: {
       allowed: ['global', 'loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
       inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '""' }],
-      defaults: [null, { type: 'value', params: [''], children: [] }],
+      defaults: [null, { type: 'value', params: ['"string"'], children: [] }],
       genStmt: function (p, ex) { return 'String ' + (p[0] || 'myText') + ' = ' + genExpr(ex && ex[1], p[1], '""') + ';'; }
     },
     pinmode: {

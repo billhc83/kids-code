@@ -1,5 +1,6 @@
 
-from utils.step_builder import build_step, intro_step, rect, circle, line,lbl
+from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.image_utils import img_to_b64
 
 META = {
     'title': 'Project 15: Backup Alarm',
@@ -7,133 +8,166 @@ META = {
     'banner_image': 'project_fifteen_banner.png',
 }
 
-STEPS =[
+STEPS = [
+    intro_step(
+        "Let's build our fifteenth project",
+        "Press the next button for a step by step guide",
+    ),
+
+    build_step(
+        "Place one leg of the 220 Ohm resistor in row 1, column D.<br>Place the other leg in row 5, column D.",
+        "",
+        rect(760, 490, 942, 587),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one leg of the 220 Ohm resistor in row 7, column D.<br>Place the other leg in row 11, column D.",
+        "",
+        rect(918, 495, 1111, 575),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one leg of the 220 Ohm resistor in row 13, column D.<br>Place the other leg in row 17, column D.",
+        "",
+        rect(1099, 502, 1255, 575),
+        greyout=True,
+    ),
+
     build_step(
         "Place the long leg of the LED in row 6, column E.<br>Place the short leg of the LED in row 5, column E.",
-        "LED stands for light emitting diode.",
-        rect(793, 291, 1039, 524),
-        labels=[lbl("Long", pos=(959, 490), font_size=16), lbl("Short", pos=(808, 493), font_size=16)],
+        "",
+        rect(834, 267, 1019, 565),
+        labels=[lbl("Long Leg", pos=(964, 462), font_size=16)],
         greyout=True,
     ),
 
     build_step(
         "Place the long leg of the LED in row 12, column E.<br>Place the short leg of the LED in row 11, column E.",
-        "LED's only work in one direction. Thats why we make sure the short and long leg are in the right spot.",
-        rect(954, 296, 1209, 519),
-        labels=[lbl("Long", pos=(1115, 495), font_size=16), lbl("Short", pos=(966, 493), font_size=16)],
+        "",
+        rect(971, 262, 1183, 567),
+        labels=[lbl("Long", pos=(1137, 493), font_size=16)],
         greyout=True,
     ),
 
     build_step(
         "Place the long leg of the LED in row 18, column E.<br>Place the short leg of the LED in row 17, column E.",
-        "LED Lifespan, these mini lights can last over 25,000 hours",
-        rect(1118, 313, 1370, 534),
-        labels=[lbl("Long", pos=(1284, 505), font_size=16), lbl("Short", pos=(1130, 502), font_size=16)],
-        greyout=True,
-    ),
-
-    build_step(
-        "Place one leg of the __ resistor in row 1, column D.<br>Place the other leg in row 5, column D.",
-        "Resistors have a color code to show their value!",
-        rect(736, 493, 947, 625),
-        labels=[lbl("220 Ohm", pos=(776, 599), font_size=16)],
-        greyout=True,
-    ),
-
-    build_step(
-        "Place one leg of the __ resistor in row 7, column D.<br>Place the other leg in row 11, column D.",
-        "Each color represents a number, which helps us understand how much resistance a resistor has",
-        rect(923, 486, 1108, 630),
-        labels=[lbl("220 Ohm", pos=(957, 608), font_size=16)],
-        greyout=True,
-    ),
-
-    build_step(
-        "Place one leg of the __ resistor in row 13, column D.<br>Place the other leg in row 17, column D.",
-        "The bigger the resistance, the harder it is for electricity to pass!",
-        rect(1089, 469, 1260, 632),
-        greyout=True,
-    ),
-
-    build_step(
-        "Place the VCC pin of the distance sensor in row 23, column H.<br>"
-        "Place the Gnd pin of the distance sensor in row 26, column H.",
-        "VCC provides power (5V) and GND is the ground connection.",
-        rect(1171, 99, 1671, 404),
-        greyout=True,
-    ),
-
-    build_step(
-        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in row 26, column F.",
         "",
-        line((476, 353), (541, 353), (688, 252), (1587, 250), (1584, 430), (1469, 430), width=10),
+        rect(1120, 284, 1375, 558),
+        labels=[lbl("Long", pos=(1265, 507), font_size=16)],
         greyout=True,
     ),
 
     build_step(
-        "Place one end of the wire in Arduino Pin 5V.<br>Place the other end in row 23, column F.",
-        "",
-        line((12, 476), (639, 428), (1397, 428), width=10),
+        "Place the Vcc pin in row 23 column G. <br>Place the trig pin in row 24 column G.<br>Place the echo pin in row 25 column G.<br>Place the GND pin in row 26 column G.",
+        "This is our sonar sensor",
+        rect(1171, 87, 1676, 385),
         greyout=True,
     ),
 
     build_step(
-        "Place one end of the wire in Arduino Pin 10.<br>Place the other end in row 25, column F.",
+        "Place the long leg of the buzzer in row 1, column J.<br>Place the short leg of the buzzer in row 4, column J.",
         "",
-        line((490, 457), (1450, 459), (1450, 426), width=10),
+        rect(651, 204, 880, 397),
+        labels=[lbl("Long", pos=(656, 320), font_size=16)],
         greyout=True,
     ),
 
     build_step(
-        "Place one end of the wire in Arduino Pin 9.<br>Place the other end in row 24, column F.",
+        "Place one end of the wire in Arduino Pin 6.<br>Place the other end in row 6, column A.",
         "",
-        line((512, 582), (935, 584), (935, 625), width=10),
+        line((495, 582), (935, 577), (935, 632), width=25),
         greyout=True,
     ),
 
     build_step(
         "Place one end of the wire in Arduino Pin 5.<br>Place the other end in row 12, column A.",
         "",
-        line((500, 611), (654, 611), (654, 750), (1096, 748), (1094, 615), width=10),
+        line((502, 601), (654, 606), (654, 750), (1096, 745), (1094, 615), width=25),
         greyout=True,
     ),
 
     build_step(
         "Place one end of the wire in Arduino Pin 4.<br>Place the other end in row 18, column A.",
         "",
-        line((507, 635), (625, 637), (627, 777), (1267, 779), (1260, 611), width=10),
+        line((498, 632), (625, 632), (625, 779), (1265, 779), (1260, 611), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 3.<br>Place the other end in row 1, column F.",
+        "",
+        line((575, 659), (380, 666), (375, 404), (803, 401), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in row 4, column A.",
+        "",
+        line((10, 500), (125, 495), (127, 375), (853, 368), (853, 416), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 9.<br>Place the other end in row 24, column F.",
+        "",
+        line((481, 483), (1421, 481), (1421, 409), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 10.<br>Place the other end in row 25, column F.",
+        "",
+        line((493, 457), (1450, 457), (1447, 401), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 5V.<br>Place the other end in row 23, column F.",
+        "",
+        line((2, 474), (649, 426), (1394, 428), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in row 26, column F.",
+        "",
+        line((522, 356), (685, 250), (1584, 250), (1584, 428), (1476, 430), width=25),
         greyout=True,
     ),
 
     build_step(
         "Place one end of the wire in Arduino Pin GND.<br>Place the other end in the negative / - rail.",
         "",
-        line((17, 524), (361, 700), (810, 702), width=10),
+        line((14, 522), (356, 700), (815, 700), width=25),
         greyout=True,
     ),
 
     build_step(
         "Place one end of the wire in row 1, column A.<br>Place the other end in the negative / - rail.",
         "",
-        line((793, 608), (839, 700), width=10),
+        line((791, 611), (841, 716), width=25),
         greyout=True,
     ),
 
     build_step(
         "Place one end of the wire in row 7, column A.<br>Place the other end in the negative / - rail.",
         "",
-        line((959, 613), (1005, 702), width=10),
+        line((954, 606), (1010, 712), width=25),
         greyout=True,
     ),
 
     build_step(
-        "Place one end of the wire in row 18, column A.<br>Place the other end in the negative / - rail.",
+        "Place one end of the wire in row 13, column A.<br>Place the other end in the negative / - rail.",
         "",
-        line((1115, 611), (1168, 707), width=10),
+        line((1111, 615), (1173, 709), width=25),
         greyout=True,
     ),
 
 ]
+
+backup_circuit_b64 = img_to_b64("static/graphics/project_fifteen_circuit.png")
 
 DRAWER_CONTENT = {
 
@@ -146,7 +180,8 @@ DRAWER_CONTENT = {
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Before your backup alarm can work, it needs to know what parts it is using. We store this information in <b>variables</b>.</p><br><p>Each variable acts like a label for a part of your system:</p><ul><li>📡 <b>trigPin</b> → sends out a signal to measure distance - Pin 9<br><br></li><li>👂 <b>echoPin</b> → listens for the signal bouncing back - Pin 10<br><br></li><li>🔊 <b>buzzerPin</b> → makes sound when objects are close - Pin 3<br><br></li><li>💡 <b>greenLED</b>, <b>yellowLED</b>, <b>redLED</b> → show safe, warning, and danger zones - Pins 4, 5 and 6<br><br></li><li>⏱ <b>duration</b> → stores how long the signal takes to return - Set to 0<br><br></li><li>📏 <b>distance</b> → stores how far away an object is - Set to 0</li></ul><p>Without these, your system wouldn’t know what anything is!</p>"
+            "content": "<p>Before your backup alarm can work, it needs to know what parts it is using. We store this information in <b>variables</b>.</p><br><p>Each variable acts like a label for a part of your system:</p><ul><li>📡 <b>trigPin</b> → sends out a signal to measure distance - Pin 9<br><br></li><li>👂 <b>echoPin</b> → listens for the signal bouncing back - Pin 10<br><br></li><li>🔊 <b>buzzerPin</b> → makes sound when objects are close - Pin 3<br><br></li><li>💡 <b>greenLED</b>, <b>yellowLED</b>, <b>redLED</b> → show safe, warning, and danger zones - Pins 4, 5 and 6<br><br></li><li>⏱ <b>duration</b> → stores how long the signal takes to return - Set to 0<br><br></li><li>📏 <b>distance</b> → stores how far away an object is - Set to 0</li></ul><p>Without these, your system wouldn’t know what anything is!</p>",
+            "image_b64": backup_circuit_b64
         },
         "howto": {
             "label": "🔧 How To",

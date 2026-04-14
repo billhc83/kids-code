@@ -46,7 +46,9 @@ def lesson(lesson_key):
         return redirect(url_for("main.dashboard"))
 
     extra = {}
-    project_data = PROJECTS.get(lesson_key)
+    import re
+    base_key = re.sub(r'_part_\w+$', '', lesson_key)
+    project_data = PROJECTS.get(lesson_key) or PROJECTS.get(base_key)
     if project_data:
         meta = project_data.get("meta", {})
         img = meta.get("circuit_image") or project_data.get("image")

@@ -55,6 +55,7 @@
                 🎯 Challenge
             </a>
             {% endif %}
+            <a href="{{ url_for('main.open_coding') }}" class="{% if current_endpoint == 'open_coding' %}active{% endif %}">Open Coding</a>
         {% endif %}
         <a href="{{ url_for('main.feedback') }}">Feedback</a>
     </div>
