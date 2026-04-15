@@ -163,11 +163,26 @@ def challenge(challenge_key):
                     f"Challenge: {challenge_key}"
                 )
 
+    extra = {}
+    preset = lesson_data.get("block_builder")
+    if preset:
+        from utils.block_builder import get_builder_html
+        base_url = request.host_url.rstrip('/')
+        ide_url = f"{base_url}/standalone_ide/{preset}?preset={preset}&page={challenge_key}"
+        extra["block_builder_html"] = get_builder_html(
+            preset=preset,
+            username=session.get("user_id"),
+            page=challenge_key,
+            is_overlay=True,
+            builder_url=ide_url
+        )
+
     return render_template(
         lesson_data["template"],
         lesson=lesson_data,
         lesson_key=challenge_key,
         submission=submission,
         error=error,
-        success=success
+        success=success,
+        **extra
     )

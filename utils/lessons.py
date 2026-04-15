@@ -92,7 +92,7 @@ LESSONS = [
         "title": "🎯 Challenge",
         "template": "lessons/challenge_one.html",
         "part": None,
-        "block_builder": None
+        "block_builder": "open_coding"
     },
     {
         "key": "project_eleven",

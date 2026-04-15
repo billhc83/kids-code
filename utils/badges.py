@@ -65,6 +65,9 @@ def check_and_award_badges(user_id, completed_lessons):
     if count >= 10 and "project_ten" not in awarded:
         award_badge(user_id, "project_ten")
 
+    if "block_builder_tutorial" in completed_lessons and "block_builder" not in awarded:
+        award_badge(user_id, "block_builder")
+
     if any("challenge" in l for l in completed_lessons) and "challenger" not in awarded:
         award_badge(user_id, "challenger")
 
