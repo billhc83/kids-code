@@ -596,6 +596,12 @@ def parse_steps(sketch_code):
             fill = False
             is_filter = False
             is_readonly = False
+        elif guidance == 'verify':
+            structure = "none"
+            validation = "verify"
+            fill = True
+            is_filter = True
+            is_readonly = False
         elif guidance == 'free':
             structure = "none"
             validation = "none"
@@ -616,6 +622,7 @@ def parse_steps(sketch_code):
             is_readonly = True
 
         # 2. Explicit Overrides (key:value)
+        palette_override = None
         for p in parts:
             p_low = p.lower()
             if p_low.startswith('fill:'):
@@ -628,6 +635,9 @@ def parse_steps(sketch_code):
                 is_filter = (p_low.split(':')[1] == 'true')
             if p_low.startswith('readonly:'):
                 is_readonly = (p_low.split(':')[1] == 'true')
+            if p.lower().startswith('palette:'):
+                palette_override = [t.strip() for t in p.split(':', 1)[1].split(',') if t.strip()]
+                is_filter = True
 
         step_config = {
             'flow': "progression",
@@ -637,10 +647,10 @@ def parse_steps(sketch_code):
             'filter': is_filter,
             'readonly': is_readonly,
             'validation': validation,
-            'interface': view if view in ['blocks', 'editor'] else 'blocks'
+            'interface': view if view in ['blocks', 'editor'] else 'blocks',
+            'palette_override': palette_override,
         }
-        
-        print(f"STEP CONFIG ({label}):", step_config)
+        print(f"[PARSE_STEPS]   fill_after_override={fill}  config.fill={step_config['fill']}")
 
         raw_steps.append({
             'label': label,
@@ -659,15 +669,41 @@ def parse_steps(sketch_code):
     steps = []
 
     for step in raw_steps:
+        print(f"\n[PARSE_STEPS] ── processing '{step['label']}' | reset={step.get('reset')} | fill={step['config']['fill']} ──")
+        print(f"[PARSE_STEPS]   cumulative_global len={len(cumulative_global)}  setup={len(cumulative_setup)}  loop={len(cumulative_loop)}")
         if step.get('reset'):
             cumulative_global = []
             cumulative_setup = []
             cumulative_loop = []
+            print(f"[PARSE_STEPS]   *** RESET applied ***")
+
+        # For verify mode, split chunk on //== to get initial workspace and correct answer
+        verify_sep = re.compile(r'^\s*//==\s*$', re.MULTILINE)
+        verify_global, verify_setup, verify_loop = [], [], []
+        if step['config']['guidance'] == 'verify':
+            halves = verify_sep.split(step['chunk'], maxsplit=1)
+            initial_chunk = halves[0]
+            correct_chunk = halves[1] if len(halves) == 2 else ''
+            if correct_chunk:
+                correct_parsed = parse_sketch(correct_chunk, fill_conditions=True, fill_values=True, initial_fill_content=True)
+                verify_global = correct_parsed['global']
+                verify_setup  = correct_parsed['setup']
+                verify_loop   = correct_parsed['loop']
+            step = dict(step, chunk=initial_chunk)
 
         # Parse this step's chunk as a sketch using the explicit fill control
         fill_val = step['config']['fill']
+        print(f"[PARSE_STEPS]   fill_val={fill_val}  chunk[:80]={repr(step['chunk'][:80])}")
         parsed = parse_sketch(step['chunk'], fill_conditions=fill_val, fill_values=fill_val, initial_fill_content=fill_val)
-        if step['config']['filter']:
+        print(f"[PARSE_STEPS]   parsed → global={len(parsed['global'])} blocks, setup={len(parsed['setup'])} blocks, loop={len(parsed['loop'])} blocks")
+        def _block_summary(blocks):
+            return [(b.get('type'), b.get('params'), b.get('exChildren')) for b in blocks]
+        print(f"[PARSE_STEPS]   parsed.global  : {_block_summary(parsed['global'])}")
+        print(f"[PARSE_STEPS]   parsed.setup   : {_block_summary(parsed['setup'])}")
+        print(f"[PARSE_STEPS]   parsed.loop    : {_block_summary(parsed['loop'])}")
+        if step['config'].get('palette_override'):
+            step['palette'] = step['config']['palette_override']
+        elif step['config']['filter']:
             step_types = collect_types(
                 parsed['global'] + parsed['setup'] + parsed['loop']
             )
@@ -697,6 +733,8 @@ def parse_steps(sketch_code):
             'setup': parsed['setup'] if parsed['setup'] else cumulative_setup,
             'loop': parsed['loop'] if parsed['loop'] else cumulative_loop,
         }
+        print(f"[PARSE_STEPS]   full → global={len(full['global'])}  setup={len(full['setup'])}  loop={len(full['loop'])}")
+        print(f"[PARSE_STEPS]   full.global: {_block_summary(full['global'])}")
         
         
         
@@ -705,9 +743,13 @@ def parse_steps(sketch_code):
             'config': step['config'],
             'palette': step['palette'],
             'active': active_section,
+            'reset': step.get('reset', False),
             'global': full['global'],
             'setup':  full['setup'],
             'loop':   full['loop'],
+            'verify_global': verify_global,
+            'verify_setup':  verify_setup,
+            'verify_loop':   verify_loop,
         })
 
         # Update cumulative storage: convert resolved slots to real codeblocks for next steps

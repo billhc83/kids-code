@@ -1,0 +1,46 @@
+{% extends "lesson_base.html" %}
+{% set banner_image = "project_seventeen_banner.png" %}
+{% block title %}🎻 Magical Harp Part 1 — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+{%- if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{%- endif %}
+
+<div class="lesson-intro">
+    <h2>🎻 Mission Briefing: The Magical Harp</h2>
+    <p>You are a magical musician with a very special mission. In this lesson, you will build a harp that sings when your hand moves through the air. ✨</p>
+
+<p>This is not a normal instrument with strings you can touch. Your Arduino will use a distance sensor like magic eyes to watch your hand and choose different notes. 🎵</p>
+
+<p>When your hand moves closer or farther away, the sound will change. That means you can play music without pressing or touching anything at all.</p>
+
+<p>Get ready to build your Invisible Magical Harp and perform your first floating concert. 🌟</p>
+
+<div class="mission-box" style="background:#f8f9fa;padding:20px;border-left:5px solid #333;border-radius:8px;margin:20px 0;">
+    <p>🎯 Your magical harp will:</p><p>Measure how far away your hand is, choose a sound, and play notes through a buzzer.</p>
+</div>
+
+<h3>🛠 What You Will Learn</h3>
+<ul>
+  <li>How a sensor can measure distance</li>
+  <li>How a buzzer can make musical sounds</li>
+  <li>How code can change sounds using numbers</li>
+  <li>How moving your hand can control a project</li>
+</ul>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_seventeen_part_one">
+        <button type="submit" class="next-btn">Begin the Concert →</button>
+    </form>
+    <p>⬅️ Click here to build your magical instrument!</p>
+</div>
+
+{% endblock %}

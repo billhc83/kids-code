@@ -165,6 +165,28 @@ LESSONS = [
         "block_builder": "project_sixteen"
     },
 
+    {
+        "key": "project_seventeen_part_one",
+        "title": "🎻 Magical Harp Part 1",
+        "template": "lessons/project_seventeen_part_one.html",
+        "part": "Magical Harp",
+        "block_builder": None
+    },
+    {
+        "key": "project_seventeen_part_two",
+        "title": "🎼 Magical Harp Part 2",
+        "template": "lessons/project_seventeen_part_two.html",
+        "part": "Magical Harp",
+        "block_builder": "project_seventeen"
+    },
+    {
+        "key": "project_seventeen_part_three",
+        "title": "🏆 Magical Harp Part 3",
+        "template": "lessons/project_seventeen_part_three.html",
+        "part": "Magical Harp",
+        "block_builder": None
+    },
+
 ]
 
 # Quick lookups

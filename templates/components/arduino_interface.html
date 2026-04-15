@@ -400,6 +400,18 @@ window.updateDrawer = function(stepIdx) {
 
   const tabsC = inner.querySelector('.drawer-tabs');
   const pansC = inner.querySelector('.drawer-tab-panels');
+  
+  // Cleanup old simulations before clearing the UI.
+  // _simCleanup is stored on the inner simDiv, not the panel element,
+  // so traverse into each panel's direct children to find it.
+  Array.from(pansC.children).forEach(child => {
+    [child, ...Array.from(child.children || [])].forEach(el => {
+      if (el._simCleanup) {
+        try { el._simCleanup(); } catch(e) { console.error('Sim cleanup error:', e); }
+      }
+    });
+  });
+
   tabsC.innerHTML = ''; pansC.innerHTML = '';
 
   const tabsRaw = c.tabs || [];
@@ -423,8 +435,14 @@ window.updateDrawer = function(stepIdx) {
       simDiv.style.padding = '8px 0';
       p.appendChild(simDiv);
       pansC.appendChild(p);
+      const cfg = tab.sim_config;
       setTimeout(() => {
-        if (window.SimEngine) SimEngine.init(simDiv, tab.sim_config);
+        if (!window.SimEngine) return;
+        if (cfg.mode === 'code_driven') {
+          SimEngine.initCodeDriven(simDiv, cfg);
+        } else {
+          SimEngine.init(simDiv, cfg);
+        }
       }, 0);
     } else {
       p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
@@ -981,7 +999,12 @@ document.getElementById('copy-btn').onclick = function() {
 const resetBtn = document.getElementById('reset-btn');
 if (resetBtn) {
   resetBtn.onclick = function() {
-    if (window.resetBlocks) window.resetBlocks();
+    if (window.resetBlocks) {
+      window.resetBlocks();
+      if (typeof drawerOpen !== 'undefined' && !drawerOpen) {
+         if (window.openDrawer) window.openDrawer();
+      }
+    }
   };
 }
 document.getElementById('clear-serial-overlay-btn').onclick = () => {

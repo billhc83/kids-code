@@ -204,7 +204,12 @@
           var saved = JSON.parse(data[0].blocks_json);
           if (BB.PROGRESSION_MODE) {
             if (saved.current_step !== undefined) {
-              BB.CURRENT_STEP   = saved.current_step;
+              var savedStep = saved.current_step;
+              if (savedStep >= BB.STEPS.length) {
+                console.log('[loadBlocks] saved step ' + savedStep + ' out of bounds (len=' + BB.STEPS.length + '), resetting to 0');
+                savedStep = 0;
+              }
+              BB.CURRENT_STEP   = savedStep;
               BB.STUDENT_SAVES  = saved.student_saves || [];
             } else if (saved.global || saved.setup || saved.loop) {
               // Fallback: migrate old free-mode save into progression format

@@ -23,3 +23,9 @@ instance/
 
 # Lesson generation — temp spec file written during /generate-lesson
 lesson_spec.json
+
+.agent
+
+.claude
+
+.
