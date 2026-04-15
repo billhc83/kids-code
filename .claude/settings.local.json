@@ -30,7 +30,9 @@
       "Bash(git push:*)",
       "Bash(grep -n \"drawer\\\\|tabs\\\\|tab\" /c/kids-code/kids-code/routes/*.py)",
       "Bash(grep -n \"parse_steps\\\\|//>>\\\\\\\\|verify\\\\|reset\\\\|fill\\\\|palette\" c:/kids-code/kids-code/utils/block_parser.py)",
-      "Bash(grep -n \"SKETCH_PRESET\\\\|Mission Complete\\\\|//>>.*open\" c:/kids-code/kids-code/utils/project_fifteen.py)"
+      "Bash(grep -n \"SKETCH_PRESET\\\\|Mission Complete\\\\|//>>.*open\" c:/kids-code/kids-code/utils/project_fifteen.py)",
+      "Bash(python3 -c \"from utils.project_seventeen import PROJECT; print\\('Import OK'\\); import json; print\\(json.dumps\\(list\\(PROJECT.keys\\(\\)\\)\\)\\)\")",
+      "Bash(python3 -c ':*)"
     ],
     "additionalDirectories": [
       "c:\\kids-code\\kids-code\\.claude"

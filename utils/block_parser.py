@@ -480,7 +480,14 @@ def parse_blocks(code, fill_conditions=False, fill_values=False, initial_fill_co
 def parse_sketch(sketch_code, fill_conditions=False, fill_values=False, initial_fill_content=False):
     result = {'global': [], 'setup': [], 'loop': []}
     setup_start = re.search(r'void\s+setup\s*\(.*?\)', sketch_code)
-    global_code = sketch_code[:setup_start.start()].strip() if setup_start else ''
+    if setup_start:
+        global_code = sketch_code[:setup_start.start()].strip()
+    else:
+        # No void setup() — could be a global-only chunk (no wrappers) or a
+        # loop-only chunk.  Use everything before void loop() as globals; if
+        # there is no loop either, the whole chunk is global declarations.
+        loop_start = re.search(r'void\s+loop\s*\(.*?\)', sketch_code)
+        global_code = sketch_code[:loop_start.start()].strip() if loop_start else sketch_code.strip()
     setup_m = re.search(r'void\s+setup\s*\(.*?\)\s*\{', sketch_code)
     loop_m  = re.search(r'void\s+loop\s*\(.*?\)\s*\{', sketch_code)
     setup_code = extract_brace_body(sketch_code, setup_m.end()-1)[0] if setup_m else ''

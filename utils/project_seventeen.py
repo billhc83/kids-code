@@ -13,147 +13,6 @@ META = {
 # rect() / circle() / line() coordinates are placeholders —
 # update with real pixel coords once the circuit image is available.
 STEPS = []
-
-
-SKETCH_PRESET = {
-    'sketch': """//>> Variables | guided | blocks
-
-//?? Declare the trigger pin variable
-int trigPin = 9;
-//?? Declare the echo pin variable
-int echoPin = 10;
-//## int buzzer = 3;
-//## long duration;
-//## int distance;
-
-//>> Setup Pins | guided | blocks
-
-void setup() {
-  //?? Set the trigger pin as output
-  pinMode(trigPin, OUTPUT);
-  //?? Set the echo pin as input
-  pinMode(echoPin, INPUT);
-}
-
-void loop() {
-}
-
-//>> Start the Pulse | guided | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //?? Start with the trigger pin low
-  digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-}
-
-//>> Send the Signal | guided | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //## digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-
-  //?? Send the trigger signal
-  digitalWrite(trigPin, HIGH);
-  //## delayMicroseconds(10);
-  //?? Turn the trigger signal off
-  digitalWrite(trigPin, LOW);
-}
-
-//>> Listen for the Echo | guided | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //## digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-  //## digitalWrite(trigPin, HIGH);
-  //## delayMicroseconds(10);
-  //## digitalWrite(trigPin, LOW);
-
-  //?? Measure the echo duration
-  duration = pulseIn(echoPin, HIGH);
-}
-
-//>> Calculate Distance | free | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //## digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-  //## digitalWrite(trigPin, HIGH);
-  //## delayMicroseconds(10);
-  //## digitalWrite(trigPin, LOW);
-  //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
-}
-
-//>> Choose the Pitch | free | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //## digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-  //## digitalWrite(trigPin, HIGH);
-  //## delayMicroseconds(10);
-  //## digitalWrite(trigPin, LOW);
-  //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
-  //## int pitch = map(distance, 5, 50, 200, 1000);
-}
-
-//>> Play the Harp | guided | blocks
-
-void setup() {
-  //## pinMode(trigPin, OUTPUT);
-  //## pinMode(echoPin, INPUT);
-}
-
-void loop() {
-  //## digitalWrite(trigPin, LOW);
-  //## delayMicroseconds(2);
-  //## digitalWrite(trigPin, HIGH);
-  //## delayMicroseconds(10);
-  //## digitalWrite(trigPin, LOW);
-  //## duration = pulseIn(echoPin, HIGH);
-  //## distance = duration * 0.034 / 2;
-  //## int pitch = map(distance, 5, 50, 200, 1000);
-
-  //?? Play the magic note
-  tone(buzzer, pitch);
-  //## delay(50);
-}
-
-//>> Mission Complete | open | blocks
-""",
-    'default_view': 'blocks',
-    'read_only': False,
-    'lock_view': False,
-    'fill_values': True,
-    'fill_conditions': True,
-}
-
-
 DRAWER_CONTENT = {
     "project_seventeen": {
         "steps": [
@@ -346,6 +205,147 @@ DRAWER_CONTENT = {
         ]
     }
 }
+
+SKETCH_PRESET = {
+    'sketch': """//>> Variables | guided | blocks
+
+//?? Declare the trigger pin variable
+int trigPin = 9;
+//?? Declare the echo pin variable
+int echoPin = 10;
+//## int buzzer = 3;
+//## long duration;
+//## int distance;
+
+//>> Setup Pins | guided | blocks
+
+void setup() {
+  //?? Set the trigger pin as output
+  pinMode(trigPin, OUTPUT);
+  //?? Set the echo pin as input
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+}
+
+//>> Start the Pulse | guided | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //?? Start with the trigger pin low
+  digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+}
+
+//>> Send the Signal | guided | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //## digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+
+  //?? Send the trigger signal
+  digitalWrite(trigPin, HIGH);
+  //## delayMicroseconds(10);
+  //?? Turn the trigger signal off
+  digitalWrite(trigPin, LOW);
+}
+
+//>> Listen for the Echo | guided | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //## digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+  //## digitalWrite(trigPin, HIGH);
+  //## delayMicroseconds(10);
+  //## digitalWrite(trigPin, LOW);
+
+  //?? Measure the echo duration
+  duration = pulseIn(echoPin, HIGH);
+}
+
+//>> Calculate Distance | free | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //## digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+  //## digitalWrite(trigPin, HIGH);
+  //## delayMicroseconds(10);
+  //## digitalWrite(trigPin, LOW);
+  //## duration = pulseIn(echoPin, HIGH);
+  //## distance = duration * 0.034 / 2;
+}
+
+//>> Choose the Pitch | free | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //## digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+  //## digitalWrite(trigPin, HIGH);
+  //## delayMicroseconds(10);
+  //## digitalWrite(trigPin, LOW);
+  //## duration = pulseIn(echoPin, HIGH);
+  //## distance = duration * 0.034 / 2;
+  //## int pitch = map(distance, 5, 50, 200, 1000);
+}
+
+//>> Play the Harp | guided | blocks
+
+void setup() {
+  //## pinMode(trigPin, OUTPUT);
+  //## pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  //## digitalWrite(trigPin, LOW);
+  //## delayMicroseconds(2);
+  //## digitalWrite(trigPin, HIGH);
+  //## delayMicroseconds(10);
+  //## digitalWrite(trigPin, LOW);
+  //## duration = pulseIn(echoPin, HIGH);
+  //## distance = duration * 0.034 / 2;
+  //## int pitch = map(distance, 5, 50, 200, 1000);
+
+  //?? Play the magic note
+  tone(buzzer, pitch);
+  //## delay(50);
+}
+
+//>> Mission Complete | open | blocks
+""",
+    'default_view': 'blocks',
+    'read_only': False,
+    'lock_view': False,
+    'fill_values': True,
+    'fill_conditions': True,
+}
+
+
+
 
 
 PROJECT = {
