@@ -64,5 +64,12 @@
 </div>
 
 <hr>
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
+        <button type="submit" class="next-btn">Next Project →</button>
+    </form>
+    <p>⬅️ Click here to add the next project to the menu</p>
+</div>
 
 {% endblock %}

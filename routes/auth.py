@@ -24,8 +24,9 @@ def login():
             flash("Incorrect password")
             return render_template("login.html")
         if not user["is_verified"]:
-            flash("Please verify your email before logging in")
-            return render_template("login.html")
+            session["pending_email"] = user["email"]
+            flash("Please verify your email before logging in.")
+            return redirect(url_for("auth.check_email"))
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]

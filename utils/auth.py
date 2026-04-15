@@ -72,11 +72,14 @@ def verify_token(token):
     return True
 
 def resend_verification_email(email):
+    print(f"[resend_verification_email] looking up email: {email!r}")
     resp = supabase.table("users").select("*").eq("email", email).execute()
     if not resp.data:
+        print(f"[resend_verification_email] no user found for {email!r}")
         return False, "No account found with that email"
     user = resp.data[0]
     if user.get("is_verified"):
+        print(f"[resend_verification_email] user {email!r} already verified")
         return False, "This account is already verified"
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
@@ -84,13 +87,15 @@ def resend_verification_email(email):
         "verification_token": token,
         "verification_token_expires": expires
     }).eq("id", user["id"]).execute()
+    print(f"[resend_verification_email] sending email to {email!r}")
     send_verification_email(email, token)
+    print(f"[resend_verification_email] done")
     return True, None
 
 def send_verification_email(to_email, token):
-    base_url = os.getenv("BASE_URL", "http://app.kids-code.ca")
+    base_url = os.getenv("BASE_URL", "https://app.kidscode.ca")
     verify_url = f"{base_url}/verify/{token}"
-    requests.post(
+    resp = requests.post(
         "https://api.resend.com/emails",
         headers={
             "Authorization": f"Bearer {RESEND_API_KEY}",
@@ -107,6 +112,8 @@ def send_verification_email(to_email, token):
             """
         }
     )
+    if not resp.ok:
+        print(f"[send_verification_email] Resend error {resp.status_code}: {resp.text}")
 
 def count_students_for_parent(parent_id):
     resp = supabase.table("parent_student_links").select("id", count="exact").eq("parent_id", parent_id).execute()
@@ -219,7 +226,7 @@ def reset_password_with_token(token, new_password):
 def send_reset_email(to_email, token):
     """Send password reset email via Resend."""
     import os
-    base_url = os.getenv("BASE_URL", "http://127.0.0.1:5001")
+    base_url = os.getenv("BASE_URL", "http://app.kidscode.ca")
     reset_url = f"{base_url}/reset-password/{token}"
     requests.post(
         "https://api.resend.com/emails",

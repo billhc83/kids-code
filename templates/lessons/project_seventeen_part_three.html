@@ -1,0 +1,51 @@
+{% extends "lesson_base.html" %}
+{% set banner_image = "project_seventeen_banner.png" %}
+{% block title %}🏆 Magical Harp Part 3 — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+{%- if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{%- endif %}
+
+<div class="lesson-intro">
+    <h2>🎉 Mission Complete: The Magical Harp</h2>
+    <p>🎉 Amazing work, Magical Musician!</p><p>You built an instrument that can make music from the air with no strings and no buttons.</p>
+
+    <div class="mission-box" style="background:#f8f9fa;padding:20px;border-left:5px solid #333;border-radius:8px;margin:20px 0;">
+        <p>Your system can now:</p>
+        <ul>
+            <li>🎵 Play notes by moving your hand closer or farther away</li>
+            <li>📏 Measure distance with an ultrasonic sensor</li>
+            <li>🔊 Make sounds with a buzzer</li>
+            <li>🧠 Use code to turn movement into music</li>
+            <li>✨ Create an invisible instrument with Arduino magic</li>
+        </ul>
+    </div>
+
+    <h3>🧠 What You Just Learned</h3>
+    <ul>
+        <li>📡 How a distance sensor collects information</li>
+        <li>📦 How to store values in variables</li>
+        <li>🔀 How code can make choices</li>
+        <li>🎼 How a buzzer can play different tones</li>
+        <li>🔁 How a loop keeps checking again and again</li>
+    </ul>
+
+    <h3>🚀 What Else Can You Build?</h3>
+    <div class="mission-box" style="background:#eef6ff;padding:20px;border-left:5px solid #4a90e2;border-radius:8px;margin:20px 0;">
+        <ul>
+            <li>🌈 <strong>Rainbow Harp</strong><br>Add colored lights that change with each note you play.</li>
+            <li>🐉 <strong>Dragon Song Maker</strong><br>Make different hand positions play the sounds of a magical dragon concert.</li>
+            <li>🚀 <strong>Space Sound Harp</strong><br>Turn your harp into a floating instrument for an alien music show.</li>
+            <li>🥁 <strong>Magic Band Set</strong><br>Add more sensors and sounds to build a whole band of invisible instruments.</li>
+        </ul>
+    </div>
+    <p><strong>You are no longer just coding… you are engineering. 🚀</strong></p>
+</div>
+
+<hr>
+
+{% endblock %}

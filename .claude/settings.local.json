@@ -23,7 +23,14 @@
       "Bash(ls /home/bill/kids-code/static/css/*.css)",
       "Bash(git pull:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Bash(grep -n \"drawer\\\\|tabs\\\\|tab\" /c/kids-code/kids-code/routes/*.py)",
+      "Bash(grep -n \"parse_steps\\\\|//>>\\\\\\\\|verify\\\\|reset\\\\|fill\\\\|palette\" c:/kids-code/kids-code/utils/block_parser.py)",
+      "Bash(grep -n \"SKETCH_PRESET\\\\|Mission Complete\\\\|//>>.*open\" c:/kids-code/kids-code/utils/project_fifteen.py)"
     ],
     "additionalDirectories": [
       "c:\\kids-code\\kids-code\\.claude"

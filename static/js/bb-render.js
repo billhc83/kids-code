@@ -269,7 +269,7 @@
       expandSection(elId);
       var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
       var guidance = step && step.config ? step.config.guidance : 'open';
-      if (BB.PROGRESSION_MODE && guidance !== 'open') return;
+      if (BB.PROGRESSION_MODE && guidance !== 'open' && guidance !== 'verify') return;
       setSelection(sName, BB.SECTIONS[sName], label);
     });
     body.addEventListener('click', function (e) {
@@ -277,7 +277,7 @@
         e.stopPropagation();
         var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
         var guidance = step && step.config ? step.config.guidance : 'open';
-        if (BB.PROGRESSION_MODE && guidance !== 'open') return;
+        if (BB.PROGRESSION_MODE && guidance !== 'open' && guidance !== 'verify') return;
         setSelection(sName, BB.SECTIONS[sName], label);
       }
     });
@@ -537,7 +537,7 @@
       e.stopPropagation();
       var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
       var guidance = step && step.config ? step.config.guidance : 'open';
-      if (BB.PROGRESSION_MODE && guidance !== 'open') return;
+      if (BB.PROGRESSION_MODE && guidance !== 'open' && guidance !== 'verify') return;
       BB.sel = { section: section, targetArr: targetArr, pathStr: pathStr, insertIdx: insertIdx };
       document.getElementById('statusbar').innerHTML = 'inserting into: <span>' + pathStr + '</span>';
       updatePalette();
@@ -554,7 +554,7 @@
     var arr = BB.SECTIONS[sName];
     var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
     var guidance = step && step.config ? step.config.guidance : 'open';
-    var canInsert = !BB.READONLY_MODE && (!BB.PROGRESSION_MODE || guidance === 'open') && arr.length > 0;
+    var canInsert = !BB.READONLY_MODE && (!BB.PROGRESSION_MODE || guidance === 'open' || guidance === 'verify') && arr.length > 0;
     if (canInsert) body.appendChild(makeInsertStrip(sName, arr, sName, 0));
     arr.forEach(function (block, idx) {
       body.appendChild(renderBlock(block, idx, arr, sName, sName, anc));
@@ -867,7 +867,7 @@
     block.body.forEach(function (b, bi) { bz.appendChild(renderBlock(b, bi, block.body, section, bodyPath, anc)); });
     var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
     var guidance = step && step.config ? step.config.guidance : 'open';
-    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open';
+    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open' || guidance === 'verify';
     if (block.body.length === 0) {
       var hint = document.createElement('div'); hint.className = 'body-hint';
       hint.textContent = canSelect ? 'click to select, then add blocks' : ''; bz.appendChild(hint);
@@ -912,7 +912,7 @@
     block.body.forEach(function (b, bi) { bz.appendChild(renderBlock(b, bi, block.body, section, bodyPath, anc)); });
     var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
     var guidance = step && step.config ? step.config.guidance : 'open';
-    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open';
+    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open' || guidance === 'verify';
     if (block.body.length === 0) {
       var hint = document.createElement('div'); hint.className = 'body-hint';
       hint.textContent = canSelect ? 'click to select, then add blocks' : ''; bz.appendChild(hint);
@@ -955,7 +955,7 @@
     if (BB.sel && BB.sel.targetArr === arr) div.classList.add('selected');
     var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
     var guidance = step && step.config ? step.config.guidance : 'open';
-    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open';
+    var canSelect = !BB.PROGRESSION_MODE || guidance === 'open' || guidance === 'verify';
     var canInsert = !BB.READONLY_MODE && canSelect && arr.length > 0;
     if (canInsert) div.appendChild(makeInsertStrip(section, arr, pathStr, 0));
     arr.forEach(function (block, idx) {

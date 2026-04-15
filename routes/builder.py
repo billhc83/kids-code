@@ -21,6 +21,19 @@ def parse():
     code = data.get("code", "")
     return parse_sketch(code, fill_conditions=True, fill_values=True)
 
+@builder_bp.route("/sim/run", methods=["POST"])
+@login_required
+def sim_run():
+    from utils.sim_engine import run as engine_run
+    data = request.get_json(silent=True) or {}
+    sketch = data.get('sketch', '')
+    sim_config = data.get('sim_config', {})
+    try:
+        result = engine_run(sketch, sim_config)
+        return result
+    except Exception as e:
+        return {'error': str(e)}, 400
+
 @builder_bp.route("/builder")
 @login_required
 def builder_endpoint():
