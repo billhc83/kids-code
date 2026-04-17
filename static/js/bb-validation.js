@@ -340,11 +340,11 @@
       BB.nextBtnState.ready = true;
       BB.nextBtnState.mode = 'next-mode';
       BB.nextBtnState.text = 'Next Step \u2192';
-      BB.nextBtnState.visible = true;
+      BB.nextBtnState.visible = (BB.CURRENT_STEP < BB.STEPS.length - 1);
       window.dispatchEvent(new CustomEvent('bb_next_state', {
         detail: {
           state: {
-            ready: true, 'check-mode': false, 'next-mode': true, hidden: false, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible
+            ready: true, 'check-mode': false, 'next-mode': true, hidden: !BB.nextBtnState.visible, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible
           }
         }
       }));
@@ -354,7 +354,7 @@
       BB.nextBtnState.ready = true;
       BB.nextBtnState.mode = 'check-mode';
       BB.nextBtnState.text = 'Check Code';
-      BB.nextBtnState.visible = true;
+      BB.nextBtnState.visible = (BB.CURRENT_STEP < BB.STEPS.length - 1);
       window.dispatchEvent(new CustomEvent('bb_next_state', {
         detail: {
           state: {

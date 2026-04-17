@@ -12,7 +12,69 @@ META = {
 # Wiring and component placement steps.
 # rect() / circle() / line() coordinates are placeholders —
 # update with real pixel coords once the circuit image is available.
-STEPS = []
+STEPS = [
+    intro_step(
+        "Let put together our musical instument",
+        "",
+    ),
+
+    build_step(
+        "Lets place the sonar sensor.  The diagram shows the wires in column H.  This is so we can see them on the diagram.  We will put the wires in column J for our project.<br>VCC Pin will be in row 23 column H<br>Trig Pin will be in row 24 column H<br> Pin will be in row 25 column H<br>GND Pin will be in row 26 column H",
+        "",
+        rect(1116, 63, 1673, 425),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place the long leg of the buzzer in row 6, column D.<br>Place the short leg of the buzzer in row 9, column D.",
+        "",
+        rect(842, 450, 1116, 644),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in row 26, column J.",
+        "",
+        line((466, 345), (537, 348), (685, 252), (1582, 252), (1585, 428), (1475, 425), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 10.<br>Place the other end in row 25, column J.",
+        "",
+        line((491, 453), (1448, 459), (1445, 407), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 9.<br>Place the other end in row 24, column J.",
+        "",
+        line((474, 483), (1418, 483), (1420, 406), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 5V.<br>Place the other end in row 23, column J.",
+        "",
+        line((3, 469), (644, 428), (1407, 428), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 3.<br>Place the other end in row 6, column A.",
+        "",
+        line((499, 660), (537, 660), (940, 613), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in row 9, column A.",
+        "",
+        line((11, 518), (420, 776), (1023, 776), (1017, 614), width=25),
+        greyout=True,
+    ),
+
+]
 DRAWER_CONTENT = {
     "project_seventeen": {
         "steps": [
@@ -181,7 +243,7 @@ DRAWER_CONTENT = {
                         "type": "sim",
                         "sim_config": {
                             "components": [
-                                {"type": "sonar",  "id": "sonar1",    "label": "Musical Sensor", "pin_trig": 9, "pin_echo": 10},
+                                {"type": "sonar",  "id": "sonar1",    "label": "Musical Sensor", "pin_trig": 9, "pin_echo": 10, "labels": {"safe": "🟢 Higher Pitch", "warning": "🟡 Medium", "danger": "🔴 Lower Pitch"}},
                                 {"type": "buzzer", "id": "musmaker",                         "pin": 3, "label": "Music Maker"},
                             ],
                             "behaviors": [
@@ -335,7 +397,41 @@ void loop() {
   //## delay(50);
 }
 
-//>> Mission Complete | open | blocks
+//>> Mission Complete | open | blocks | reset | fill:true
+
+int trigPin = 9;
+int echoPin = 10;
+int buzzer = 3;
+
+long duration;
+int distance;
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+ 
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  
+  duration = pulseIn(echoPin, HIGH);
+
+
+  distance = duration * 0.034 / 2;
+
+
+  int pitch = map(distance, 5, 50, 200, 1000);
+
+  tone(buzzer, pitch);
+
+  delay(50);
+}
 """,
     'default_view': 'blocks',
     'read_only': False,

@@ -194,7 +194,8 @@ window.SimEngine = (function () {
   var SONAR_ZONE_COLORS  = { safe: '#00ff88', warning: '#ffcc00', danger: '#ff4444' };
   var SONAR_ZONE_LABELS  = { safe: '🟢 SAFE', warning: '🟡 WARNING', danger: '🔴 DANGER' };
 
-  function applySonar(id, zone) {
+  function applySonar(id, zone, customLabels) {
+    var labels = customLabels || SONAR_ZONE_LABELS;
     var color = SONAR_ZONE_COLORS[zone] || '#00ff88';
     /* Recolour signal rings */
     [1, 2, 3].forEach(function (n) {
@@ -205,7 +206,7 @@ window.SimEngine = (function () {
     var readout = document.getElementById(id + '-readout');
     var zoneTag = document.getElementById(id + '-zone');
     if (readout) readout.style.color = color;
-    if (zoneTag) { zoneTag.textContent = SONAR_ZONE_LABELS[zone] || zone; zoneTag.style.color = color; }
+    if (zoneTag) { zoneTag.textContent = labels[zone] || zone; zoneTag.style.color = color; }
   }
 
   function sonarPingFlash(id) {
@@ -421,7 +422,7 @@ window.SimEngine = (function () {
         case 'buzzer': applyBuzzer(id, newState === 'on'); break;
         case 'switch': applySwitch(id, newState === 'on'); break;
         case 'button': applyButton(id, newState === 'pressed'); break;
-        case 'sonar':  applySonar(id, newState); break;
+        case 'sonar':  applySonar(id, newState, comp.labels); break;
       }
       if (evaluate !== false) evalBehaviors();
     }
@@ -507,7 +508,8 @@ window.SimEngine = (function () {
             if (readout) readout.textContent = dist + ' cm';
             sonarPingFlash(comp.id);
             applyState(comp.id, zone);
-            setStatus('Distance: ' + dist + ' cm  ·  ' + (SONAR_ZONE_LABELS[zone] || zone));
+            var labels = comp.labels || SONAR_ZONE_LABELS;
+            setStatus('Distance: ' + dist + ' cm  ·  ' + (labels[zone] || zone));
           });
         }
       }

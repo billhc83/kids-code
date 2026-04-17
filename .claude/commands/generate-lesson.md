@@ -4,91 +4,48 @@ You are generating a new themed lesson for the KidsCode Arduino platform. Read C
 
 ## Step 1 — Gather Inputs
 
-Ask the user for the following if not already provided in their message. Ask for all missing items in a single message, not one at a time:
+Ask for all missing items in a single message:
 
-- **Theme / narrative**: What is the story? (e.g. "spy gadget that detects intruders", "dragon fire alarm", "space station power system")
-- **Lesson key**: Short snake_case name used in filenames and URLs (e.g. `project_sixteen`, `project_dragon`)
+- **Theme / narrative**: The story (e.g. "spy gadget that detects intruders", "dragon fire alarm")
+- **Lesson key**: Short snake_case name (e.g. `project_sixteen`)
 - **Lesson title**: Display title with emoji (e.g. `🐉 Dragon Fire Alarm`)
-- **Target age group**: 8–10 (younger), 11–12 (middle), 13–14 (older)
-- **Arduino sketch**: The full sketch or at minimum the key functions, pins, and variables used
-- **Component list**: What physical parts are used (LED, buzzer, ultrasonic sensor, button, etc.)
-- **Number of coding steps**: How many `//>>` progression steps the sketch has (or should have)
+- **Target age group**: 8–10, 11–12, or 13–14
+- **Arduino sketch**: Full sketch or key functions, pins, and variables
+- **Component list**: Physical parts used
+- **Number of coding steps**: How many `//>>` steps
 - **Multi-part lesson?**: Yes/No. If yes, how many parts?
 
-## Step 2 — Plan the Content
+## Step 2 — Generate Sketch + Drawer Content
 
-Before writing anything, lay out a brief plan:
+Generate both together and show them side-by-side for a single approval. These must match 1:1 — reviewing together catches mismatches before proceeding.
 
-1. List the coding steps with one-line descriptions
-2. Identify which concepts each step introduces
-3. Confirm the theme can carry through all steps naturally
+**Sketch** (`SKETCH_PRESET`): Annotate with `//>>`, `//?? `, and `//##` directives per CLAUDE.md Sketch Directives rules. Each step should be achievable in 2–5 blocks. The final step is always `//>> Mission Complete | open | blocks` with no code.
 
-Show this plan to the user and ask for confirmation or changes before proceeding to Step 3.
+**Drawer** (`DRAWER_CONTENT`): One entry per `//>>` step, three tabs each — `📖 What & Why`, `🔧 How To`, `🧠 Logic`. Follow age calibration and tab structure from CLAUDE.md Content Conventions.
 
-## Step 3 — Generate All Content
+Wait for user approval or corrections before Step 3.
 
-Generate the following in order. Show each section to the user before moving on to the next. Wait for approval or corrections.
+## Step 3 — Generate Page Content
 
-### 3a. Drawer Content (`DRAWER_CONTENT`)
+Generate all three together and show as a single block for approval:
 
-For each coding step, write a drawer entry with three tabs:
-- `📖 What & Why` — Explains what this step does and why it matters. Use the theme/narrative. Keep it concrete. Avoid abstract jargon.
-- `🔧 How To` — Numbered steps the student follows. Short, direct sentences.
-- `🧠 Logic` — A real-world analogy or metaphor. Connect the code concept to something physical the student knows.
+**3a. Main Page Template** (`{% block intro %}`, `{% block parts %}`, `{% block tips %}`): Follow template structure from CLAUDE.md. Age-appropriate language, themed to the narrative.
 
-Age calibration:
-- Ages 8–10: Very short sentences. Max 2–3 sentences per paragraph. Heavy emoji. Physical toy analogies.
-- Ages 11–12: Can handle slightly longer explanations. Analogies can be slightly more technical (machines, vehicles, gadgets).
-- Ages 13–14: Full sentences, technical vocabulary introduced carefully with plain-English definitions inline.
+**3b. Assembly Steps** (`STEPS`): Non-wiring placement steps only. Use `rect(0, 0, 100, 100)` as placeholder coords for all highlights — real coordinates are added after the circuit image is created. Format per CLAUDE.md module structure.
 
-### 3b. Sketch Preset (`SKETCH_PRESET`)
+**3c. Lessons Registry Entry**: Dict entry for `utils/lessons.py` per CLAUDE.md registry format.
 
-Write the Arduino sketch with `//>>` step markers matching the drawer steps. Each step should:
-- Be achievable in 2–5 blocks in the block builder
-- Build on the previous step
-- Have a clear, descriptive step label after `//>>` 
-
-Include phantom placeholders `//??` for lines the student fills in themselves.
-
-### 3c. Main Page Template (HTML)
-
-Write the `{% block intro %}` section with:
-- A one-sentence goal with emoji
-- "New ideas" section introducing the 2–3 key concepts for this lesson (themed to the narrative)
-- Age-appropriate language throughout
-
-Write the `{% block parts %}` section with the component list, each with a fun description matching the theme.
-
-Write the `{% block tips %}` section with 2–3 practical tips specific to this lesson's common pitfalls.
-
-### 3d. Assembly Steps (`STEPS`)
-
-Write only the **non-wiring** build steps (component placement only, not wire routing). Use this format:
-
-```python
-build_step(
-    "Place the [component] in row [N], column [X].<br>Place the [other end] in row [N], column [X].",
-    "Interesting fact or tip about this component.",
-    rect(0, 0, 100, 100),  # PLACEHOLDER — real coordinates added after circuit image is created
-    greyout=True,
-),
-```
-
-Use `rect(0, 0, 100, 100)` as a placeholder for all highlight coordinates. Note clearly in comments that coordinates must be updated once the circuit image is available.
-
-### 3e. Lessons Registry Entry
-
-Write the dict entry to be added to `utils/lessons.py`.
+Wait for user approval or corrections before Step 4.
 
 ## Step 4 — Write the Files
 
-Once the user has approved all content, call `utils/lesson_scaffold.py` using:
+Write `lesson_spec.json` to the project root, then run:
 
 ```bash
 python utils/lesson_scaffold.py lesson_spec.json
 ```
 
-Before calling the script, write the full lesson spec to `lesson_spec.json` in the project root using this structure:
+Spec format:
 
 ```json
 {
@@ -109,13 +66,7 @@ Before calling the script, write the full lesson spec to `lesson_spec.json` in t
   "fill_values": true,
   "fill_conditions": true,
   "steps": [
-    {
-      "instruction": "Place the LED...",
-      "tip": "Fun fact about LEDs",
-      "highlight": "rect",
-      "coords": [0, 0, 100, 100],
-      "greyout": true
-    }
+    { "instruction": "...", "tip": "...", "highlight": "rect", "coords": [0,0,100,100], "greyout": true }
   ],
   "drawer_steps": [
     {
@@ -123,8 +74,8 @@ Before calling the script, write the full lesson spec to `lesson_spec.json` in t
       "tip": "One-line tip",
       "tabs": {
         "explain": {"label": "📖 What & Why", "content": "<p>...</p>"},
-        "howto": {"label": "🔧 How To", "content": "<p>...</p>"},
-        "logic": {"label": "🧠 Logic", "content": "<p>...</p>"}
+        "howto":   {"label": "🔧 How To",     "content": "<p>...</p>"},
+        "logic":   {"label": "🧠 Logic",      "content": "<p>...</p>"}
       }
     }
   ],
@@ -132,18 +83,11 @@ Before calling the script, write the full lesson spec to `lesson_spec.json` in t
 }
 ```
 
-The scaffold script will:
-1. Create `utils/project_{key}.py`
-2. Create `templates/lessons/project_{key}.html`
-3. Insert the registry entry into `utils/lessons.py`
-
 ## Step 5 — Post-Generation Checklist
-
-After the files are written, remind the user of what still needs to be done manually:
 
 - [ ] Add circuit diagram PNG → `static/graphics/project_{name}_circuit.png`
 - [ ] Add banner image PNG → `static/graphics/project_{name}_banner.png`
 - [ ] Update `rect()` / `circle()` / `line()` coordinates in `STEPS` once circuit image is available
 - [ ] Add wiring `build_step` entries for each wire connection (uses `line()` with pixel coordinates)
-- [ ] Test the lesson by starting the Flask app and navigating to `/lessons/project_{name}`
+- [ ] Test the lesson at `/lessons/project_{name}`
 - [ ] Delete `lesson_spec.json` from the project root
