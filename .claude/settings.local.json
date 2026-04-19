@@ -16,11 +16,23 @@
       "Bash(mv \"c:/kids-code/kids-code/.claude/skills/generate-lesson.md\" \"c:/kids-code/kids-code/.claude/commands/generate-lesson.md\")",
       "Bash(find /c/kids-code/kids-code -type f -name \"*.py\" -exec grep -l \"WebSocket\\\\|3211\\\\|3210\\\\|serial\" {} \\\\;)",
       "Bash(xargs grep:*)",
+      "Bash(ls -lah /home/bill/kids-code/static/js/bb*.js)",
+      "Bash(find /home/bill/kids-code/utils -name \"project_*.py\" -exec grep -l \">>>\" {} \\\\;)",
+      "Bash(grep -l \"//\\\\s*>>\" /home/bill/kids-code/utils/project_*.py)",
+      "Bash(grep -r \"//\\\\s*>>\" /home/bill/kids-code/utils/*.py)",
+      "Bash(ls /home/bill/kids-code/static/css/*.css)",
+      "Bash(git pull:*)",
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Bash(grep -n \"drawer\\\\|tabs\\\\|tab\" /c/kids-code/kids-code/routes/*.py)",
+      "Bash(grep -n \"parse_steps\\\\|//>>\\\\\\\\|verify\\\\|reset\\\\|fill\\\\|palette\" c:/kids-code/kids-code/utils/block_parser.py)",
+      "Bash(grep -n \"SKETCH_PRESET\\\\|Mission Complete\\\\|//>>.*open\" c:/kids-code/kids-code/utils/project_fifteen.py)",
+      "Bash(python3 -c \"from utils.project_seventeen import PROJECT; print\\('Import OK'\\); import json; print\\(json.dumps\\(list\\(PROJECT.keys\\(\\)\\)\\)\\)\")",
+      "Bash(python3 -c ':*)"
     ],
     "additionalDirectories": [
       "c:\\kids-code\\kids-code\\.claude"

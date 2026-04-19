@@ -21,6 +21,19 @@ def parse():
     code = data.get("code", "")
     return parse_sketch(code, fill_conditions=True, fill_values=True)
 
+@builder_bp.route("/sim/run", methods=["POST"])
+@login_required
+def sim_run():
+    from utils.sim_engine import run as engine_run
+    data = request.get_json(silent=True) or {}
+    sketch = data.get('sketch', '')
+    sim_config = data.get('sim_config', {})
+    try:
+        result = engine_run(sketch, sim_config)
+        return result
+    except Exception as e:
+        return {'error': str(e)}, 400
+
 @builder_bp.route("/builder")
 @login_required
 def builder_endpoint():
@@ -54,9 +67,11 @@ def get_preset(name):
     fill_values = False
     fill_conditions = False
 
+    print(f"[get_preset] name={name!r}  in_PROJECTS={name in PROJECTS}  PROJECTS keys={list(PROJECTS.keys())}", flush=True)
     if name in PROJECTS:
         p = PROJECTS[name]
         preset_obj = p.get("presets", {}).get("default", {})
+        print(f"[get_preset] preset_obj type={type(preset_obj).__name__}  has_sketch={'sketch' in preset_obj if isinstance(preset_obj, dict) else 'N/A'}", flush=True)
         if isinstance(preset_obj, dict):
             sketch_code = preset_obj.get("sketch")
             default_view = preset_obj.get("default_view", "blocks")
@@ -102,13 +117,16 @@ def get_preset(name):
             sketch_code = preset
         drawer_content = DRAWER_CONTENT.get(name)
 
+    print(f"[get_preset] sketch_code present={bool(sketch_code)}  has_steps_marker={'//>>' in (sketch_code or '')}", flush=True)
     if sketch_code and '//>>' in sketch_code:
         progression_data = parse_steps(sketch_code)
+        print(f"[get_preset] parse_steps → {len(progression_data) if progression_data else 'None'} steps", flush=True)
         parsed_sketch = None
     elif sketch_code:
         progression_data = None
         parsed_sketch = parse_sketch(sketch_code, fill_conditions=fill_conditions, fill_values=fill_values)
     else:
+        print(f"[get_preset] WARNING: sketch_code is empty/None — nothing to return!", flush=True)
         progression_data = None
         parsed_sketch = None
 

@@ -21,6 +21,7 @@
  */
 window.SimEngine = (function () {
   'use strict';
+  var activeRequestId = 0;
 
   /* ── LED colour palettes ─────────────────────────────────────────────────── */
   var PALETTES = {
@@ -193,7 +194,8 @@ window.SimEngine = (function () {
   var SONAR_ZONE_COLORS  = { safe: '#00ff88', warning: '#ffcc00', danger: '#ff4444' };
   var SONAR_ZONE_LABELS  = { safe: '🟢 SAFE', warning: '🟡 WARNING', danger: '🔴 DANGER' };
 
-  function applySonar(id, zone) {
+  function applySonar(id, zone, customLabels) {
+    var labels = customLabels || SONAR_ZONE_LABELS;
     var color = SONAR_ZONE_COLORS[zone] || '#00ff88';
     /* Recolour signal rings */
     [1, 2, 3].forEach(function (n) {
@@ -204,7 +206,7 @@ window.SimEngine = (function () {
     var readout = document.getElementById(id + '-readout');
     var zoneTag = document.getElementById(id + '-zone');
     if (readout) readout.style.color = color;
-    if (zoneTag) { zoneTag.textContent = SONAR_ZONE_LABELS[zone] || zone; zoneTag.style.color = color; }
+    if (zoneTag) { zoneTag.textContent = labels[zone] || zone; zoneTag.style.color = color; }
   }
 
   function sonarPingFlash(id) {
@@ -420,7 +422,7 @@ window.SimEngine = (function () {
         case 'buzzer': applyBuzzer(id, newState === 'on'); break;
         case 'switch': applySwitch(id, newState === 'on'); break;
         case 'button': applyButton(id, newState === 'pressed'); break;
-        case 'sonar':  applySonar(id, newState); break;
+        case 'sonar':  applySonar(id, newState, comp.labels); break;
       }
       if (evaluate !== false) evalBehaviors();
     }
@@ -506,7 +508,8 @@ window.SimEngine = (function () {
             if (readout) readout.textContent = dist + ' cm';
             sonarPingFlash(comp.id);
             applyState(comp.id, zone);
-            setStatus('Distance: ' + dist + ' cm  ·  ' + (SONAR_ZONE_LABELS[zone] || zone));
+            var labels = comp.labels || SONAR_ZONE_LABELS;
+            setStatus('Distance: ' + dist + ' cm  ·  ' + (labels[zone] || zone));
           });
         }
       }
@@ -524,5 +527,197 @@ window.SimEngine = (function () {
     };
   }
 
-  return { init: init };
+  /* ── Timeline playback (code-driven sim) ────────────────────────────────── */
+
+  /**
+   * initTimeline(container, result)
+   * Plays back a pre-built timeline returned by /sim/run.
+   *
+   * result shape:
+   *   { duration: <ms>, components: [{id, type, color, pin, label, timeline:[{t,state}]}] }
+   *
+   * After `duration` ms the animation loops automatically.
+   */
+  function initTimeline(container, result) {
+    if (container._simCleanup) container._simCleanup();
+
+    var components = result.components || [];
+    var duration   = result.duration   || 0;
+    var handles    = [];
+    var loopHandle = null;
+
+    /* Build UI — same chrome as the interactive sim */
+    container.innerHTML = '';
+    container.style.cssText =
+      'background:#1a1a2e;border-radius:12px;padding:24px 16px 16px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:14px;';
+
+    var canvas = document.createElement('div');
+    canvas.style.cssText =
+      'display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:center;';
+    components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
+    container.appendChild(canvas);
+
+    var statusBar = document.createElement('div');
+    statusBar.style.cssText =
+      'padding:7px 20px;background:rgba(255,255,255,0.04);' +
+      'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
+      'color:#7ab;font-size:11px;font-family:"Courier New",monospace;' +
+      'text-align:center;min-width:220px;max-width:100%;';
+    statusBar.textContent = 'Simulating…';
+    container.appendChild(statusBar);
+
+    /* If every event in every timeline is at t=0 there is nothing to animate —
+       the code has no delays so each LED is in a fixed steady state.
+       Just apply the final state and stop — no loop, no flicker. */
+    var hasTimedEvent = components.some(function (c) {
+      return (c.timeline || []).some(function (e) { return e.t > 0; });
+    });
+
+    if (!hasTimedEvent) {
+      components.forEach(function (c) {
+        var tl   = c.timeline || [];
+        var last = tl[tl.length - 1];
+        if (!last) return;
+        if (c.type === 'led') {
+          var on = last.state === 'on';
+          applyLED(c.id, on, c.color || 'red');
+          var modeNote = (c.pin_mode === 'INPUT')
+            ? '  \u2014 pinMode is INPUT, LED can\u2019t turn on!'
+            : '';
+          statusBar.textContent =
+            (c.label || ('Pin ' + c.pin)) + '  \u2192  ' +
+            (on ? 'always HIGH \u26a1' : 'always LOW \u00b7  (LED off)') + modeNote;
+        }
+      });
+      return;
+    }
+
+    /* Minimum loop delay prevents tight-spin when all delays are very short */
+    var loopDelay = Math.max(duration, 300);
+
+    function clearHandles() {
+      handles.forEach(clearTimeout);
+      handles = [];
+      if (loopHandle) { clearTimeout(loopHandle); loopHandle = null; }
+    }
+
+    function playOnce() {
+      clearHandles();
+
+      components.forEach(function (c) {
+        var tl = c.timeline || [];
+
+        /* Apply ALL t=0 events synchronously — no deferred callbacks at t=0.
+           This means the browser never renders an intermediate t=0 state,
+           eliminating the flicker on loop restart. */
+        var firstTimed = -1;
+        for (var i = 0; i < tl.length; i++) {
+          if (tl[i].t === 0) {
+            if (c.type === 'led') applyLED(c.id, tl[i].state === 'on', c.color || 'red');
+          } else {
+            firstTimed = i;
+            break;
+          }
+        }
+
+        /* Schedule only t>0 events */
+        if (firstTimed === -1) return;
+        for (var j = firstTimed; j < tl.length; j++) {
+          (function (event) {
+            var h = setTimeout(function () {
+              if (c.type === 'led') {
+                var on = event.state === 'on';
+                applyLED(c.id, on, c.color || 'red');
+                statusBar.textContent =
+                  (c.label || ('Pin ' + c.pin)) + '  \u2192  ' + (on ? 'HIGH \u26a1' : 'LOW \u00b7');
+              }
+            }, event.t);
+            handles.push(h);
+          }(tl[j]));
+        }
+      });
+
+      loopHandle = setTimeout(playOnce, loopDelay);
+    }
+
+    playOnce();
+
+    container._simCleanup = function () { clearHandles(); };
+  }
+
+  /**
+   * initCodeDriven(container, simConfig)
+   * Fetches the current sketch from the block builder, posts it to /sim/run,
+   * then hands off to initTimeline.  Adds a Re-run button so the student can
+   * refresh the sim after editing their code.
+   */
+  function initCodeDriven(container, simConfig) {
+    if (container._simCleanup) container._simCleanup();
+
+    /* Show a loading state while we wait for the server */
+    container.innerHTML = '';
+    container.style.cssText =
+      'background:#1a1a2e;border-radius:12px;padding:32px 16px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:10px;';
+    var loading = document.createElement('div');
+    loading.style.cssText =
+      'color:#7ab;font-size:12px;font-family:"Courier New",monospace;letter-spacing:0.5px;';
+    loading.textContent = 'Analysing your code\u2026';
+    container.appendChild(loading);
+
+    var sketch = (window.getGeneratedCode ? window.getGeneratedCode() : '') || '';
+    activeRequestId++;
+    var thisRequestId = activeRequestId;
+
+    fetch('/sim/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sketch: sketch, sim_config: simConfig }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (result) {
+        if (thisRequestId !== activeRequestId) return; // Skip if a newer request was started
+        if (result.error) {
+          container.innerHTML = '';
+          container.style.cssText =
+            'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
+            'display:flex;flex-direction:column;align-items:center;gap:10px;';
+          var errMsg = document.createElement('div');
+          errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
+          errMsg.textContent = 'Could not run simulation: ' + result.error;
+          container.appendChild(errMsg);
+          _appendRerunButton(container, simConfig);
+          return;
+        }
+        initTimeline(container, result);
+        _appendRerunButton(container, simConfig);
+      })
+      .catch(function () {
+        container.innerHTML = '';
+        container.style.cssText =
+          'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
+          'display:flex;flex-direction:column;align-items:center;gap:10px;';
+        var errMsg = document.createElement('div');
+        errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
+        errMsg.textContent = 'Simulation error — check your code and try again.';
+        container.appendChild(errMsg);
+        _appendRerunButton(container, simConfig);
+      });
+  }
+
+  function _appendRerunButton(container, simConfig) {
+    var btn = document.createElement('button');
+    btn.textContent = '\u25b6 Re-run with current code';
+    btn.style.cssText =
+      'margin-top:4px;padding:6px 18px;background:#1e3a5f;color:#7ab;' +
+      'border:1px solid #2d5a8e;border-radius:6px;font-size:11px;' +
+      'cursor:pointer;font-family:"Courier New",monospace;letter-spacing:0.3px;';
+    btn.onmouseover = function () { btn.style.background = '#264d7a'; };
+    btn.onmouseout  = function () { btn.style.background = '#1e3a5f'; };
+    btn.onclick = function () { initCodeDriven(container, simConfig); };
+    container.appendChild(btn);
+  }
+
+  return { init: init, initTimeline: initTimeline, initCodeDriven: initCodeDriven };
 }());

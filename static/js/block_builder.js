@@ -1,10 +1,10 @@
 // block_builder.js — Entry point: reads BB_CONFIG, code generation, persistence, window exports, and initialization
 // Load order: bb-blocks.js → bb-render.js → bb-validation.js → block_builder.js (this file)
 (function () {
-  ('[DEBUG] block_builder.js: Execution started.');
+  console.log('[BB] block_builder.js: Execution started.');
   var CFG = window.BB_CONFIG;
-  if (!CFG) { console.error('[DEBUG] block_builder.js: BB_CONFIG is missing!'); return; }
-  ('[DEBUG] block_builder.js: Config loaded.', CFG.mode);
+  if (!CFG) { console.error('[BB] block_builder.js: BB_CONFIG is missing!'); return; }
+  console.log('[BB] Config loaded. mode=' + CFG.mode + ' steps=' + (CFG.steps ? CFG.steps.length : 'undefined') + ' force_preset=' + CFG.force_preset);
 
   var BB = window._BB;
 
@@ -200,11 +200,19 @@
       { headers: { 'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        console.log('[BB:loadBlocks] response rows=' + (data ? data.length : 'null'));
         if (data && data.length > 0) {
           var saved = JSON.parse(data[0].blocks_json);
+          console.log('[BB:loadBlocks] found save: current_step=' + saved.current_step + ' student_saves len=' + (saved.student_saves ? saved.student_saves.length : 'none'));
           if (BB.PROGRESSION_MODE) {
+            console.log('[BB:loadBlocks] saved.student_saves:', JSON.stringify(saved.student_saves));
             if (saved.current_step !== undefined) {
-              BB.CURRENT_STEP   = saved.current_step;
+              var savedStep = saved.current_step;
+              if (savedStep >= BB.STEPS.length) {
+                console.log('[loadBlocks] saved step ' + savedStep + ' out of bounds (len=' + BB.STEPS.length + '), resetting to 0');
+                savedStep = 0;
+              }
+              BB.CURRENT_STEP   = savedStep;
               BB.STUDENT_SAVES  = saved.student_saves || [];
             } else if (saved.global || saved.setup || saved.loop) {
               // Fallback: migrate old free-mode save into progression format
@@ -292,12 +300,13 @@
   }
 
   // ── Initialization ─────────────────────────────────────────────────────────
-  ('[DEBUG] block_builder.js: Initializing workspace.');
+  console.log('[BB] Initializing workspace. mode=' + CFG.mode + ' USERNAME=' + BB.USERNAME + ' PAGE=' + BB.PAGE);
   if (CFG.mode === 'progression') {
     BB.PROGRESSION_MODE = true;
     BB.STEPS = CFG.steps;
     BB.CURRENT_STEP = 0;
     BB.STUDENT_SAVES = [];
+    console.log('[BB] Progression mode: ' + (BB.STEPS ? BB.STEPS.length : 'NO STEPS') + ' steps. Step[0]:', BB.STEPS && BB.STEPS[0] ? BB.STEPS[0].label : 'MISSING');
     BB.buildWorkspace(0, null);
   } else {
     BB.SECTIONS.global = CFG.blocks ? CFG.blocks.global : [];
@@ -306,6 +315,7 @@
     BB.render();
     BB.genCode();
   }
+  console.log('[BB] loadBlocks check: USERNAME=' + !!BB.USERNAME + ' PROGRESSION_MODE=' + !!BB.PROGRESSION_MODE + ' force_preset=' + CFG.force_preset + ' → will load=' + !!(BB.USERNAME && (BB.PROGRESSION_MODE || !CFG.force_preset)));
   if (BB.USERNAME && (BB.PROGRESSION_MODE || !CFG.force_preset)) BB.loadBlocks();
   BB.updatePalette();
   BB.render();

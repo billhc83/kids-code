@@ -340,11 +340,25 @@
       BB.nextBtnState.ready = true;
       BB.nextBtnState.mode = 'next-mode';
       BB.nextBtnState.text = 'Next Step \u2192';
-      BB.nextBtnState.visible = true;
+      BB.nextBtnState.visible = (BB.CURRENT_STEP < BB.STEPS.length - 1);
       window.dispatchEvent(new CustomEvent('bb_next_state', {
         detail: {
           state: {
-            ready: true, 'check-mode': false, 'next-mode': true, hidden: false, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible
+            ready: true, 'check-mode': false, 'next-mode': true, hidden: !BB.nextBtnState.visible, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible
+          }
+        }
+      }));
+      return;
+    }
+    if (curGuidance === 'verify') {
+      BB.nextBtnState.ready = true;
+      BB.nextBtnState.mode = 'check-mode';
+      BB.nextBtnState.text = 'Check Code';
+      BB.nextBtnState.visible = (BB.CURRENT_STEP < BB.STEPS.length - 1);
+      window.dispatchEvent(new CustomEvent('bb_next_state', {
+        detail: {
+          state: {
+            ready: true, 'check-mode': true, 'next-mode': false, hidden: false, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible
           }
         }
       }));
@@ -433,11 +447,31 @@
     return valid;
   };
 
+  // ── Verify mode validation (code-string comparison) ──────────────────────
+  BB.validateVerify = function () {
+    var step = BB.STEPS && BB.STEPS[BB.CURRENT_STEP];
+    if (!step || (!step.verify_global.length && !step.verify_setup.length && !step.verify_loop.length)) return true;
+    function norm(s) { return s.replace(/\s+/g, ' ').trim(); }
+    var studentGlobal = norm(BB.genBlocks(BB.SECTIONS.global, 0));
+    var studentSetup  = norm(BB.genBlocks(BB.SECTIONS.setup,  1));
+    var studentLoop   = norm(BB.genBlocks(BB.SECTIONS.loop,   1));
+    var targetGlobal  = norm(BB.genBlocks(step.verify_global || [], 0));
+    var targetSetup   = norm(BB.genBlocks(step.verify_setup  || [], 1));
+    var targetLoop    = norm(BB.genBlocks(step.verify_loop   || [], 1));
+    return studentGlobal === targetGlobal && studentSetup === targetSetup && studentLoop === targetLoop;
+  };
+
   // ── Workspace builder ─────────────────────────────────────────────────────
-  BB.buildWorkspace = function (stepIdx, saves) {
+  BB.buildWorkspace = function (stepIdx) {
     if (!BB.PROGRESSION_MODE || !BB.STEPS || stepIdx >= BB.STEPS.length) return;
     var step = BB.STEPS[stepIdx];
-    if (BB.STUDENT_SAVES[stepIdx]) {
+    console.log('[buildWorkspace] stepIdx=' + stepIdx + ' label=' + step.label);
+    console.log('[buildWorkspace] config:', JSON.stringify(step.config));
+    console.log('[buildWorkspace] hasSave=' + !!BB.STUDENT_SAVES[stepIdx] + ' step.reset=' + !!step.reset);
+    console.log('[buildWorkspace] step.global:', JSON.stringify(step.global));
+    console.log('[buildWorkspace] step.setup:', JSON.stringify(step.setup));
+    console.log('[buildWorkspace] step.loop:', JSON.stringify(step.loop));
+    if (BB.STUDENT_SAVES[stepIdx] && !step.reset) {
       var savedState = BB.STUDENT_SAVES[stepIdx];
       BB.SECTIONS.global = JSON.parse(JSON.stringify(savedState.global));
       BB.SECTIONS.setup  = JSON.parse(JSON.stringify(savedState.setup));
@@ -461,15 +495,18 @@
     BB.nextBtnState.ready    = false; BB.nextBtnState.mode = ''; BB.nextBtnState.text = 'Complete Step'; BB.nextBtnState.prevVisible = stepIdx > 0;
     window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: false, 'check-mode': false, 'next-mode': false, hidden: !BB.nextBtnState.visible, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible } } }));
     window.dispatchEvent(new CustomEvent('bb_next_state', { detail: { state: { ready: false, 'check-mode': false, 'next-mode': false, hidden: !BB.nextBtnState.visible, text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible, feedback: null } } }));
-    if (window.updateDrawer) window.updateDrawer(stepIdx);
     BB.checkStepComplete(); BB.render(); BB.genCode();
+    if (window.updateDrawer) window.updateDrawer(stepIdx);
   };
 
   // ── bbNext / bbPrev ───────────────────────────────────────────────────────
   window.bbNext = function () {
     if (!BB.nextBtnState.ready) return;
     if (BB.nextBtnState.mode === 'check-mode') {
-      if (BB.validateStep()) {
+      var curStep = BB.STEPS && BB.STEPS[BB.CURRENT_STEP];
+      var isVerify = curStep && curStep.config && curStep.config.guidance === 'verify';
+      var passed = isVerify ? BB.validateVerify() : BB.validateStep();
+      if (passed) {
         BB.nextBtnState.text = 'Next Step \u2192';
         BB.nextBtnState.mode = 'next-mode';
         window.dispatchEvent(new CustomEvent('bb_next_state', {
@@ -483,12 +520,13 @@
         }));
         BB.CHECK_FAIL_COUNT = 0;
       } else {
+        var errMsg = isVerify ? 'Not quite \u2014 keep fixing the code!' : 'Try again - check highlighted blocks';
         window.dispatchEvent(new CustomEvent('bb_next_state', {
           detail: {
             state: {
               ready: true, 'check-mode': true, 'next-mode': false, hidden: false,
               text: BB.nextBtnState.text, prevVisible: BB.nextBtnState.prevVisible,
-              feedback: { text: 'Try again - check highlighted blocks', type: 'error' }
+              feedback: { text: errMsg, type: 'error' }
             }
           }
         }));
@@ -504,7 +542,7 @@
 
   window.bbPrev = function () {
     if (!BB.PROGRESSION_MODE || BB.CURRENT_STEP <= 0) return;
-    BB.CURRENT_STEP--; BB.STUDENT_SAVES.pop(); BB.buildWorkspace(BB.CURRENT_STEP);
+    BB.CURRENT_STEP--; BB.buildWorkspace(BB.CURRENT_STEP);
   };
 
   window.getCurrentStepMeta = function () { return window.CURRENT_STEP_META || {}; };

@@ -60,7 +60,7 @@ STEPS = [
     ),
 
     build_step(
-        "Place the Vcc pin in row 23 column G. <br>Place the trig pin in row 24 column G.<br>Place the echo pin in row 25 column G.<br>Place the GND pin in row 26 column G.",
+        "We have shown the wires in column G for clarity. Please place the wires in column J<br>It is important to not put wires in front of the sonar sensor.<br>Place the Vcc pin in row 23 column J. <br>Place the trig pin in row 24 column J.<br>Place the echo pin in row 25 column J.<br>Place the GND pin in row 26 column J.",
         "This is our sonar sensor",
         rect(1171, 87, 1676, 385),
         greyout=True,

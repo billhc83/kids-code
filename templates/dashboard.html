@@ -188,12 +188,12 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
         <div class="dash-card-label">📊 Your Progress</div> 
         <div class="progress-row">
             <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" 
-                     style="width: {{ ((completed|length / total_lessons) * 100)|int }}%">
+                <div class="progress-bar-fill"
+                     style="width: {{ ((completed_count / total_lessons) * 100)|int }}%">
                 </div>
             </div>
             <span class="progress-count">
-                {{ completed|length }} / {{ total_lessons }} projects
+                {{ completed_count }} / {{ total_lessons }} projects
             </span>
         </div>
     </div>

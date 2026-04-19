@@ -10,9 +10,11 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
     proj = None  # parent PROJECT (drawer, meta); None for legacy PRESETS-only entries
     p = None     # resolved preset dict: { sketch, default_view, ... }
 
+    print(f"[build_config] preset={preset!r}  in_PROJECTS={preset in PROJECTS}  in_PRESETS={preset in PRESETS}", flush=True)
     if preset in PROJECTS:
         proj = PROJECTS[preset]
         p = proj.get("presets", {}).get("default")
+        print(f"[build_config] found in PROJECTS  presets keys={list((proj.get('presets') or {}).keys())}  p type={type(p).__name__}", flush=True)
     elif preset in PRESETS:
         p = PRESETS[preset]
     else:
@@ -27,6 +29,7 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
         raise ValueError(f"Unknown block builder preset: {preset!r}")
 
     sketch = p.get("sketch") if isinstance(p, dict) else p
+    print(f"[build_config] sketch present={bool(sketch)}  is_progression={'//>>' in (sketch or '')}  sketch[:80]={repr((sketch or '')[:80])}", flush=True)
     if not sketch or not isinstance(sketch, str):
         raise ValueError(f"Preset {preset!r} has no sketch string")
 
@@ -40,6 +43,7 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
     is_progression = '//>>' in sketch
     if is_progression:
         steps = parse_steps(sketch)
+        print(f"[build_config] parse_steps → {len(steps) if steps else 'None'} steps  labels={[s['label'] for s in steps] if steps else []}", flush=True)
         config = {
             "mode": "progression",
             "steps": steps,

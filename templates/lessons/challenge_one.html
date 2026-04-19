@@ -36,9 +36,11 @@
     <p>Someone has built a circuit, but the code has gone missing! Your job is to write a script that wakes up the system.</p>
     <h3>The Mission:</h3>
     <ol style="margin-left:20px;line-height:2;font-size:15px;">
-        <li>Look at the <strong>Circuit Blueprint</strong> below.</li>
-        <li>Write a code that makes the <strong style="color:#cf222e;">Red Warning Light</strong> (LED) blink on and off like a heartbeat! ❤️⚡</li>
-        <li>Submit your secret code in the box at the bottom for the <strong>Head Detective</strong> to check!</li>
+        <li>Look at the <strong>Circuit Blueprint</strong> below and build the circuit on your breadboard.</li>
+        <li>Use the <strong>Block Builder</strong> (the blue button in the bottom-right corner) to write your code.</li>
+        <li>Make the <strong style="color:#cf222e;">Red Warning Light</strong> (LED) blink on and off like a heartbeat! ❤️⚡</li>
+        <li>When you're done, <strong>close the Block Builder</strong> — your code will appear in the submission box automatically.</li>
+        <li>Hit <strong>Submit</strong> to send it to the Head Detective for review! 🚀</li>
     </ol>
 </div>
 
@@ -48,24 +50,24 @@
 <div class="part-row">
     <div>
         <h3>🧱 Mystery Blueprint</h3>
-        <p><em>Follow these coordinates to see the crime scene!</em></p>
+        <p><em>Follow these coordinates to build the crime scene!</em></p>
 
         <h4>💡 <span style="color:#cf222e;">Warning Light</span> (LED)</h4>
         <ul style="margin-left:20px;line-height:1.9;font-size:14px;">
-            <li><strong>Long leg:</strong> row 10, column E</li>
-            <li><strong>Short leg:</strong> row 7, column E</li>
+            <li><strong>Long leg (+):</strong> row 12, column E</li>
+            <li><strong>Short leg (–):</strong> row 11, column E</li>
         </ul>
 
         <h4>⚡ The Helper (220 Ohm Resistor)</h4>
         <ul style="margin-left:20px;line-height:1.9;font-size:14px;">
-            <li><strong>Leg 1:</strong> row 7, column C</li>
-            <li><strong>Leg 2:</strong> — rail (Ground Rail)</li>
+            <li><strong>Leg 1:</strong> row 11, column D</li>
+            <li><strong>Leg 2:</strong> row 7, column D</li>
         </ul>
 
         <h4>🧶 The Wires</h4>
         <ol style="margin-left:20px;line-height:1.9;font-size:14px;">
-            <li><strong>Pin 13</strong> → row 10, column A</li>
-            <li><strong>Pin GND</strong> → — rail / Ground Rail</li>
+            <li><strong>Pin GND</strong> → row 7, column E</li>
+            <li><strong>Pin 8</strong> → row 12, column A</li>
         </ol>
     </div>
     <div>
@@ -73,12 +75,29 @@
             <h2>📝 The Goal</h2>
             <p>Make the LED turn <strong>ON</strong> for 1 second, then <strong>OFF</strong> for 1 second.</p>
             <p>It should keep doing this forever so everyone knows the castle is safe! 🏰✨</p>
+            <p style="margin-top:12px;font-size:13px;color:#57606a;">
+                <strong>Hint:</strong> The LED is on <strong>Pin 8</strong>.
+            </p>
         </div>
-        {{ hover_zoom("static/graphics/challenge_one_circuit.png", height=300, key="challenge1")|safe }}
+        {{ hover_zoom("static/graphics/project_one_circuit.png", height=300, key="challenge1")|safe }}
     </div>
 </div>
 
 <hr>
+
+<!-- How to use the block builder -->
+<div class="dash-card" style="background:#eff6ff;border:2px solid #bfdbfe;margin-bottom:24px;">
+    <div class="dash-card-label" style="color:#1d4ed8;">🔵 Using the Block Builder</div>
+    <p style="font-size:14px;color:#1e40af;line-height:1.7;">
+        Click the <strong>blue button</strong> in the bottom-right corner to open the Block Builder.
+        Use it to write your Arduino sketch — drag and drop blocks to build your code!
+        When you're happy with your sketch, <strong>click the blue button again to close</strong> and your code
+        will automatically appear in the submission box below.
+    </p>
+    <p style="font-size:13px;color:#3730a3;margin-top:8px;">
+        💡 You can also click <strong>"📋 Grab from Builder"</strong> at any time to pull your latest code.
+    </p>
+</div>
 
 <!-- Hints -->
 <details style="margin:20px 0;">
@@ -89,6 +108,7 @@
         <p>💡 <strong>Hint 1:</strong> Remember to use <code>pinMode</code> and <code>OUTPUT</code> in your setup so the light knows it needs to glow!</p>
         <p>💡 <strong>Hint 2:</strong> Use <code>digitalWrite</code> and <code>HIGH</code> to turn the light on and <code>LOW</code> to turn it off.</p>
         <p>💡 <strong>Hint 3:</strong> Don't forget a <code>delay(1000);</code> between your commands so the light has time to wake up and sleep! 😴</p>
+        <p>💡 <strong>Hint 4:</strong> The LED is connected to <strong>Pin 8</strong>.</p>
     </div>
 </details>
 
@@ -96,22 +116,41 @@
 
 <!-- Submit form or approved state -->
 {% if not submission or submission.status == 'rejected' %}
-<div class="dash-card">
+<div class="dash-card" id="submit-section">
     <div class="dash-card-label">
         {% if submission and submission.status == 'rejected' %}🔄 Resubmit Your Evidence
         {% else %}📤 Submit Your Evidence{% endif %}
     </div>
     <p style="font-size:14px;color:#57606a;margin-bottom:12px;">
-        Paste your complete Arduino sketch below. Make sure it compiles and uploads to your board before submitting.
+        Write your sketch in the Block Builder, then close it — your code will appear here automatically.
+        You can also paste it manually below.
     </p>
+
+    <!-- Code grabbed notice -->
+    <div id="code-grabbed-notice" style="display:none;padding:10px 14px;border-radius:8px;
+         background:#dcfce7;color:#1a7f37;border:1px solid #bbf7d0;
+         font-size:13px;font-weight:700;margin-bottom:10px;">
+        ✅ Code loaded from Block Builder!
+    </div>
+
     <form method="POST">
-        <textarea name="sketch_code"
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:700;color:#57606a;">Your Sketch</span>
+            <button type="button" onclick="grabCodeFromBuilder()"
+                    style="padding:6px 14px;background:#eff6ff;border:1px solid #bfdbfe;
+                           border-radius:8px;font-size:12px;font-weight:700;color:#1d4ed8;
+                           cursor:pointer;">
+                📋 Grab from Builder
+            </button>
+        </div>
+        <textarea id="sketch-textarea" name="sketch_code"
                   style="width:100%;min-height:300px;padding:14px;
                          background:#1e1e2e;color:#cdd6f4;
                          border:2px solid #dbeafe;border-radius:10px;
                          font-family:monospace;font-size:13px;line-height:1.6;
                          resize:vertical;outline:none;white-space:pre;tab-size:2;"
-                  placeholder="// Paste your Arduino sketch here..."
+                  placeholder="// Your code will appear here when you close the Block Builder,
+// or paste your Arduino sketch here..."
                   spellcheck="false">{% if submission %}{{ submission.sketch_code }}{% else %}void setup() {
   // put your setup code here, to run once:
 }
@@ -149,5 +188,47 @@ void loop() {
     </a>
 </div>
 {% endif %}
+
+<script>
+function grabCodeFromBuilder() {
+    var iframe = document.getElementById('bb-iframe');
+    if (iframe && iframe.contentWindow && typeof iframe.contentWindow.getGeneratedCode === 'function') {
+        var code = iframe.contentWindow.getGeneratedCode();
+        if (code && code.trim()) {
+            document.getElementById('sketch-textarea').value = code;
+            showCodeGrabbedNotice();
+        } else {
+            alert('No code found yet — build your sketch in the Block Builder first!');
+        }
+    } else {
+        alert('Open the Block Builder first (blue button ↘), write your code, then try again!');
+    }
+}
+
+function showCodeGrabbedNotice() {
+    var notice = document.getElementById('code-grabbed-notice');
+    if (!notice) return;
+    notice.style.display = 'block';
+    document.getElementById('submit-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(function() { notice.style.display = 'none'; }, 3000);
+}
+
+// Auto-populate textarea when the block builder FAB is closed
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'bb_close') {
+        // Short delay to let the iframe finish its close sequence
+        setTimeout(function() {
+            var iframe = document.getElementById('bb-iframe');
+            if (iframe && iframe.contentWindow && typeof iframe.contentWindow.getGeneratedCode === 'function') {
+                var code = iframe.contentWindow.getGeneratedCode();
+                if (code && code.trim()) {
+                    document.getElementById('sketch-textarea').value = code;
+                    showCodeGrabbedNotice();
+                }
+            }
+        }, 150);
+    }
+});
+</script>
 
 {% endblock %}

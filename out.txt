@@ -1,0 +1,10 @@
+{'fill': True,
+ 'filter': True,
+ 'flow': 'progression',
+ 'guidance': 'verify',
+ 'interface': 'blocks',
+ 'palette_override': ['intvar', 'pinmode', 'digitalwrite', 'delay', 'value'],
+ 'readonly': False,
+ 'structure': 'none',
+ 'validation': 'verify'}
+['intvar', 'pinmode', 'digitalwrite', 'delay', 'value']
