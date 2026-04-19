@@ -209,7 +209,109 @@
   }
   
   .status-online { color: #22c55e; }
-  .status-offline { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; }
+  .status-offline { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; cursor: pointer; }
+
+  /* KIDSCODE LINK MODAL */
+  #kclink-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.85);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+  }
+  #kclink-overlay.open { display: flex; }
+  #kclink-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+  }
+  #kclink-modal-header {
+    background: #0969da;
+    color: white;
+    padding: 20px 24px 16px;
+  }
+  #kclink-modal-header h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  #kclink-modal-header p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  #kclink-modal-body {
+    padding: 24px;
+  }
+  #kclink-modal-body p {
+    color: #334155;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+  .kclink-btn-primary {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #0969da;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .kclink-btn-primary:hover { background: #0757b8; }
+  .kclink-btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: #0969da;
+    border: 1px solid #0969da;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .kclink-btn-secondary:hover { background: #f0f7ff; }
+  .kclink-dismiss {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    margin-top: 8px;
+    background: none;
+    border: none;
+    width: 100%;
+    padding: 4px;
+  }
+  .kclink-dismiss:hover { color: #64748b; }
+  .kclink-os-note {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   
   /* GLOBAL DRAWER */
   #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:32px;
@@ -321,6 +423,21 @@
       <button id="close-serial-btn">Hide Monitor</button>
     </div>
     <div id="serial-monitor"></div>
+  </div>
+
+  <!-- KIDSCODE LINK MODAL -->
+  <div id="kclink-overlay">
+    <div id="kclink-modal">
+      <div id="kclink-modal-header">
+        <h2 id="kclink-modal-title">KidsCode Link needed</h2>
+        <p id="kclink-modal-subtitle">Connect your Arduino to this website</p>
+      </div>
+      <div id="kclink-modal-body">
+        <p id="kclink-modal-msg"></p>
+        <div id="kclink-modal-actions"></div>
+        <button class="kclink-dismiss" onclick="closeKCLinkModal()">Dismiss</button>
+      </div>
+    </div>
   </div>
 
   <!-- GLOBAL DRAWER -->
@@ -611,23 +728,100 @@ function parseAgentErrors(errorString) {
   return errors;
 }
 
-// Heartbeat to check if Agent is running
+// Heartbeat to check if KidsCode Link is running
+let agentOnline = false;
+
 async function checkAgentStatus() {
   const statusEl = document.getElementById('agent-status');
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
-    
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
     const res = await fetch('http://127.0.0.1:3210/status', { signal: controller.signal });
     clearTimeout(timeoutId);
 
-    statusEl.textContent = "● Agent Online";
+    agentOnline = true;
+    localStorage.setItem('kclink_installed', 'true');
+    statusEl.textContent = "● KidsCode Link";
     statusEl.className = "status-online";
+    statusEl.onclick = null;
   } catch (err) {
-    statusEl.textContent = "⚠ Offline: Open Arduino Agent";
+    agentOnline = false;
+    statusEl.textContent = "⚠ KidsCode Link Offline";
     statusEl.className = "status-offline";
+    statusEl.onclick = showKCLinkModal;
   }
 }
+
+function isWindows() {
+  return navigator.userAgent.toLowerCase().includes('windows');
+}
+
+function showKCLinkModal() {
+  const installed = localStorage.getItem('kclink_installed') === 'true';
+  const win = isWindows();
+
+  const title = document.getElementById('kclink-modal-title');
+  const subtitle = document.getElementById('kclink-modal-subtitle');
+  const msg = document.getElementById('kclink-modal-msg');
+  const actions = document.getElementById('kclink-modal-actions');
+
+  actions.innerHTML = '';
+
+  if (!win) {
+    title.textContent = 'Windows only for now';
+    subtitle.textContent = 'KidsCode Link';
+    msg.textContent = 'KidsCode Link is currently only available on Windows. Mac support is coming soon — check back!';
+  } else if (installed) {
+    title.textContent = 'KidsCode Link is sleeping';
+    subtitle.textContent = 'It just needs a nudge';
+    msg.textContent = 'KidsCode Link is installed but not running. Open it on your computer to connect, then come back here.';
+    const openBtn = document.createElement('a');
+    openBtn.href = 'kclink://launch';
+    openBtn.className = 'kclink-btn-primary';
+    openBtn.textContent = 'Open KidsCode Link';
+    actions.appendChild(openBtn);
+    const reinstallLink = document.createElement('a');
+    reinstallLink.href = 'https://github.com/billhc83/kids-code/releases/download/KidsCode_Link/KidsCode.Link.Setup.1.0.0.exe';
+    reinstallLink.target = '_blank';
+    reinstallLink.className = 'kclink-os-note';
+    reinstallLink.style.cssText = 'display:block; margin-top:12px; text-decoration:underline; cursor:pointer;';
+    reinstallLink.textContent = 'Reinstall KidsCode Link';
+    actions.appendChild(reinstallLink);
+    const note = document.createElement('p');
+    note.className = 'kclink-os-note';
+    note.textContent = '🪟 Windows only';
+    actions.appendChild(note);
+  } else {
+    title.textContent = 'KidsCode Link needed';
+
+    subtitle.textContent = 'One-time setup — takes about a minute';
+    msg.textContent = 'To upload code to your Arduino, you need KidsCode Link — a small helper app that connects this website to your board. Download it once and you\'re all set!';
+    const dlBtn = document.createElement('a');
+    dlBtn.href = 'https://github.com/billhc83/kids-code/releases/download/KidsCode_Link/KidsCode.Link.Setup.1.0.0.exe';
+    dlBtn.target = '_blank';
+    dlBtn.className = 'kclink-btn-primary';
+    dlBtn.textContent = '⬇ Download KidsCode Link';
+    actions.appendChild(dlBtn);
+    const parentNote = document.createElement('p');
+    parentNote.className = 'kclink-os-note';
+    parentNote.textContent = '👋 Ask a parent for help if you\'re not sure!';
+    actions.appendChild(parentNote);
+    const note = document.createElement('p');
+    note.className = 'kclink-os-note';
+    note.textContent = '🪟 Windows only';
+    actions.appendChild(note);
+  }
+
+  document.getElementById('kclink-overlay').classList.add('open');
+}
+
+function closeKCLinkModal() {
+  document.getElementById('kclink-overlay').classList.remove('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (e.target === document.getElementById('kclink-overlay')) closeKCLinkModal();
+});
 
 // Fetch ports
 async function fetchPorts() {
@@ -653,7 +847,7 @@ async function fetchPorts() {
 
     logToSerial("Ports refreshed");
   } catch (err) {
-    logToSerial("Agent not detected", true);
+    logToSerial("KidsCode Link not detected", true);
   }
 }
 
@@ -681,7 +875,7 @@ async function connectSerial() {
       return;
     }
   } catch (err) {
-    logToSerial("Could not start serial — is Arduino Agent running?", true);
+    logToSerial("Could not start serial — is KidsCode Link running?", true);
     return;
   }
 
@@ -707,7 +901,7 @@ async function connectSerial() {
   };
 
   ws.onerror = () => {
-    logToSerial("Serial connection failed — is Arduino Agent running?", true);
+    logToSerial("Serial connection failed — is KidsCode Link running?", true);
   };
 
   ws.onclose = () => {
@@ -717,6 +911,7 @@ async function connectSerial() {
 
 // Compile
 async function compileSketch() {
+  if (!agentOnline) { showKCLinkModal(); return; }
   // Ensure editor is up to date if we are currently in blocks mode
   if (currentMode === 'blocks' && window.getGeneratedCode) {
     editor.setValue(window.getGeneratedCode());
@@ -748,6 +943,7 @@ async function compileSketch() {
 
 // Upload
 async function uploadSketch() {
+  if (!agentOnline) { showKCLinkModal(); return; }
   if (currentMode === 'blocks' && window.getGeneratedCode && editor) {
     editor.setValue(window.getGeneratedCode());
   }
