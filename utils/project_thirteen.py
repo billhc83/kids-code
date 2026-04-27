@@ -323,10 +323,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I think my button legs missed row 10",
+    "I can't tell if wire is in column D",
+    "My Pin 2 wire isn't making contact",
+    "My ground wire isn't in the negative rail",
+    "I think my wire in column G is misplaced",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

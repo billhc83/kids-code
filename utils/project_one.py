@@ -182,10 +182,19 @@ PROGRESSION_PRESET = {
 }
 
 
+CHIPS = [
+    "My LED won't light up",
+    "My resistor between 11D-7D may be wrong",
+    "My GND wire at row 7E feels loose",
+    "My Pin 8 wire at row 12A isn't secure",
+    "My LED legs in 12E/11E might be swapped",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

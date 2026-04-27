@@ -220,10 +220,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "Button feels loose on the breadboard",
+    "I can't hear the buzzer beep",
+    "My buzzer legs don't fit in row 12",
+    "Wire from pin 8 isn't in row 12A",
+    "Ground wire not in the - rail",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

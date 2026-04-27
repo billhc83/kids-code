@@ -162,10 +162,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I pushed the launch button but no LED",
+    "My LED won’t light up",
+    "My wires fell off the breadboard",
+    "I’m not sure where to plug the resistor",
+    "My Arduino isn’t responding",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

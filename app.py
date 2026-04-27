@@ -14,6 +14,7 @@ from routes.admin import admin_bp
 from routes.parent import parent_bp
 from routes.builder import builder_bp
 from routes.main import main_bp
+from routes.help import help_bp
 
 from utils.progression import get_user_progression
 from utils.lessons import get_sidebar_groups, LESSON_BY_KEY
@@ -41,6 +42,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(parent_bp)
 app.register_blueprint(builder_bp)
 app.register_blueprint(main_bp)
+app.register_blueprint(help_bp)
 
 @app.context_processor
 def inject_globals():

@@ -787,13 +787,8 @@ function showKCLinkModal() {
     reinstallLink.style.cssText = 'display:block; margin-top:12px; text-decoration:underline; cursor:pointer;';
     reinstallLink.textContent = 'Reinstall KidsCode Link';
     actions.appendChild(reinstallLink);
-    const note = document.createElement('p');
-    note.className = 'kclink-os-note';
-    note.textContent = '🪟 Windows only';
-    actions.appendChild(note);
   } else {
     title.textContent = 'KidsCode Link needed';
-
     subtitle.textContent = 'One-time setup — takes about a minute';
     msg.textContent = 'To upload code to your Arduino, you need KidsCode Link — a small helper app that connects this website to your board. Download it once and you\'re all set!';
     const dlBtn = document.createElement('a');
@@ -909,9 +904,69 @@ async function connectSerial() {
   };
 }
 
+// Wake KidsCode Link via protocol handler, then poll until online or timeout
+async function wakeAndWaitForAgent(onSuccess, onFail) {
+  if (agentOnline) { onSuccess(); return; }
+
+  if (!isWindows()) { showKCLinkModal(); return; }
+
+  // If we've never seen the agent on this device, skip straight to install modal
+  const knownInstalled = localStorage.getItem('kclink_installed') === 'true';
+  if (!knownInstalled) { showKCLinkModal(); return; }
+
+  // Fire the protocol handler via hidden iframe — page stays put
+  const launcher = document.createElement('iframe');
+  launcher.style.display = 'none';
+  launcher.src = 'kclink://launch';
+  document.body.appendChild(launcher);
+  setTimeout(() => document.body.removeChild(launcher), 2000);
+
+  // Show waiting state in status bar
+  const statusEl = document.getElementById('agent-status');
+  statusEl.textContent = '⏳ Starting KidsCode Link...';
+  statusEl.className = 'status-offline';
+
+  // Poll for up to 8 seconds
+  const maxAttempts = 16;
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 1000);
+      await fetch('http://127.0.0.1:3210/status', { signal: controller.signal });
+      clearTimeout(t);
+      clearInterval(poll);
+      agentOnline = true;
+      localStorage.setItem('kclink_installed', 'true');
+      statusEl.textContent = '● KidsCode Link';
+      statusEl.className = 'status-online';
+      statusEl.onclick = null;
+      onSuccess();
+    } catch (_) {
+      if (attempts >= maxAttempts) {
+        clearInterval(poll);
+        // Flag is stale — clear it so next time we go straight to install
+        localStorage.removeItem('kclink_installed');
+        agentOnline = false;
+        statusEl.textContent = '⚠ KidsCode Link Offline';
+        statusEl.className = 'status-offline';
+        statusEl.onclick = showKCLinkModal;
+        onFail();
+      }
+    }
+  }, 500);
+}
+
 // Compile
 async function compileSketch() {
-  if (!agentOnline) { showKCLinkModal(); return; }
+  if (!agentOnline) {
+    wakeAndWaitForAgent(
+      () => compileSketch(),
+      () => showKCLinkModal()
+    );
+    return;
+  }
   // Ensure editor is up to date if we are currently in blocks mode
   if (currentMode === 'blocks' && window.getGeneratedCode) {
     editor.setValue(window.getGeneratedCode());
@@ -943,7 +998,13 @@ async function compileSketch() {
 
 // Upload
 async function uploadSketch() {
-  if (!agentOnline) { showKCLinkModal(); return; }
+  if (!agentOnline) {
+    wakeAndWaitForAgent(
+      () => uploadSketch(),
+      () => showKCLinkModal()
+    );
+    return;
+  }
   if (currentMode === 'blocks' && window.getGeneratedCode && editor) {
     editor.setValue(window.getGeneratedCode());
   }

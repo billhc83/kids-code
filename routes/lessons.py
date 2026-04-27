@@ -104,7 +104,8 @@ def lesson(lesson_key):
             username=session.get("user_id"),
             page=lesson_key,
             is_overlay=True,
-            builder_url=ide_url
+            builder_url=ide_url,
+            chips=project_data.get("chips") if project_data else None,
         )
         
         if drawer_content:

@@ -268,10 +268,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I flipped the LED legs backwards",
+    "I still can't see the LED light up",
+    "I think my resistor isn't connected",
+    "I can't find the Arduino GND pin",
+    "I can't plug the wire into Pin 8",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

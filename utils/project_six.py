@@ -232,10 +232,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I can't find photoresistor leg at row 18",
+    "My 10k resistor isn’t in row 15 H",
+    "I don’t see power from 5V to row 18 J",
+    "My GND wire isn’t in row 11 J",
+    "The A0 wire isn’t in row 15 J",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
