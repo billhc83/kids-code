@@ -1,0 +1,34 @@
+{% extends "lesson_base.html" %}
+{% set banner_image = "project_eighteen_banner.png" %}
+{% block title %}🏁 Drag Race: Mission Briefing — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+{%- if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{%- endif %}
+
+<div class="lesson-intro">
+    <h2>Welcome to the Drag Strip! 🏎️</h2>
+    <p>The engines are roaring and the crowd is cheering! 🏁 Today YOU are the chief engineer at our very own drag strip speed lab!</p><p>You are going to build a real speed trap using two ultrasonic sensors. 📡 When something zooms through, your tracker will clock its speed — just like at a real race!</p><p>Grab a toy car, roll a ball, or push anything you want. 🚗 We are going to find out what is the FASTEST thing at the drag strip!</p>
+
+<div class="mission-box" style="background:#f8f9fa;padding:20px;border-left:5px solid #333;border-radius:8px;margin:20px 0;">
+    <div class="mission-box"><h3>🎯 Your Mission</h3><ul><li>🔧 Build a two-sensor speed trap on your Arduino</li><li>📡 Detect objects passing through Sensor 1, then Sensor 2</li><li>⚡ Calculate the speed and show it on screen!</li></ul></div>
+</div>
+
+<h3>🛠 What You Will Learn</h3><ul><li>How ultrasonic sensors detect nearby objects</li><li>How to measure time between two events</li><li>How to calculate speed using distance and time</li><li>How to show your results on the Serial Monitor</li><li>How real speed traps work in the world!</li></ul>
+</div>
+
+<hr>
+
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_eighteen_part_one">
+        <button type="submit" class="next-btn">Start Your Engines →</button>
+    </form>
+    <p>⬅️ Head to the build station to set up your speed trap!</p>
+</div>
+
+{% endblock %}

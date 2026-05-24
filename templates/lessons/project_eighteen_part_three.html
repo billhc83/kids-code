@@ -1,0 +1,51 @@
+{% extends "lesson_base.html" %}
+{% set banner_image = "project_eighteen_banner.png" %}
+{% block title %}🏁 Drag Race: Speed Champion! — KidsCode{% endblock %}
+
+{% block lesson_content %}
+
+{%- if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="Banner"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{%- endif %}
+
+<div class="lesson-intro">
+    <h2>🎉 Mission Complete — Speed Champion!</h2>
+    <p>You did it, chief engineer! 🎉 Your speed trap is clocking objects just like a real drag strip timer!</p><p>Roll a car, slide a book, or toss a ball — your tracker can measure them all! 🚀</p>
+
+    <div class="mission-box" style="background:#f8f9fa;padding:20px;border-left:5px solid #333;border-radius:8px;margin:20px 0;">
+        <p>Your system can now:</p>
+        <ul>
+            <li>📡 A two-sensor speed trap that detects passing objects</li>
+            <li>⏱️ A timer that starts and stops automatically</li>
+            <li>➗ A speed calculator using real distance and time math</li>
+            <li>📺 A live speed display on the Serial Monitor</li>
+            <li>🏎️ A device you can test ANY object with!</li>
+        </ul>
+    </div>
+
+    <h3>🧠 What You Just Learned</h3>
+    <ul>
+        <li>📡 How ultrasonic sensors send and bounce back sound waves</li>
+        <li>⏱️ How to measure time between two events in code</li>
+        <li>➗ How speed = distance ÷ time works in real life</li>
+        <li>💡 How to use variables to store and compare readings</li>
+        <li>🖥️ How to print live results to the Serial Monitor</li>
+    </ul>
+
+    <h3>🚀 What Else Can You Build?</h3>
+    <div class="mission-box" style="background:#eef6ff;padding:20px;border-left:5px solid #4a90e2;border-radius:8px;margin:20px 0;">
+        <ul>
+            <li>🚦 <strong>Speed Limit Alert</strong><br>Flash an LED or buzz a buzzer when something goes too fast!</li>
+            <li>🏆 <strong>Top Speed Leaderboard</strong><br>Track the 3 fastest speeds and display the winner on screen!</li>
+            <li>📏 <strong>Change the Distance</strong><br>Move the sensors further apart — does it change your results?</li>
+            <li>📊 <strong>Chart the Speeds</strong><br>Log speeds to a spreadsheet using Serial output and make a race graph!</li>
+        </ul>
+    </div>
+    <p><strong>You are no longer just coding… you are engineering. 🚀</strong></p>
+</div>
+
+<hr>
+
+{% endblock %}

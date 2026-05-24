@@ -35,7 +35,8 @@
       "Bash(python3 -c ':*)",
       "Bash(python utils/retrofit_chips.py)",
       "Bash(pip install *)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python utils/lesson_scaffold.py lesson_spec.json)"
     ],
     "additionalDirectories": [
       "c:\\kids-code\\kids-code\\.claude"

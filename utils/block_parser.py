@@ -131,9 +131,18 @@ class BlockTransformer(Transformer):
         }
         if len(items) > 3:
             res['joiner'] = 'and' if str(items[3]) == '&&' else 'or'
-            res['leftExpr2'] = items[4]
-            res['op2'] = str(items[5])
-            res['rightExpr2'] = items[6]
+            inner = items[4]
+            if isinstance(inner, dict) and 'leftExpr' in inner:
+                # Recursive parse: condition(A op B && condition(C op D))
+                # Unpack the nested condition into the flat leftExpr2/op2/rightExpr2 fields
+                res['leftExpr2'] = inner.get('leftExpr')
+                res['op2'] = inner.get('op', '==')
+                res['rightExpr2'] = inner.get('rightExpr')
+            else:
+                # Flat 7-item parse: [A, op, B, &&, C, op, D]
+                res['leftExpr2'] = items[4]
+                res['op2'] = str(items[5]) if len(items) > 5 else '=='
+                res['rightExpr2'] = items[6] if len(items) > 6 else None
         return res
 
     def stmt(self, items):

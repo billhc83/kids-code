@@ -46,6 +46,14 @@
     <p><strong>You are no longer just coding… you are engineering. 🚀</strong></p>
 </div>
 
+<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
+    <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="lesson_key" value="project_seventeen_part_three">
+        <button type="submit" class="next-btn">Next Lesson →</button>
+    </form>
+    <p>⬅️ Ready for the next challenge? Head to the Drag Race!</p>
+</div>
+
 <hr>
 
 {% endblock %}
