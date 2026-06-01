@@ -12,7 +12,119 @@ META = {
 # Wiring and component placement steps.
 # rect() / circle() / line() coordinates are placeholders —
 # update with real pixel coords once the circuit image is available.
-STEPS = []
+STEPS = [
+    intro_step(
+        "Lets wire up the speed sensor",
+        "",
+    ),
+
+    build_step(
+        """In your first bread board <br>
+Place VCC in row 7 column H
+Place TRIG in row 8 column H
+Place ECHO in row 9 column H
+Place GND in row 10 column H""",
+        "",
+        rect(752, 76, 1273, 355),
+        greyout=True,
+    ),
+
+    build_step(
+        """In your second breadboard <br>
+Place VCC in row 15 column H
+Place TRIG in row 16 column H
+Place ECHO in row 17 column H
+Place GND in row 18 column H""",
+        "",
+        rect(2046, 84, 2575, 363),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 2.<br>Place the other end in row 8, column J.",
+        "We are showin the wire in front of the sensor in the picture so we can see it, but make sure it goes into column J",
+        line((503, 688), (722, 688), (761, 413), (997, 417), (997, 383), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 3.<br>Place the other end in row 8, column J.",
+        "We are showing the wire in front of the sensor so we can see it,  make sure you actually plug it into column J",
+        line((486, 657), (696, 657), (731, 360), (1023, 364), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 4.<br>Place the other end in row 21, column J.",
+        "We are showing the wire in front of the sensor so we can see it,  make sure you actually plug it into column J",
+        line((507, 626), (619, 635), (727, 93), (1642, 97), (1642, 411), (2291, 416), (2300, 385), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 5.<br>Place the other end in Arduino Pin 22.",
+        "We are showing the wire in front of the sensor so we can see it,  make sure you actually plug it into column J",
+        line((503, 594), (589, 603), (696, 65), (1672, 70), (1672, 358), (2317, 358), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin 5V.<br>Place the other end in the positive / + rail.",
+        "",
+        line((9, 453), (404, 732), (860, 732), (877, 680), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in Arduino Pin GND.<br>Place the other end in the negative / - rail.",
+        "",
+        line((17, 513), (383, 771), (1371, 767), (1419, 651), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the negative / - rail.<br>Place the other end in the negative / - rail.",
+        "",
+        line((1561, 659), (1763, 655), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the positive / + rail.<br>Place the other end in the positive / + rail.",
+        "",
+        line((1569, 686), (1771, 686), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the positive / + rail.<br>Place the other end in Arduino Pin 7.",
+        "Make sure the wire is not in front of the sensor",
+        line((980, 703), (967, 372), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the positive / + rail.<br>Place the other end in row 20, column J.",
+        "Make sure the wire is not in front of the sensor",
+        line((2279, 696), (2270, 373), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the negative / - rail.<br>Place the other end in Arduino Pin 10.",
+        "Make sure your wire is not in front of the sensor",
+        line((1088, 669), (1049, 368), width=25),
+        greyout=True,
+    ),
+
+    build_step(
+        "Place one end of the wire in the negative / - rail.<br>Place the other end in row 23, column J.",
+        "Make sure your wire is not in front of the sensor",
+        line((2356, 678), (2347, 373), width=25),
+        greyout=True,
+    ),
+
+]
 
 
 SKETCH_PRESET = {

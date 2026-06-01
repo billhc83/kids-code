@@ -56,6 +56,9 @@ def lesson(lesson_key):
         title = meta.get("title") or project_data.get("title")
         if img and steps:
             extra["assembly_guide_html"] = render_assembly_guide(img, steps, title)
+        circuit_def = project_data.get("circuit_definition")
+        if circuit_def:
+            extra["circuit_def_json"] = json.dumps(circuit_def)
 
     if lesson_key == "project_fourteen_part_one":
         from utils.code_breaker import serial_monitor

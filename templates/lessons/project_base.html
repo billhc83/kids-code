@@ -29,8 +29,16 @@
 </div>
 
 <div class="lesson-tab-panel active" id="tab-overview">
-    {% if circuit_image %}
-    {{ hover_zoom("static/graphics/" + circuit_image, height=500, key=lesson_key)|safe }}
+    {% if circuit_def_json %}
+        <div id="circuit-canvas-{{ lesson_key }}" style="max-width:900px; margin:0 auto; background:#f8f5e8; border-radius:8px; padding:12px;"></div>
+        <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
+        <script>
+            const circuitDef = {{ circuit_def_json | safe }};
+            const renderer = new CircuitRenderer(circuitDef, 'circuit-canvas-{{ lesson_key }}');
+            renderer.render();
+        </script>
+    {% elif circuit_image %}
+        {{ hover_zoom("static/graphics/" + circuit_image, height=500, key=lesson_key)|safe }}
     {% endif %}
 </div>
 

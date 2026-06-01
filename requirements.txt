@@ -11,3 +11,4 @@ responses
 supabase
 respx
 lark
+openai
