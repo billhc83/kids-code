@@ -1,0 +1,329 @@
+{
+  "project": "eleven",
+  "llm_input": {
+    "topic": "Project 11: Engine System Start",
+    "components": "SLIDE_SWITCH, BUTTON, LED (color=red), BUZZER",
+    "pins": [
+      "D9",
+      "D7",
+      "D2",
+      "D5"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Engine Start System",
+      "difficulty": "easy",
+      "description": "Create a simulated engine start system with a switch, button, LED, and buzzer.",
+      "learning_goal": "Understanding basic input/output control with switches and sensors",
+      "code_hint": "Check slide switch state, activate LED and buzzer when button is pressed"
+    },
+    "components": [
+      {
+        "id": "SW1",
+        "type": "SLIDE_SWITCH",
+        "properties": {}
+      },
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D9",
+        "to": "SW1.com"
+      },
+      {
+        "from": "SW1.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D7",
+        "to": "BTN1.TL"
+      },
+      {
+        "from": "BTN1.BR",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D5",
+        "to": "LED1.anode"
+      },
+      {
+        "from": "LED1.cathode",
+        "to": "R_LED1.pin1"
+      },
+      {
+        "from": "R_LED1.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D2",
+        "to": "BUZ1.positive"
+      },
+      {
+        "from": "BUZ1.negative",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Engine Start System",
+      "difficulty": "easy",
+      "description": "Create a simulated engine start system with a switch, button, LED, and buzzer.",
+      "learning_goal": "Understanding basic input/output control with switches and sensors",
+      "code_hint": "Check slide switch state, activate LED and buzzer when button is pressed"
+    },
+    "components": [
+      {
+        "id": "SW1",
+        "type": "SLIDE_SWITCH",
+        "pins": {
+          "pin1": {
+            "col": "E",
+            "row": 11
+          },
+          "com": {
+            "col": "E",
+            "row": 12
+          },
+          "pin2": {
+            "col": "E",
+            "row": 13
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "pins": {
+          "TL": {
+            "col": "E",
+            "row": 17
+          },
+          "TR": {
+            "col": "F",
+            "row": 17
+          },
+          "BL": {
+            "col": "E",
+            "row": 19
+          },
+          "BR": {
+            "col": "F",
+            "row": 19
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "pins": {
+          "anode": {
+            "col": "E",
+            "row": 25
+          },
+          "cathode": {
+            "col": "E",
+            "row": 24
+          }
+        },
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "R_LED1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 24
+          },
+          "pin2": {
+            "col": "D",
+            "row": 20
+          }
+        },
+        "properties": {
+          "ohms": 220
+        }
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "pins": {
+          "positive": {
+            "col": "F",
+            "row": 26
+          },
+          "negative": {
+            "col": "F",
+            "row": 29
+          }
+        },
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D9",
+        "to": "breadboard.A12",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.D13",
+        "to": "breadboard.-1.13",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D7",
+        "to": "breadboard.A17",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.G19",
+        "to": "breadboard.-1.19",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D5",
+        "to": "breadboard.A25",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.E20",
+        "to": "breadboard.-1.20",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D2",
+        "to": "breadboard.J26",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.G29",
+        "to": "breadboard.-1.29",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.GND",
+        "to": "breadboard.-1.30",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "SW1",
+        "instruction": "Place the slide switch on the breadboard with the centre pin in row 12, column E and the side pin in row 13, column E.",
+        "tip": "Slide it toward the GND side to turn ON \u2014 that closes the circuit."
+      },
+      {
+        "type": "component",
+        "id": "BTN1",
+        "instruction": "Place the button onto the breadboard across the center gap. Top legs in row 17, columns E and F. Bottom legs in row 19, columns E and F.",
+        "tip": "The button bridges the two halves of the breadboard."
+      },
+      {
+        "type": "component",
+        "id": "LED1",
+        "instruction": "Put the red LED on the breadboard with the long leg (anode) in row 25, column E and the short leg (cathode) in row 24, column E.",
+        "tip": "The long leg is positive \u2014 it's called the anode!"
+      },
+      {
+        "type": "component",
+        "id": "R_LED1",
+        "instruction": "Put the 220\u03a9 resistor on the breadboard with one leg in row 24, column D and the other leg in row 20, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "component",
+        "id": "BUZ1",
+        "instruction": "Place the buzzer with the long leg (+) in row 26, column F and the short leg (\u2212) in row 29, column F.",
+        "tip": "The long leg is positive \u2014 mark it with a tiny + on the buzzer."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D9",
+        "to": "breadboard.A12",
+        "instruction": "Connect a green wire from Arduino pin D9 to the breadboard at row 12, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.D13",
+        "to": "breadboard.-1.13",
+        "instruction": "Connect a black wire from the breadboard at row 13, column D to the negative (\u2212) rail at row 13.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D7",
+        "to": "breadboard.A17",
+        "instruction": "Connect a green wire from Arduino pin D7 to the breadboard at row 17, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.G19",
+        "to": "breadboard.-1.19",
+        "instruction": "Connect a black wire from the breadboard at row 19, column G to the negative (\u2212) rail at row 19.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D5",
+        "to": "breadboard.A25",
+        "instruction": "Connect a green wire from Arduino pin D5 to the breadboard at row 25, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E20",
+        "to": "breadboard.-1.20",
+        "instruction": "Connect a black wire from the breadboard at row 20, column E to the negative (\u2212) rail at row 20.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D2",
+        "to": "breadboard.J26",
+        "instruction": "Connect a green wire from Arduino pin D2 to the breadboard at row 26, column J.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.G29",
+        "to": "breadboard.-1.29",
+        "instruction": "Connect a black wire from the breadboard at row 29, column G to the negative (\u2212) rail at row 29.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.GND",
+        "to": "breadboard.-1.30",
+        "instruction": "Connect a black wire from the Arduino's GND pin to the negative (\u2212) rail at row 30.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

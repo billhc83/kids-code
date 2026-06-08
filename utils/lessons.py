@@ -209,6 +209,14 @@ LESSONS = [
         "block_builder": None
     },
 
+    {
+        "key": "project_nineteen",
+        "title": "🤖 Project 19: The Robot Gatekeeper",
+        "template": "lessons/project_nineteen.html",
+        "part": None,
+        "block_builder": "project_nineteen"
+    },
+
 ]
 
 # Quick lookups

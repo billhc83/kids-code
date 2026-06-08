@@ -1,0 +1,254 @@
+{
+  "project": "ten",
+  "llm_input": {
+    "topic": "Project 10: The Spy Vault Security Console",
+    "components": "SLIDE_SWITCH, SLIDE_SWITCH, LED (color=red)",
+    "pins": [
+      "D2",
+      "D3",
+      "D8"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Spy Vault Security Console",
+      "difficulty": "easy",
+      "description": "Use two slide switches to control a red LED that lights up only when both are toggled on.",
+      "learning_goal": "Understanding how to use slide switches as input controls for conditional output activation",
+      "code_hint": "Read both slide switch pins and turn on the LED only when both are HIGH"
+    },
+    "components": [
+      {
+        "id": "SW1",
+        "type": "SLIDE_SWITCH",
+        "properties": {}
+      },
+      {
+        "id": "SW2",
+        "type": "SLIDE_SWITCH",
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "properties": {
+          "color": "red"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "SW1.com"
+      },
+      {
+        "from": "SW1.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D3",
+        "to": "SW2.com"
+      },
+      {
+        "from": "SW2.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "LED1.anode"
+      },
+      {
+        "from": "LED1.cathode",
+        "to": "R_LED1.pin1"
+      },
+      {
+        "from": "R_LED1.pin2",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Spy Vault Security Console",
+      "difficulty": "easy",
+      "description": "Use two slide switches to control a red LED that lights up only when both are toggled on.",
+      "learning_goal": "Understanding how to use slide switches as input controls for conditional output activation",
+      "code_hint": "Read both slide switch pins and turn on the LED only when both are HIGH"
+    },
+    "components": [
+      {
+        "id": "SW1",
+        "type": "SLIDE_SWITCH",
+        "pins": {
+          "pin1": {
+            "col": "E",
+            "row": 11
+          },
+          "com": {
+            "col": "E",
+            "row": 12
+          },
+          "pin2": {
+            "col": "E",
+            "row": 13
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "SW2",
+        "type": "SLIDE_SWITCH",
+        "pins": {
+          "pin1": {
+            "col": "E",
+            "row": 16
+          },
+          "com": {
+            "col": "E",
+            "row": 17
+          },
+          "pin2": {
+            "col": "E",
+            "row": 18
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "pins": {
+          "anode": {
+            "col": "E",
+            "row": 24
+          },
+          "cathode": {
+            "col": "E",
+            "row": 23
+          }
+        },
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "R_LED1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 23
+          },
+          "pin2": {
+            "col": "D",
+            "row": 19
+          }
+        },
+        "properties": {
+          "ohms": 220
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.D13",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D3",
+        "to": "breadboard.A17",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.D18",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "breadboard.A24",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.E19",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "SW1",
+        "instruction": "Place the slide switch on the breadboard with the centre pin in row 12, column E and the side pin in row 13, column E.",
+        "tip": "Slide it toward the GND side to turn ON \u2014 that closes the circuit."
+      },
+      {
+        "type": "component",
+        "id": "SW2",
+        "instruction": "Place the slide switch on the breadboard with the centre pin in row 17, column E and the side pin in row 18, column E.",
+        "tip": "Slide it toward the GND side to turn ON \u2014 that closes the circuit."
+      },
+      {
+        "type": "component",
+        "id": "LED1",
+        "instruction": "Put the red LED on the breadboard with the long leg (anode) in row 24, column E and the short leg (cathode) in row 23, column E.",
+        "tip": "The long leg is positive \u2014 it's called the anode!"
+      },
+      {
+        "type": "component",
+        "id": "R_LED1",
+        "instruction": "Put the 220\u03a9 resistor on the breadboard with one leg in row 23, column D and the other leg in row 19, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "instruction": "Connect a green wire from Arduino pin D2 to the breadboard at row 12, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.D13",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 13, column D to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D3",
+        "to": "breadboard.A17",
+        "instruction": "Connect a green wire from Arduino pin D3 to the breadboard at row 17, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.D18",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 18, column D to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D8",
+        "to": "breadboard.A24",
+        "instruction": "Connect a green wire from Arduino pin D8 to the breadboard at row 24, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E19",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 19, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

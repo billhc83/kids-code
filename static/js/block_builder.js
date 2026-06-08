@@ -94,12 +94,31 @@
     return pad + BB.BLOCKS[blockToGen.type].genStmt(blockToGen.params, blockToGen.exChildren || []);
   };
 
+  function hasServoBlocks() {
+    function walkArr(arr) {
+      if (!arr) return false;
+      for (var i = 0; i < arr.length; i++) {
+        var b = arr[i].type === 'slot' ? arr[i].content : arr[i];
+        if (!b) continue;
+        if (b.type && b.type.indexOf('servo') === 0) return true;
+        if (b.ifbody && walkArr(b.ifbody)) return true;
+        if (b.elseifs) for (var j = 0; j < b.elseifs.length; j++) { if (walkArr(b.elseifs[j].body)) return true; }
+        if (b.elsebody && walkArr(b.elsebody)) return true;
+        if (b.body && walkArr(b.body)) return true;
+      }
+      return false;
+    }
+    return walkArr(BB.SECTIONS.global) || walkArr(BB.SECTIONS.setup) || walkArr(BB.SECTIONS.loop);
+  }
+
   BB.genCode = function () {
     var co = document.getElementById('codeout');
     var gv = BB.genBlocks(BB.SECTIONS.global, 0);
     var sc = BB.genBlocks(BB.SECTIONS.setup, 1);
     var lc = BB.genBlocks(BB.SECTIONS.loop, 1);
+    var includes = hasServoBlocks() ? '#include <Servo.h>\n\n' : '';
     co.textContent = '// Arduino Sketch\n// Block Builder\n// ------------\n\n'
+      + includes
       + (gv ? gv + '\n\n' : '')
       + 'void setup() {\n' + (sc ? sc + '\n' : '') + '}'
       + '\n\nvoid loop() {\n' + (lc ? lc + '\n' : '') + '}';

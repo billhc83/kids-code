@@ -1,3 +1,5 @@
+let _rendererUidCounter = 0;
+
 function _ensureDefs(renderer) {
   let defs = renderer.svgEl.querySelector('defs');
   if (!defs) {
@@ -6,15 +8,19 @@ function _ensureDefs(renderer) {
   }
   return defs;
 }
- 
+
 /**
  * Register a gradient/filter only once per SVG render pass.
- * Returns the id so it can be used in fill="url(#id)".
+ * IDs are prefixed with the renderer's UID so multiple renderers on the
+ * same page don't share gradient elements — sharing breaks in Chrome when
+ * the first SVG is hidden (display:none) and url(#id) can't resolve it.
+ * Returns the scoped id for use in fill="url(#id)".
  */
 function _defOnce(renderer, id, builderFn) {
+  const localId = renderer._uid + '_' + id;
   const defs = _ensureDefs(renderer);
-  if (!defs.querySelector('#' + id)) builderFn(renderer, defs, id);
-  return id;
+  if (!defs.querySelector('#' + localId)) builderFn(renderer, defs, localId);
+  return localId;
 }
  
 /** Shorthand: create element via renderer and append to defs. */
@@ -270,13 +276,18 @@ const SYMBOL_RENDERERS = {
 
     const x  = (pins.TL.x + pins.TR.x + pins.BL.x + pins.BR.x) / 4;
     const y  = (pins.TL.y + pins.TR.y + pins.BL.y + pins.BR.y) / 4;
-    const bw = 1.8,  bh = 1.0;
+    // 6×6 mm body — spans the E/F gap (2 SVG units) in both axes
+    const bw = 1.8,  bh = 1.8;
 
-    // 4 legs drawn from body-edge attachment points to actual pin holes
+    // Legs: real tactile-button legs exit the bottom corners of the housing
+    // and bend outward into the breadboard holes.  Each leg runs from the
+    // body base-corner (same left/right side as the pin) down to the pin hole.
     [pins.TL, pins.TR, pins.BL, pins.BR].forEach(function(pin) {
+      const bx = x + (pin.x >= x ? bw / 2 : -bw / 2);  // left or right side
+      const by = y + bh / 2;                             // always the base of the body
       renderer.svgEl.appendChild(renderer._el('line', {
-        x1: pin.x, y1: pin.y, x2: pin.x, y2: pin.y + (pin.y < y ? -0.5 : 0.5),
-        stroke: '#DDDDDD', 'stroke-width': 0.1, 'stroke-linecap': 'round'
+        x1: bx, y1: by, x2: pin.x, y2: pin.y,
+        stroke: '#CCCCCC', 'stroke-width': 0.12, 'stroke-linecap': 'round'
       }));
     });
  
@@ -301,29 +312,35 @@ const SYMBOL_RENDERERS = {
       width: bw - 0.2, height: bh * 0.28, rx: 0.08,
       fill: '#FFFFFF', 'fill-opacity': 0.07
     }));
- 
-    // Cap stem (connects base to dome)
-    renderer.svgEl.appendChild(renderer._el('rect', {
-      x: x - 0.3, y: y - bh / 2 - 0.38,
-      width: 0.6, height: 0.42, rx: 0.07,
-      fill: capColor,
-      stroke: '#881111', 'stroke-width': 0.04
+
+    // Diagonal continuity marks — TL↔BR and TR↔BL are internally shorted on this SPST switch
+    const _hw = bw / 2 - 0.18, _hh = bh / 2 - 0.18;
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x - _hw, y1: y - _hh, x2: x + _hw, y2: y + _hh,
+      stroke: '#FFFFFF', 'stroke-width': 0.07, 'stroke-opacity': 0.22,
+      'stroke-dasharray': '0.18 0.1'
     }));
- 
-    // Cap dome
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x + _hw, y1: y - _hh, x2: x - _hw, y2: y + _hh,
+      stroke: '#FFFFFF', 'stroke-width': 0.07, 'stroke-opacity': 0.22,
+      'stroke-dasharray': '0.18 0.1'
+    }));
+
+    // Cap — top-down view: a round dome centered on the body (what you see from above).
+    // No stem needed — we're looking straight down at the button.
     renderer.svgEl.appendChild(renderer._el('circle', {
-      cx: x, cy: y - bh / 2 - 0.38,
-      r: 0.42,
+      cx: x, cy: y,
+      r: 0.55,
       fill: 'url(#' + capGradId + ')',
-      stroke: '#881111', 'stroke-width': 0.04
+      stroke: '#881111', 'stroke-width': 0.05
     }));
- 
-    // Cap specular
+
+    // Cap specular highlight (top-left glint)
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.13, cy: y - bh / 2 - 0.52,
-      rx: 0.14, ry: 0.09,
-      fill: '#FFFFFF', 'fill-opacity': 0.58,
-      transform: 'rotate(-22,' + (x - 0.13) + ',' + (y - bh / 2 - 0.52) + ')'
+      cx: x - 0.18, cy: y - 0.18,
+      rx: 0.16, ry: 0.10,
+      fill: '#FFFFFF', 'fill-opacity': 0.60,
+      transform: 'rotate(-30,' + (x - 0.18) + ',' + (y - 0.18) + ')'
     }));
   },
  
@@ -343,11 +360,11 @@ const SYMBOL_RENDERERS = {
  
     const x = (pins.positive.x + pins.negative.x) / 2;
     const y = (pins.positive.y + pins.negative.y) / 2;
-    const r = 0.85;
+    const r = 2.0;
  
     // Shadow
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x + 0.07, cy: y + 0.1, rx: r + 0.05, ry: r + 0.05,
+      cx: x + 0.16, cy: y + 0.22, rx: r + 0.1, ry: r + 0.1,
       fill: '#00000055'
     }));
  
@@ -367,60 +384,54 @@ const SYMBOL_RENDERERS = {
     });
  
     // Centre vent holes
-    [[-0.12, -0.12], [0.12, -0.12], [0, 0.15],
-     [-0.12, 0.12],  [0.12, 0.12]].forEach(function(d) {
+    [[-0.28, -0.28], [0.28, -0.28], [0, 0.35],
+     [-0.28, 0.28],  [0.28, 0.28]].forEach(function(d) {
       renderer.svgEl.appendChild(renderer._el('circle', {
-        cx: x + d[0], cy: y + d[1], r: 0.055,
+        cx: x + d[0], cy: y + d[1], r: 0.13,
         fill: '#111'
       }));
     });
  
     // Top sheen
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.28, cy: y - 0.33, rx: 0.32, ry: 0.18,
+      cx: x - 0.66, cy: y - 0.78, rx: 0.75, ry: 0.42,
       fill: '#FFFFFF', 'fill-opacity': 0.09,
-      transform: 'rotate(-28,' + (x - 0.28) + ',' + (y - 0.33) + ')'
+      transform: 'rotate(-28,' + (x - 0.66) + ',' + (y - 0.78) + ')'
     }));
  
-    // + polarity marker
-    const plusEl = renderer._el('text', {
-      x: x - 0.28, y: y + 0.12,
-      'text-anchor': 'middle', 'font-size': 0.4,
-      fill: '#FFCC00', 'font-family': 'monospace', 'font-weight': 'bold'
+    
+    // Leads — exit body edge toward each pin, then continue to the breadboard hole
+    [
+      { pin: pins.positive, color: '#FFDD88' },
+      { pin: pins.negative, color: '#CCCCCC' },
+    ].forEach(function(leg) {
+      const dx = leg.pin.x - x;
+      const dy = leg.pin.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+      const ex = x + r * (dx / dist);
+      const ey = y + r * (dy / dist);
+      renderer.svgEl.appendChild(renderer._el('line', {
+        x1: ex, y1: ey, x2: leg.pin.x, y2: leg.pin.y,
+        stroke: leg.color, 'stroke-width': 0.1, 'stroke-linecap': 'round'
+      }));
+      renderer.svgEl.appendChild(renderer._el('circle', {
+        cx: leg.pin.x, cy: leg.pin.y, r: 0.09,
+        fill: leg.color
+      }));
     });
-    plusEl.textContent = '+';
-    renderer.svgEl.appendChild(plusEl);
- 
-    // PCB mount rim at base
-    renderer.svgEl.appendChild(renderer._el('rect', {
-      x: x - r, y: y + r - 0.05, width: r * 2, height: 0.18,
-      rx: 0.04, fill: '#333', stroke: '#222', 'stroke-width': 0.03
-    }));
- 
-    // Positive lead
-    renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x - 0.3, y1: y + r + 0.1, x2: pins.positive.x, y2: pins.positive.y,
-      stroke: '#CCCCCC', 'stroke-width': 0.1, 'stroke-linecap': 'round'
-    }));
-
-    // Negative lead
-    renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x + 0.3, y1: y + r + 0.1, x2: pins.negative.x, y2: pins.negative.y,
-      stroke: '#CCCCCC', 'stroke-width': 0.1, 'stroke-linecap': 'round'
-    }));
  
     // Sound arc (kept — it's a nice schematic hint)
     renderer.svgEl.appendChild(renderer._el('path', {
-      d: 'M ' + (x - 0.38) + ' ' + (y - r - 0.08) +
-         ' Q ' + x + ' ' + (y - r - 0.52) +
-         ' ' + (x + 0.38) + ' ' + (y - r - 0.08),
+      d: 'M ' + (x - 0.89) + ' ' + (y - r - 0.18) +
+         ' Q ' + x + ' ' + (y - r - 1.22) +
+         ' ' + (x + 0.89) + ' ' + (y - r - 0.18),
       fill: 'none', stroke: '#888', 'stroke-width': 0.1,
       'stroke-linecap': 'round'
     }));
     renderer.svgEl.appendChild(renderer._el('path', {
-      d: 'M ' + (x - 0.55) + ' ' + (y - r - 0.22) +
-         ' Q ' + x + ' ' + (y - r - 0.82) +
-         ' ' + (x + 0.55) + ' ' + (y - r - 0.22),
+      d: 'M ' + (x - 1.29) + ' ' + (y - r - 0.52) +
+         ' Q ' + x + ' ' + (y - r - 1.93) +
+         ' ' + (x + 1.29) + ' ' + (y - r - 0.52),
       fill: 'none', stroke: '#666', 'stroke-width': 0.08,
       'stroke-linecap': 'round'
     }));
@@ -430,6 +441,8 @@ const SYMBOL_RENDERERS = {
   // ── SERVO ──────────────────────────────────────────────────────────────────
   // Off-breadboard component. pins.body positions the centre of the servo body
   // using any convenient breadboard hole as a visual anchor.
+  // Falls back to computing the body centre from signal/power/ground pins when
+  // pins.body is absent (circuit engine auto-placement path).
   SERVO: function(renderer, pins, props) {
     const bodyGradId = _defOnce(renderer, 'servoBodyGrad', function(r, defs, id) {
       const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
@@ -438,15 +451,23 @@ const SYMBOL_RENDERERS = {
       lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#114477' }));
       defs.appendChild(lg);
     });
- 
+
     const hornGradId = _defOnce(renderer, 'servoHornGrad', function(r, defs, id) {
       const rg = r._el('radialGradient', { id, cx: '38%', cy: '32%', r: '66%' });
       rg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#EEEEEE' }));
       rg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#888888' }));
       defs.appendChild(rg);
     });
- 
-    const x = pins.body.x, y = pins.body.y;
+
+    let x, y;
+    if (pins.body) {
+      x = pins.body.x; y = pins.body.y;
+    } else {
+      // Derive body centre from wiring pins: average row position, offset above connector
+      const wPins = [pins.signal, pins.power, pins.ground].filter(Boolean);
+      x = wPins.reduce(function(s, p) { return s + p.x; }, 0) / wPins.length;
+      y = (pins.power || wPins[0]).y - 3.2;
+    }
     const bw = 2.8, bh = 1.8;
  
     // Body shadow
@@ -508,30 +529,387 @@ const SYMBOL_RENDERERS = {
       fill: '#2266AA', stroke: '#112255', 'stroke-width': 0.04
     }));
  
-    // 3-wire connector block
-    const wireBaseX = x + bw * 0.18;
+    // 3-wire connector block — each wire lands on its actual breadboard pin hole.
+    // Rows are 1 SVG unit apart on the x-axis, so we use pin coords directly
+    // instead of fixed dx offsets (which were wrong in both position and order).
     const wireBaseY = y + bh / 2;
     const wires = [
-      { dx: 0,    color: '#FF8800', label: 'S' },
-      { dx: 0.55, color: '#CC2222', label: '+' },
-      { dx: 1.1,  color: '#4444BB', label: '−' },
+      { pin: pins.signal, fallback: x + 0.5,  color: '#FF8800', label: 'S' },
+      { pin: pins.power,  fallback: x - 0.5,  color: '#CC2222', label: '+' },
+      { pin: pins.ground, fallback: x - 1.5,  color: '#7B3F00', label: '−' },
     ];
     wires.forEach(function(w) {
-      const wx = wireBaseX + w.dx;
+      const wx    = w.pin ? w.pin.x : w.fallback;
+      const wyEnd = w.pin ? w.pin.y : wireBaseY + 1.5;
       // Connector pin housing
       renderer.svgEl.appendChild(renderer._el('rect', {
         x: wx - 0.18, y: wireBaseY,
         width: 0.36, height: 0.28, rx: 0.04,
         fill: '#333', stroke: '#222', 'stroke-width': 0.03
       }));
-      // Wire lead
+      // Wire lead — extends all the way to the breadboard pin hole
       renderer.svgEl.appendChild(renderer._el('line', {
-        x1: wx, y1: wireBaseY + 0.28, x2: wx, y2: wireBaseY + 0.9,
+        x1: wx, y1: wireBaseY + 0.28, x2: wx, y2: wyEnd,
         stroke: w.color, 'stroke-width': 0.13, 'stroke-linecap': 'round'
       }));
+      // Terminal dot at pin hole
+      renderer.svgEl.appendChild(renderer._el('circle', {
+        cx: wx, cy: wyEnd, r: 0.09, fill: w.color
+      }));
     });
+  },
+
+
+  // ── LDR (Light Dependent Resistor / Photoresistor) ─────────────────────────
+  // Analog sensor — no polarity, legs are interchangeable.
+  // Wiring rules for Arduino:
+  //   • Must use a voltage divider: LDR in series with a 10kΩ pull-down resistor.
+  //   • One LDR leg → 5V; other LDR leg → analog pin (A0–A5) AND resistor lead.
+  //   • Resistor's other lead → GND.
+  //   • Read with analogRead(pin) — returns 0–1023 (brighter = lower resistance = higher reading).
+  //   • Never connect directly between 5V and GND without the series resistor.
+  // pins.pin1 — breadboard hole for one leg (either end).
+  // pins.pin2 — breadboard hole for the other leg.
+  LDR: function(renderer, pins, props) {
+    const p1 = pins.pin1;
+    const p2 = pins.pin2;
+    const x = (p1.x + p2.x) / 2;
+    const y = (p1.y + p2.y) / 2;
+    const halfDist = Math.sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y)) / 2;
+    const angle = -Math.atan2(p2.x - x, p2.y - y) * 180 / Math.PI;
+    const bodyR = 0.72;
+
+    const domeGradId = _defOnce(renderer, 'ldrDomeGrad', function(r, defs, id) {
+      const rg = r._el('radialGradient', { id, cx: '38%', cy: '32%', r: '66%' });
+      rg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#FFFFFF', 'stop-opacity': '0.82' }));
+      rg.appendChild(r._el('stop', { offset: '45%',  'stop-color': '#E8E2BE' }));
+      rg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#A89A68' }));
+      defs.appendChild(rg);
+    });
+
+    const _origAppendLDR = renderer.svgEl.appendChild.bind(renderer.svgEl);
+    const _grpLDR = renderer._el('g', { transform: 'rotate(' + angle + ',' + x + ',' + y + ')' });
+    renderer.svgEl.appendChild = function(el) { return _grpLDR.appendChild(el); };
+
+    // Leads
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: y - halfDist, x2: x, y2: y - bodyR,
+      stroke: '#BBBBBB', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+    }));
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: y + bodyR, x2: x, y2: y + halfDist,
+      stroke: '#BBBBBB', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+    }));
+
+    // Drop shadow
+    renderer.svgEl.appendChild(renderer._el('circle', {
+      cx: x + 0.06, cy: y + 0.08, r: bodyR + 0.05,
+      fill: '#00000033'
+    }));
+
+    // Body disc
+    renderer.svgEl.appendChild(renderer._el('circle', {
+      cx: x, cy: y, r: bodyR,
+      fill: 'url(#' + domeGradId + ')',
+      stroke: '#7A7050', 'stroke-width': 0.06
+    }));
+
+    // CdS serpentine track — 4-pass zigzag (the characteristic LDR pattern)
+    const tw = 0.44, th = 0.44;
+    const passes = 4;
+    const rowH = (th * 2) / passes;
+    let trackD = 'M ' + (x - tw) + ' ' + (y - th);
+    for (let i = 0; i < passes; i++) {
+      const yy = y - th + i * rowH;
+      trackD += (i % 2 === 0) ? (' H ' + (x + tw)) : (' H ' + (x - tw));
+      if (i < passes - 1) trackD += ' V ' + (yy + rowH);
+    }
+    renderer.svgEl.appendChild(renderer._el('path', {
+      d: trackD,
+      fill: 'none',
+      stroke: '#6B4E1E',
+      'stroke-width': 0.105,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    }));
+
+    // Light-arrow indicators (diagonal arrows in upper-right, pointing at body)
+    [
+      [x + 0.90, y - 0.90, x + 0.66, y - 0.66],
+      [x + 1.06, y - 0.66, x + 0.82, y - 0.42],
+    ].forEach(function(arr) {
+      const ax1 = arr[0], ay1 = arr[1], ax2 = arr[2], ay2 = arr[3];
+      const ddx = ax2 - ax1, ddy = ay2 - ay1;
+      const len = Math.sqrt(ddx * ddx + ddy * ddy) || 0.001;
+      const nx = ddx / len, ny = ddy / len;
+      renderer.svgEl.appendChild(renderer._el('line', {
+        x1: ax1, y1: ay1, x2: ax2, y2: ay2,
+        stroke: '#FFDD44', 'stroke-width': 0.075, 'stroke-linecap': 'round'
+      }));
+      const hs = 0.13;
+      renderer.svgEl.appendChild(renderer._el('line', {
+        x1: ax2, y1: ay2,
+        x2: ax2 - hs * (nx - ny), y2: ay2 - hs * (ny + nx),
+        stroke: '#FFDD44', 'stroke-width': 0.075, 'stroke-linecap': 'round'
+      }));
+      renderer.svgEl.appendChild(renderer._el('line', {
+        x1: ax2, y1: ay2,
+        x2: ax2 - hs * (nx + ny), y2: ay2 - hs * (ny - nx),
+        stroke: '#FFDD44', 'stroke-width': 0.075, 'stroke-linecap': 'round'
+      }));
+    });
+
+    // Glass sheen highlight
+    renderer.svgEl.appendChild(renderer._el('ellipse', {
+      cx: x - 0.25, cy: y - 0.27,
+      rx: 0.22, ry: 0.13,
+      fill: '#FFFFFF', 'fill-opacity': 0.65,
+      transform: 'rotate(-30,' + (x - 0.25) + ',' + (y - 0.27) + ')'
+    }));
+
+    renderer.svgEl.appendChild = _origAppendLDR;
+    _origAppendLDR(_grpLDR);
+  },
+
+
+  // ── HC-SR04 (Ultrasonic Distance Sensor) ──────────────────────────────────
+  // pins always in col J (bottommost breadboard column).
+  // Side-on view: PCB edge at col J (py), cylinders extend DOWNWARD off the
+  // board edge so the sensor faces outward — away from the breadboard.
+  // x-axis (rows): 18 wide, cylinders left & right with pin gap in centre.
+  HC_SR04: function(renderer, pins, props) {
+    const pVcc  = pins.vcc;
+    const pTrig = pins.trig;
+    const pEcho = pins.echo;
+    const pGnd  = pins.gnd;
+
+    const cx = (pVcc.x + pGnd.x) / 2;  // horizontal centre of 4-pin group
+    const py = pVcc.y;                   // col J y — all pins share this
+
+    const bw     = 18;    // total board width (x)
+    const pcbH   = 0.48;  // PCB edge thickness
+    const cylRx  = 3.0;   // cylinder half-width (x)
+    const cylBH  = 3.4;   // cylinder body height (y)
+    const cylCap = 0.70;  // cylinder rounded-end cap height (y)
+    const cylOff = 5.0;   // x-offset of each cylinder centre from cx
+
+    // Cylinders grow DOWNWARD: PCB at py, cylinders start just below it.
+    const cylTop = py + pcbH;
+
+    // ── Gradients ──
+    const pcbGradId = _defOnce(renderer, 'hcsrPcbGrad', function(r, defs, id) {
+      const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+      lg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#3A5A3A' }));
+      lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#1A3A1A' }));
+      defs.appendChild(lg);
+    });
+
+    const cylGradId = _defOnce(renderer, 'hcsrCylGrad', function(r, defs, id) {
+      const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '100%', y2: '0%' });
+      lg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#383838' }));
+      lg.appendChild(r._el('stop', { offset: '18%',  'stop-color': '#9C9C9C' }));
+      lg.appendChild(r._el('stop', { offset: '44%',  'stop-color': '#E2E2E2' }));
+      lg.appendChild(r._el('stop', { offset: '56%',  'stop-color': '#E2E2E2' }));
+      lg.appendChild(r._el('stop', { offset: '82%',  'stop-color': '#9C9C9C' }));
+      lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#383838' }));
+      defs.appendChild(lg);
+    });
+
+    const bodyX = cx - bw / 2;
+
+    // Drop shadow
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: bodyX + 0.18, y: py + 0.18,
+      width: bw, height: pcbH + cylBH + cylCap + 0.25, rx: 0.35,
+      fill: '#00000045'
+    }));
+
+    // ── PCB edge (thin dark-green strip at col J) ──
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: bodyX, y: py,
+      width: bw, height: pcbH, rx: 0.10,
+      fill: 'url(#' + pcbGradId + ')',
+      stroke: '#0A180A', 'stroke-width': 0.09
+    }));
+
+    // ── Two cylinders — grow downward, caps face outward off the board ──
+    [-1, 1].forEach(function(side) {
+      const txCtr = cx + side * cylOff;
+      const txL   = txCtr - cylRx;
+
+      // Cylinder rectangular body
+      renderer.svgEl.appendChild(renderer._el('rect', {
+        x: txL, y: cylTop,
+        width: cylRx * 2, height: cylBH,
+        fill: 'url(#' + cylGradId + ')',
+        stroke: '#282828', 'stroke-width': 0.12
+      }));
+
+      // Rounded far-end cap at BOTTOM (faces outward off board)
+      renderer.svgEl.appendChild(renderer._el('ellipse', {
+        cx: txCtr, cy: cylTop + cylBH,
+        rx: cylRx, ry: cylCap,
+        fill: 'url(#' + cylGradId + ')',
+        stroke: '#282828', 'stroke-width': 0.12
+      }));
+
+      // PCB-end mounting collar (dark rim at top of cylinder where it meets PCB)
+      renderer.svgEl.appendChild(renderer._el('rect', {
+        x: txL, y: cylTop,
+        width: cylRx * 2, height: 0.28,
+        fill: '#1C1C1C', stroke: 'none'
+      }));
+
+      // Emitting-face aperture at far (bottom) end
+      const apRx = cylRx * 0.60;
+      const apRy = cylCap * 0.50;
+      const apCy = cylTop + cylBH + cylCap * 0.30;
+      renderer.svgEl.appendChild(renderer._el('ellipse', {
+        cx: txCtr, cy: apCy,
+        rx: apRx, ry: apRy,
+        fill: '#242424', stroke: '#444', 'stroke-width': 0.09
+      }));
+      renderer.svgEl.appendChild(renderer._el('ellipse', {
+        cx: txCtr, cy: apCy,
+        rx: apRx * 0.58, ry: apRy * 0.58,
+        fill: 'none', stroke: '#585858', 'stroke-width': 0.08
+      }));
+      renderer.svgEl.appendChild(renderer._el('circle', {
+        cx: txCtr, cy: apCy, r: 0.15, fill: '#686868'
+      }));
+
+      // Specular highlight strip along cylinder spine
+      renderer.svgEl.appendChild(renderer._el('rect', {
+        x: txCtr - cylRx * 0.11, y: cylTop + 0.38,
+        width: cylRx * 0.22, height: cylBH - 0.60,
+        rx: 0.10, fill: '#FFFFFF', 'fill-opacity': 0.38
+      }));
+    });
+
+    // ── Label — rotated vertically in gap between cylinders ──
+    const midY = cylTop + (cylBH + cylCap) / 2;
+    const lblEl = renderer._el('text', {
+      x: cx, y: midY,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': 0.52, fill: '#7EC87E',
+      'font-family': 'monospace', 'font-weight': 'bold',
+      transform: 'rotate(-90,' + cx + ',' + midY + ')'
+    });
+    lblEl.textContent = 'HC-SR04';
+    renderer.svgEl.appendChild(lblEl);
+
+    // ── Pins — gold pads at PCB edge; labels just inside the gap ──
+    [
+      { pin: pVcc,  label: 'V' },
+      { pin: pTrig, label: 'T' },
+      { pin: pEcho, label: 'E' },
+      { pin: pGnd,  label: 'G' },
+    ].forEach(function(pc) {
+      renderer.svgEl.appendChild(renderer._el('circle', {
+        cx: pc.pin.x, cy: py,
+        r: 0.22, fill: '#FFD700', stroke: '#AA8800', 'stroke-width': 0.05
+      }));
+      const pt = renderer._el('text', {
+        x: pc.pin.x, y: cylTop + 0.50,
+        'text-anchor': 'middle',
+        'font-size': 0.36, fill: '#B0C8B0',
+        'font-family': 'monospace'
+      });
+      pt.textContent = pc.label;
+      renderer.svgEl.appendChild(pt);
+    });
+  },
+
+
+  // ── SLIDE SWITCH ───────────────────────────────────────────────────────────
+  // pins.pin1 — unused throw terminal (away from Arduino).
+  // pins.com  — common/wiper → Arduino signal wire.
+  // pins.pin2 — active throw → GND.
+  // All 3 pins share the same column (same y); body is centered on the pin row.
+  // Actuator drawn at the pin1 end (switch in OFF position).
+  SLIDE_SWITCH: function(renderer, pins, props) {
+    const p1 = pins.pin1;
+    const pC = pins.com;
+    const p2 = pins.pin2;
+
+    const cx = pC.x;
+    const cy = pC.y;  // all pins same y (same breadboard column)
+
+    const bw = 3.0;   // body width along x (row axis)
+    const bh = 1.5;   // body depth along y (col axis)
+
+    const bodyGradId = _defOnce(renderer, 'swBodyGrad', function(r, defs, id) {
+      const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '0%', y2: '100%' });
+      lg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#C8A870' }));
+      lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#8A6830' }));
+      defs.appendChild(lg);
+    });
+
+    const actuatorGradId = _defOnce(renderer, 'swActuatorGrad', function(r, defs, id) {
+      const rg = r._el('radialGradient', { id, cx: '36%', cy: '30%', r: '65%' });
+      rg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#444444' }));
+      rg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#111111' }));
+      defs.appendChild(rg);
+    });
+
+    // Body shadow
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: cx - bw / 2 + 0.07, y: cy - bh / 2 + 0.09,
+      width: bw, height: bh, rx: 0.15,
+      fill: '#00000050'
+    }));
+
+    // Body (phenolic resin — warm tan)
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: cx - bw / 2, y: cy - bh / 2,
+      width: bw, height: bh, rx: 0.15,
+      fill: 'url(#' + bodyGradId + ')',
+      stroke: '#6A5020', 'stroke-width': 0.07
+    }));
+
+    // Body top sheen
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: cx - bw / 2 + 0.12, y: cy - bh / 2 + 0.08,
+      width: bw - 0.24, height: bh * 0.25, rx: 0.10,
+      fill: '#FFFFFF', 'fill-opacity': 0.09
+    }));
+
+    // Gold pin pads at bottom edge of body
+    [p1, pC, p2].forEach(function(pin) {
+      renderer.svgEl.appendChild(renderer._el('circle', {
+        cx: pin.x, cy: cy + bh / 2 - 0.12,
+        r: 0.14, fill: '#D4AF37', stroke: '#9A7A00', 'stroke-width': 0.04
+      }));
+    });
+
+    // Actuator slot (recessed track)
+    const slotW = bw - 0.70;
+    const slotH = bh * 0.42;
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: cx - slotW / 2, y: cy - slotH / 2,
+      width: slotW, height: slotH, rx: 0.08,
+      fill: '#1a1a1a', stroke: '#0a0a0a', 'stroke-width': 0.05
+    }));
+
+    // Actuator knob — shown at pin1 end (switch OFF)
+    const knobW  = 0.62;
+    const knobH  = slotH + 0.22;
+    const knobCX = p1.x;
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: knobCX - knobW / 2, y: cy - knobH / 2,
+      width: knobW, height: knobH, rx: 0.10,
+      fill: 'url(#' + actuatorGradId + ')',
+      stroke: '#2a2a2a', 'stroke-width': 0.05
+    }));
+
+    // Knob specular highlight
+    renderer.svgEl.appendChild(renderer._el('rect', {
+      x: knobCX - knobW / 2 + 0.09, y: cy - knobH / 2 + 0.07,
+      width: knobW - 0.18, height: knobH * 0.28, rx: 0.05,
+      fill: '#FFFFFF', 'fill-opacity': 0.20
+    }));
   }
- 
+
 };
 SYMBOL_RENDERERS.LED.bbox = function(pins, props) {
   const domeCY = pins.anode.y + 0.45;
@@ -553,19 +931,98 @@ SYMBOL_RENDERERS.RESISTOR.bbox = function(pins, props) {
 SYMBOL_RENDERERS.BUTTON.bbox = function(pins, props) {
   const cx = (pins.TL.x + pins.TR.x + pins.BL.x + pins.BR.x) / 4;
   const cy = (pins.TL.y + pins.TR.y + pins.BL.y + pins.BR.y) / 4;
-  return { x0: cx - 1.6, y0: cy - 1.5, x1: cx + 1.6, y1: cy + 1.4 };
+  // y0 must clear cap dome: cy - bh/2(0.9) - stem(0.38) - dome_r(0.42) ≈ cy - 1.7
+  return { x0: cx - 1.6, y0: cy - 2.2, x1: cx + 1.6, y1: cy + 1.4 };
 };
 
 SYMBOL_RENDERERS.BUZZER.bbox = function(pins, props) {
   const cx = (pins.positive.x + pins.negative.x) / 2;
   const cy = (pins.positive.y + pins.negative.y) / 2;
-  return { x0: cx - 1.4, y0: cy - 2.0, x1: cx + 1.4, y1: cy + 1.4 };
+  return { x0: cx - 2.6, y0: cy - 2.6, x1: cx + 2.6, y1: cy + 2.6 };
 };
 
 SYMBOL_RENDERERS.SERVO.bbox = function(pins, props) {
-  const bx = pins.body.x, by = pins.body.y;
-  return { x0: bx - 1.9, y0: by - 2.2, x1: bx + 1.9, y1: by + 2.8 };
+  let bx, by;
+  if (pins.body) {
+    bx = pins.body.x; by = pins.body.y;
+  } else {
+    const wPins = [pins.signal, pins.power, pins.ground].filter(Boolean);
+    bx = wPins.reduce(function(s, p) { return s + p.x; }, 0) / wPins.length;
+    by = (pins.power || wPins[0]).y - 3.2;
+  }
+  // y1 must reach the pin holes: by = pinY - 3.2, so pinY = by + 3.2;
+  // add 0.4 clearance below pin holes.
+  return { x0: bx - 2.1, y0: by - 2.2, x1: bx + 2.1, y1: by + 3.6 };
 };
+
+SYMBOL_RENDERERS.LDR.bbox = function(pins, props) {
+  const cx = (pins.pin1.x + pins.pin2.x) / 2;
+  const cy = (pins.pin1.y + pins.pin2.y) / 2;
+  // Extra clearance on upper-right for the light-arrow indicators
+  return { x0: cx - 1.1, y0: cy - 1.4, x1: cx + 1.4, y1: cy + 1.1 };
+};
+
+SYMBOL_RENDERERS.HC_SR04.bbox = function(pins, props) {
+  const cx    = (pins.vcc.x + pins.gnd.x) / 2;
+  const py    = pins.vcc.y;   // col J — bottom of sensor (pin row)
+  const bw    = 18;
+  const totalH = 0.48 + 3.4 + 0.70;  // pcbH + cylBH + cylCap
+  // Body grows DOWNWARD past col J; bbox covers the full physical area.
+  return { x0: cx - bw / 2 - 0.5, y0: py - 0.5, x1: cx + bw / 2 + 0.5, y1: py + totalH + 0.5 };
+};
+
+SYMBOL_RENDERERS.SLIDE_SWITCH.bbox = function(pins, props) {
+  const cx = pins.com.x;
+  const cy = pins.com.y;
+  const bw = 3.0, bh = 1.5;
+  return { x0: cx - bw / 2 - 0.4, y0: cy - bh / 2 - 0.4, x1: cx + bw / 2 + 0.4, y1: cy + bh / 2 + 0.4 };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MIN-HEAP — used as the A* open set
+// ─────────────────────────────────────────────────────────────────────────────
+class MinHeap {
+  constructor() { this._data = []; }
+
+  get size() { return this._data.length; }
+
+  push(item) {
+    this._data.push(item);
+    this._bubbleUp(this._data.length - 1);
+  }
+
+  pop() {
+    const top = this._data[0];
+    const last = this._data.pop();
+    if (this._data.length > 0) {
+      this._data[0] = last;
+      this._siftDown(0);
+    }
+    return top;
+  }
+
+  _bubbleUp(i) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this._data[p].f <= this._data[i].f) break;
+      const tmp = this._data[p]; this._data[p] = this._data[i]; this._data[i] = tmp;
+      i = p;
+    }
+  }
+
+  _siftDown(i) {
+    const n = this._data.length;
+    while (true) {
+      let min = i;
+      const l = 2 * i + 1, r = 2 * i + 2;
+      if (l < n && this._data[l].f < this._data[min].f) min = l;
+      if (r < n && this._data[r].f < this._data[min].f) min = r;
+      if (min === i) break;
+      const tmp = this._data[min]; this._data[min] = this._data[i]; this._data[i] = tmp;
+      i = min;
+    }
+  }
+}
 
 class CircuitRenderer {
   constructor(circuitDef, containerId) {
@@ -605,10 +1062,13 @@ class CircuitRenderer {
 
     this._bbox = null;
     this.svgEl = null;
+    this.BOARD2_X_OFFSET = 36;
+    this._isDualBoard = false;
   }
 
-  holeToSVG(col, row) {
-    return { x: this.BB_ANCHOR.x + (30 - row), y: this.BB_ANCHOR.y + this.COL_OFFSETS[col] };
+  holeToSVG(col, row, board) {
+    const xOff = (board === 2) ? this.BOARD2_X_OFFSET : 0;
+    return { x: this.BB_ANCHOR.x + (30 - row) + xOff, y: this.BB_ANCHOR.y + this.COL_OFFSETS[col] };
   }
 
   pinToSVG(pin) {
@@ -624,13 +1084,16 @@ class CircuitRenderer {
 
     if (type === 'arduino') return this.pinToSVG(ref);
 
+    // Determine board from type prefix: "breadboard2" → 2, everything else → 1
+    const board = (type === 'breadboard2') ? 2 : 1;
+
     // Power rail: "+1.5" or "-2.10"
     const railMatch = /^([+\-][12])\.(\d+)$/.exec(ref);
-    if (railMatch) return this.holeToSVG(railMatch[1], parseInt(railMatch[2]));
+    if (railMatch) return this.holeToSVG(railMatch[1], parseInt(railMatch[2]), board);
 
     // Standard bus hole: "A10" or "E7"
     const holeMatch = /^([A-Ja-j]+)(\d+)$/.exec(ref);
-    if (holeMatch) return this.holeToSVG(holeMatch[1].toUpperCase(), parseInt(holeMatch[2]));
+    if (holeMatch) return this.holeToSVG(holeMatch[1].toUpperCase(), parseInt(holeMatch[2]), board);
 
     throw new Error('Unrecognised endpoint: ' + endpoint);
   }
@@ -655,26 +1118,28 @@ class CircuitRenderer {
     if (y > this._bbox.y1) this._bbox.y1 = y;
   }
 
-  drawBreadboard() {
+  _drawSingleBoard(xOffset, board) {
     const a = this.BB_ANCHOR;
-    this._track(a.x - 2, a.y - 1.0);
-    this._track(a.x + 31, a.y + 18);
+    const ax = a.x + xOffset;
+
+    this._track(ax - 2, a.y - 1.0);
+    this._track(ax + 31, a.y + 18);
 
     // White board body
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x - 0.5, y: a.y - 1.0, width: 30.5, height: 18.0,
+      x: ax - 0.5, y: a.y - 1.0, width: 30.5, height: 18.0,
       rx: 0.5, fill: '#FAFAFA', stroke: '#BBB', 'stroke-width': 0.1
     }));
 
     // Power rail tints
-    this.svgEl.appendChild(this._el('rect', { x: a.x - 0.4, y: a.y + 0 - 0.4,  width: 29.8, height: 0.8, fill: '#FFD5D5' }));
-    this.svgEl.appendChild(this._el('rect', { x: a.x - 0.4, y: a.y + 1 - 0.4,  width: 29.8, height: 0.8, fill: '#D5D5FF' }));
-    this.svgEl.appendChild(this._el('rect', { x: a.x - 0.4, y: a.y + 15 - 0.4, width: 29.8, height: 0.8, fill: '#FFD5D5' }));
-    this.svgEl.appendChild(this._el('rect', { x: a.x - 0.4, y: a.y + 16 - 0.4, width: 29.8, height: 0.8, fill: '#D5D5FF' }));
+    this.svgEl.appendChild(this._el('rect', { x: ax - 0.4, y: a.y + 0 - 0.4,  width: 29.8, height: 0.8, fill: '#FFD5D5' }));
+    this.svgEl.appendChild(this._el('rect', { x: ax - 0.4, y: a.y + 1 - 0.4,  width: 29.8, height: 0.8, fill: '#D5D5FF' }));
+    this.svgEl.appendChild(this._el('rect', { x: ax - 0.4, y: a.y + 15 - 0.4, width: 29.8, height: 0.8, fill: '#FFD5D5' }));
+    this.svgEl.appendChild(this._el('rect', { x: ax - 0.4, y: a.y + 16 - 0.4, width: 29.8, height: 0.8, fill: '#D5D5FF' }));
 
     // Centre DIP gap
     this.svgEl.appendChild(this._el('line', {
-      x1: a.x - 0.5, y1: a.y + 8, x2: a.x + 29.5, y2: a.y + 8,
+      x1: ax - 0.5, y1: a.y + 8, x2: ax + 29.5, y2: a.y + 8,
       stroke: '#C8C8C8', 'stroke-width': 0.25, 'stroke-dasharray': '0.6 0.4'
     }));
 
@@ -682,7 +1147,7 @@ class CircuitRenderer {
     const allCols = ['+1','-1','A','B','C','D','E','F','G','H','I','J','+2','-2'];
     for (let ci = 0; ci < allCols.length; ci++) {
       for (let row = 1; row <= 30; row++) {
-        const p = this.holeToSVG(allCols[ci], row);
+        const p = this.holeToSVG(allCols[ci], row, board);
         this.svgEl.appendChild(this._el('circle', { cx: p.x, cy: p.y, r: 0.3, fill: '#555' }));
       }
     }
@@ -690,7 +1155,7 @@ class CircuitRenderer {
     // Column letter labels (A-J) above board
     ['A','B','C','D','E','F','G','H','I','J'].forEach(function(col) {
       const y = a.y + this.COL_OFFSETS[col];
-      this._txt(col, { x: a.x - 1.2, y: y + 0.25, 'text-anchor': 'end',
+      this._txt(col, { x: ax - 1.2, y: y + 0.25, 'text-anchor': 'end',
         'font-size': 0.65, fill: '#555', 'font-family': 'monospace', 'font-weight': 'bold' });
     }, this);
 
@@ -698,15 +1163,20 @@ class CircuitRenderer {
     [['+1', '+', '#B00000'], ['-1', '−', '#0000B0'],
      ['+2', '+', '#B00000'], ['-2', '−', '#0000B0']].forEach(function(e) {
       const y = a.y + this.COL_OFFSETS[e[0]];
-      this._txt(e[1], { x: a.x - 1.2, y: y + 0.25, 'text-anchor': 'end',
+      this._txt(e[1], { x: ax - 1.2, y: y + 0.25, 'text-anchor': 'end',
         'font-size': 0.7, fill: e[2], 'font-family': 'monospace', 'font-weight': 'bold' });
     }, this);
 
     // Row numbers on the right side — every 5th + row 1
     [1, 5, 10, 15, 20, 25, 30].forEach(function(row) {
-      this._txt(String(row), { x: a.x + (30 - row), y: a.y + 17.5,
+      this._txt(String(row), { x: ax + (30 - row), y: a.y + 17.5,
         'text-anchor': 'middle', 'font-size': 0.6, fill: '#888', 'font-family': 'monospace' });
     }, this);
+  }
+
+  drawBreadboard() {
+    this._drawSingleBoard(0, 1);
+    if (this._isDualBoard) this._drawSingleBoard(this.BOARD2_X_OFFSET, 2);
   }
 
   drawArduino() {
@@ -890,10 +1360,11 @@ class CircuitRenderer {
   placeComponent(component) {
     const pinsRaw = component.pins || {};
     const pinsSVG = {};
+    const board = component.board || 1;
     let cx = 0, cy = 0, n = 0;
     for (const name in pinsRaw) {
       const h = pinsRaw[name];
-      pinsSVG[name] = this.holeToSVG(h.col, h.row);
+      pinsSVG[name] = this.holeToSVG(h.col, h.row, board);
       cx += pinsSVG[name].x;
       cy += pinsSVG[name].y;
       n++;
@@ -913,142 +1384,38 @@ class CircuitRenderer {
     }
   }
 
-  drawWire(connection) {
+  drawWire(connection, wireIndex) {
     const start = this._resolveEndpoint(connection.from);
     const end   = this._resolveEndpoint(connection.to);
-    const fromBB  = this._isInBreadboard(start), fromARD = this._isInArduino(start);
-    const toBB    = this._isInBreadboard(end),   toARD   = this._isInArduino(end);
+    const color = connection.color || '#555';
 
-    // 2.3 Rail preference: bias toward horizontal-first for rail-row endpoints
-    const bb = this.BB_ANCHOR;
-    const ard = this.ARD_ANCHOR;
-    const RAIL_OFFSETS = [0, 1, 15, 16];
-    const startInRail = fromBB && RAIL_OFFSETS.indexOf(start.y - bb.y) !== -1;
-    const endInRail   = toBB   && RAIL_OFFSETS.indexOf(end.y   - bb.y) !== -1;
+    const waypoints = this._astar(start, end);
+    this._markWireCells(waypoints);
 
-    const candidates = [];
-    const hFirst = { x: end.x, y: start.y };
-    const vFirst = { x: start.x, y: end.y };
+    let d = 'M ' + waypoints[0].x + ' ' + waypoints[0].y;
+    for (let i = 1; i < waypoints.length; i++) d += ' L ' + waypoints[i].x + ' ' + waypoints[i].y;
 
-    if (fromARD) {
-      // Horizontal-first from a vertical header edge leaves the board immediately.
-      candidates.push(hFirst);
-      candidates.push(vFirst);
-    } else if (toARD) {
-      // Vertical-first results in horizontal entry into the Arduino header.
-      candidates.push(vFirst);
-      candidates.push(hFirst);
-    } else {
-      if ((fromBB && toARD) || (fromARD && toBB)) {
-        const bbPt  = fromBB ? start : end;
-        const ardPt = fromARD ? start : end;
-        candidates.push({ x: bbPt.x, y: ardPt.y });
-      }
-      if (startInRail) candidates.unshift(hFirst);
-      else if (endInRail) candidates.unshift(vFirst);
-      candidates.push(hFirst);
-      candidates.push(vFirst);
-    }
+    this.svgEl.appendChild(this._el('path', {
+      d: d,
+      stroke: color, 'stroke-width': 0.4, fill: 'none',
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round'
+    }));
 
-    let chosenMid = null;
-    for (let i = 0; i < candidates.length; i++) {
-      const mid = candidates[i];
-      const s1 = this._normSeg(start.x, start.y, mid.x, mid.y);
-      const s2 = this._normSeg(mid.x, mid.y, end.x, end.y);
-      if (this._segmentClear(s1) && this._segmentClear(s2)) { chosenMid = mid; break; }
-    }
-    // 2.1 Z-shape candidates: 3-segment paths tried before detour fallback
-    if (!chosenMid) {
-      const snap = function(v) { return Math.round(v * 2) / 2; };
-      const dx = end.x - start.x, dy = end.y - start.y;
-      const zCands = [];
+    if (this._isInBreadboard(start))
+      this.svgEl.appendChild(this._el('circle', { cx: start.x, cy: start.y, r: 0.22, fill: color }));
+    if (this._isInBreadboard(end))
+      this.svgEl.appendChild(this._el('circle', { cx: end.x, cy: end.y, r: 0.22, fill: color }));
 
-      // Preferred Z-shapes for Arduino breakout (leave board immediately)
-      if (fromARD) {
-        const outX = (start.x <= ard.x + 1) ? start.x - 2 : start.x + 2;
-        zCands.push([{ x: outX, y: start.y }, { x: outX, y: end.y }]);
-      }
-      if (toARD) {
-        const outX = (end.x <= ard.x + 1) ? end.x - 2 : end.x + 2;
-        zCands.push([{ x: outX, y: start.y }, { x: outX, y: end.y }]);
-      }
-
-      zCands.push([{ x: snap(start.x + dx * 0.25), y: start.y }, { x: snap(start.x + dx * 0.25), y: end.y }]);
-      zCands.push([{ x: start.x, y: snap(start.y + dy * 0.25) }, { x: end.x,   y: snap(start.y + dy * 0.25) }]);
-
-      for (let z = 0; z < zCands.length; z++) {
-        const m1 = zCands[z][0], m2 = zCands[z][1];
-        const s1 = this._normSeg(start.x, start.y, m1.x, m1.y);
-        const s2 = this._normSeg(m1.x, m1.y, m2.x, m2.y);
-        const s3 = this._normSeg(m2.x, m2.y, end.x, end.y);
-        if (this._segmentClear(s1) && this._segmentClear(s2) && this._segmentClear(s3)) {
-          this._segments.push(s1); this._segments.push(s2); this._segments.push(s3);
-          const color = connection.color || '#555';
-          this.svgEl.appendChild(this._el('path', {
-            d: 'M '+start.x+' '+start.y+' L '+m1.x+' '+m1.y+' L '+m2.x+' '+m2.y+' L '+end.x+' '+end.y,
-            stroke: color, 'stroke-width': 0.4, fill: 'none',
-            'stroke-linecap': 'round', 'stroke-linejoin': 'round'
-          }));
-          if (this._isInBreadboard(start))
-            this.svgEl.appendChild(this._el('circle', { cx: start.x, cy: start.y, r: 0.22, fill: color }));
-          if (this._isInBreadboard(end))
-            this.svgEl.appendChild(this._el('circle', { cx: end.x, cy: end.y, r: 0.22, fill: color }));
-          
-          this._allWires.push({
-            fromRaw: connection.from,
-            toRaw: connection.to,
-            pathData: 'M '+start.x+' '+start.y+' L '+m1.x+' '+m1.y+' L '+m2.x+' '+m2.y+' L '+end.x+' '+end.y,
-            start: start,
-            end: end
-          });
-          return;
-        }
-      }
-    }
-
-    if (!chosenMid) {
-      const base = candidates[candidates.length - 1];
-      const snap = function(v) { return Math.round(v * 2) / 2; };
-      const detourDeltas = [
-        {dx:  0.5, dy: 0}, {dx: -0.5, dy: 0},
-        {dx: 0, dy:  0.5}, {dx: 0, dy: -0.5},
-        {dx:  1.0, dy: 0}, {dx: -1.0, dy: 0},
-        {dx: 0, dy:  1.0}, {dx: 0, dy: -1.0},
-        {dx:  1.5, dy: 0}, {dx: -1.5, dy: 0},
-        {dx: 0, dy:  1.5}, {dx: 0, dy: -1.5},
-      ];
-      for (let d = 0; d < detourDeltas.length; d++) {
-        const mid = { x: snap(base.x + detourDeltas[d].dx), y: snap(base.y + detourDeltas[d].dy) };
-        const s1 = this._normSeg(start.x, start.y, mid.x, mid.y);
-        const s2 = this._normSeg(mid.x, mid.y, end.x, end.y);
-        if (this._segmentClear(s1) && this._segmentClear(s2)) { chosenMid = mid; break; }
-      }
-    }
-
-    if (!chosenMid) {
-      if (fromARD) chosenMid = hFirst;
-      else if (toARD) chosenMid = vFirst;
-      else chosenMid = hFirst;
-    }
-
-    const m = chosenMid;
-    this._segments.push(this._normSeg(start.x, start.y, m.x, m.y));
-    this._segments.push(this._normSeg(m.x, m.y, end.x, end.y));
-
-    this._wirePaths.push({ start, mid: m, end, color: connection.color || '#555', fromRaw: connection.from, toRaw: connection.to });
-    
-    this._allWires.push({
-        fromRaw: connection.from,
-        toRaw: connection.to,
-        pathData: 'M '+start.x+' '+start.y+' L '+m.x+' '+m.y+' L '+end.x+' '+end.y,
-        start: start,
-        end: end
-    });
+    this._allWires.push({ fromRaw: connection._origFrom || connection.from, toRaw: connection._origTo || connection.to, pathData: d, start, end, waypoints });
   }
 
   _isInBreadboard(pt) {
     const a = this.BB_ANCHOR;
-    return pt.x >= a.x - 1 && pt.x <= a.x + 31 && pt.y >= a.y - 1 && pt.y <= a.y + 18;
+    const inB1 = pt.x >= a.x - 1 && pt.x <= a.x + 31 && pt.y >= a.y - 1 && pt.y <= a.y + 18;
+    if (!this._isDualBoard) return inB1;
+    const b2x = a.x + this.BOARD2_X_OFFSET;
+    const inB2 = pt.x >= b2x - 1 && pt.x <= b2x + 31 && pt.y >= a.y - 1 && pt.y <= a.y + 18;
+    return inB1 || inB2;
   }
 
   _isInArduino(pt) {
@@ -1073,17 +1440,17 @@ class CircuitRenderer {
   }
 
   render() {
+    this._uid = 'cr' + (++_rendererUidCounter);
     this._bbox = null;
     this._debugOverlay = null;
     this._debugInfoBar = null;
+    this._isDualBoard = (this.def.layout === 'dual_board');
     this.svgEl = this._el('svg', { xmlns: this.svgNS, style: 'width:100%;height:auto;display:block;' });
     this.drawBreadboard();
     this.drawArduino();
-    this._segments = [];
-    this._wirePaths = [];
     this._allWires = [];
-    this._drawnSegs = [];
     this._buildObstacleRegistry();
+    this._initGrid();
     const self = this;
     const _powerKw = ['GND', '5V', 'VIN', '3V3', '+1', '-1', '+2', '-2'];
     function _isPow(ep) { return _powerKw.some(function(k) { return ep.indexOf(k) !== -1; }); }
@@ -1093,15 +1460,15 @@ class CircuitRenderer {
         return Math.sqrt((e.x-s.x)*(e.x-s.x)+(e.y-s.y)*(e.y-s.y));
       } catch(ex) { return 999; }
     }
-    const connections = (this.def.connections || []).slice().sort(function(a, b) {
+    const connections = this._assignWireColors(
+      this._normalizeGroundConnections((this.def.connections || []).slice())
+    ).sort(function(a, b) {
       const pa = (_isPow(a.from)||_isPow(a.to)) ? 0 : 1;
       const pb = (_isPow(b.from)||_isPow(b.to)) ? 0 : 1;
       if (pa !== pb) return pa - pb;
       return _len(a) - _len(b);
     });
-    for (let i = 0; i < connections.length; i++) this.drawWire(connections[i]);
-    this._drawBundledWires();
-    this._drawHopArcs();
+    for (let i = 0; i < connections.length; i++) this.drawWire(connections[i], i);
     const components = this.def.components || [];
     for (let i = 0; i < components.length; i++) this.placeComponent(components[i]);
     const pad = 3;
@@ -1125,7 +1492,7 @@ class CircuitRenderer {
     const layer = this._el('g', { id: 'highlight-layer' });
     const defs = _ensureDefs(this);
 
-    const maskId = 'greyout-mask';
+    const maskId = this._uid + '_greyout-mask';
     const existingMask = defs.querySelector('#' + maskId);
     if (existingMask) existingMask.remove();
     const mask = this._el('mask', { id: maskId });
@@ -1149,8 +1516,9 @@ class CircuitRenderer {
             if (symRenderer && symRenderer.bbox) {
                 const pinsRaw = comp.pins || {};
                 const pinsSVG = {};
+                const compBoard = comp.board || 1;
                 for (const name in pinsRaw) {
-                    pinsSVG[name] = this.holeToSVG(pinsRaw[name].col, pinsRaw[name].row);
+                    pinsSVG[name] = this.holeToSVG(pinsRaw[name].col, pinsRaw[name].row, compBoard);
                 }
                 const bbox = symRenderer.bbox(pinsSVG, comp.properties || {});
                 // Punch hole (black)
@@ -1343,39 +1711,392 @@ class CircuitRenderer {
     return true;
   }
 }
-CircuitRenderer.prototype._normSeg = function(ax, ay, bx, by) {
-  return { x0: Math.min(ax,bx), y0: Math.min(ay,by), x1: Math.max(ax,bx), y1: Math.max(ay,by) };
+// Assign colors to wires by type:
+//   ground (GND / -1 / -2 rail)  → black
+//   power  (5V / VIN / +1 / +2)  → red
+//   signal                        → cycle through SIGNAL_COLORS palette
+// Overrides any color already set on the connection so the rendered circuit
+// always uses high-contrast, varied wiring regardless of definition order.
+CircuitRenderer.prototype._assignWireColors = function(connections) {
+  const SIGNAL_COLORS = [
+    '#E74C3C', // red
+    '#3498DB', // blue
+    '#9B59B6', // purple
+    '#E67E22', // orange
+    '#1ABC9C', // teal
+    '#F1C40F', // yellow
+    '#E91E63', // pink
+    '#00BCD4', // cyan
+    '#FF5722', // deep orange
+    '#8BC34A', // lime green
+    '#673AB7', // deep purple
+    '#FF9800', // amber
+    '#2196F3', // light blue
+    '#4CAF50', // medium green
+    '#F06292', // rose
+    '#26C6DA', // light cyan
+    '#7E57C2', // medium purple
+    '#FF7043', // coral
+    '#66BB6A', // soft green
+    '#AB47BC', // orchid
+  ];
+
+  const GND_KW = ['GND', '-1', '-2'];
+  const PWR_KW = ['5V', 'VIN', '3V3', '+1', '+2'];
+  function isGnd(ep) { return GND_KW.some(function(k) { return ep.indexOf(k) !== -1; }); }
+  function isPwr(ep) { return PWR_KW.some(function(k) { return ep.indexOf(k) !== -1; }); }
+
+  let sigIdx = 0;
+  return connections.map(function(conn) {
+    if (isGnd(conn.from) || isGnd(conn.to)) return Object.assign({}, conn, { color: '#000000' });
+    if (isPwr(conn.from) || isPwr(conn.to)) return Object.assign({}, conn, { color: '#CC0000' });
+    if (conn.color) return conn;  // respect explicitly-set signal wire colors
+    const color = SIGNAL_COLORS[sigIdx % SIGNAL_COLORS.length];
+    sigIdx++;
+    return Object.assign({}, conn, { color: color });
+  });
 };
 
-CircuitRenderer.prototype._segHitsRect = function(seg, rect) {
-  const isH = seg.y0 === seg.y1;
-  const isV = seg.x0 === seg.x1;
-  // Strict inequality in the travel direction ensures segments can touch/start on the edge
-  // but not travel along it or cross through it.
-  if (isH) return seg.y0 >= rect.y0 && seg.y0 <= rect.y1 && seg.x0 < rect.x1 && seg.x1 > rect.x0;
-  if (isV) return seg.x0 >= rect.x0 && seg.x0 <= rect.x1 && seg.y0 < rect.y1 && seg.y1 > rect.y0;
-  return false;
+// When multiple wires all target arduino.GND, route them via the negative rails instead
+// so each component's GND drops to the rail and only one canonical wire runs to Arduino.
+//
+// Rail assignment strategy:
+//   AE-side (A-E) holes → rail -1 at the same row (top rail, above the AE columns).
+//   FJ-side (F-J) holes → rail -2 at the same row (bottom rail, below the FJ columns),
+//     UNLESS that -2 slot is inside a component obstacle (e.g. HC-SR04 PCB covers -2 at
+//     rows 1-20).  In that case, fall back to rail -1 at the nearest *unused* row so the
+//     wire avoids both the obstacle and any already-assigned -1 slot.
+//
+// Canonical wires at the Arduino end:
+//   • Only -1 in use → arduino.GND → breadboard.-1.30
+//   • Only -2 in use → arduino.GND → breadboard.-2.30
+//   • Both in use    → arduino.GND → breadboard.-1.30  +  -2.30 → -1.30 (bridge)
+CircuitRenderer.prototype._normalizeGroundConnections = function(connections) {
+  const self = this;
+  const isDual = this._isDualBoard;
+  // Match existing rail endpoints (breadboard., breadboard1., breadboard2.)
+  const railRe = /^breadboard[12]?\.[+\-][12]\.\d+$/;
+  // Match hole endpoints — capture optional board number, col, row
+  const holeRe = /^breadboard([12]?)\.([A-Ja-j]+)(\d+)$/;
+  const aeHalf = new Set(['A','B','C','D','E']);
+
+  function _boardPrefix(boardNum) {
+    return isDual ? ('breadboard' + boardNum) : 'breadboard';
+  }
+
+  function _slotBlocked(boardNum, rail, row) {
+    const pos = self.holeToSVG(rail, row, isDual ? boardNum : 1);
+    const obs = self._obstacles || [];
+    for (let i = 0; i < obs.length; i++) {
+      const o = obs[i];
+      if (pos.x >= o.x0 && pos.x <= o.x1 && pos.y >= o.y0 && pos.y <= o.y1) return true;
+    }
+    return false;
+  }
+
+  // Find the nearest unoccupied, unblocked -1 slot to `preferRow` on `boardNum`.
+  // usedSlots keys are "boardNum:row" strings to avoid cross-board conflicts.
+  function _findFreeTopSlot(boardNum, preferRow, usedSlots) {
+    for (let delta = 0; delta <= 10; delta++) {
+      const candidates = delta === 0 ? [preferRow] : [preferRow + delta, preferRow - delta];
+      for (let ci = 0; ci < candidates.length; ci++) {
+        const r = candidates[ci];
+        if (r < 1 || r > 30) continue;
+        if (usedSlots.has(boardNum + ':' + r)) continue;
+        if (_slotBlocked(boardNum, '-1', r)) continue;
+        return r;
+      }
+    }
+    return null;
+  }
+
+  const gndIndices = [];
+  for (let i = 0; i < connections.length; i++) {
+    if (connections[i].from === 'arduino.GND' || connections[i].to === 'arduino.GND') {
+      gndIndices.push(i);
+    }
+  }
+  if (gndIndices.length === 0) return connections;
+
+  // Separate non-GND connections through immediately.
+  const result = [];
+  for (let i = 0; i < connections.length; i++) {
+    if (gndIndices.indexOf(i) === -1) result.push(connections[i]);
+  }
+
+  let hasRailGndWire = false;
+  // Per-board rail state
+  const boardState = {
+    1: { hasTopRail: false, hasBotRail: false },
+    2: { hasTopRail: false, hasBotRail: false },
+  };
+  let gndColor = '#000000';
+
+  // usedTopSlots keyed as "boardNum:row"
+  const usedTopSlots = new Set();
+  const fjPending = [];
+
+  // Pass 1 — assign AE-side GND holes to -1 rail.
+  for (let gi = 0; gi < gndIndices.length; gi++) {
+    const conn = connections[gndIndices[gi]];
+    const other = conn.from === 'arduino.GND' ? conn.to : conn.from;
+    if (conn.color) gndColor = conn.color;
+
+    if (railRe.test(other)) {
+      result.push(conn);
+      hasRailGndWire = true;
+      continue;
+    }
+
+    const hm = holeRe.exec(other);
+    if (!hm) { result.push(conn); continue; }
+
+    const boardNum = hm[1] ? parseInt(hm[1]) : 1;
+    const col = hm[2].toUpperCase()[0];
+    const row = parseInt(hm[3]);
+    const bp = _boardPrefix(boardNum);
+
+    if (aeHalf.has(col)) {
+      usedTopSlots.add(boardNum + ':' + row);
+      boardState[boardNum].hasTopRail = true;
+      result.push({
+        from: other, to: bp + '.-1.' + row,
+        color: conn.color || '#000000', label: conn.label,
+        _origFrom: conn.from, _origTo: conn.to,
+      });
+    } else {
+      fjPending.push({ conn, other, row, boardNum, bp });
+    }
+  }
+
+  // Pass 2 — assign FJ-side GND holes.
+  for (let fi = 0; fi < fjPending.length; fi++) {
+    const { conn, other, row, boardNum, bp } = fjPending[fi];
+
+    if (!_slotBlocked(boardNum, '-2', row)) {
+      boardState[boardNum].hasBotRail = true;
+      result.push({
+        from: other, to: bp + '.-2.' + row,
+        color: conn.color || '#000000', label: conn.label,
+        _origFrom: conn.from, _origTo: conn.to,
+      });
+    } else {
+      // -2 blocked (e.g. HC-SR04 PCB): fall back to nearest free -1 slot on same board.
+      const slot = _findFreeTopSlot(boardNum, row, usedTopSlots);
+      if (slot !== null) {
+        usedTopSlots.add(boardNum + ':' + slot);
+        boardState[boardNum].hasTopRail = true;
+        result.push({
+          from: other, to: bp + '.-1.' + slot,
+          color: conn.color || '#000000', label: conn.label,
+          _origFrom: conn.from, _origTo: conn.to,
+        });
+      } else {
+        result.push(conn);
+      }
+    }
+  }
+
+  // Add canonical wire(s) connecting rails to Arduino GND.
+  if (!hasRailGndWire) {
+    if (!isDual) {
+      // Single-board legacy behavior — use un-prefixed "breadboard."
+      const bs = boardState[1];
+      if (bs.hasTopRail && !bs.hasBotRail) {
+        result.push({ from: 'arduino.GND', to: 'breadboard.-1.30', color: gndColor });
+      } else if (!bs.hasTopRail && bs.hasBotRail) {
+        result.push({ from: 'arduino.GND', to: 'breadboard.-2.30', color: gndColor });
+      } else if (bs.hasTopRail && bs.hasBotRail) {
+        result.push({ from: 'arduino.GND', to: 'breadboard.-1.30', color: gndColor });
+        result.push({ from: 'breadboard.-2.30', to: 'breadboard.-1.30', color: gndColor });
+      }
+    } else {
+      // Dual-board: canonical goes to board 1; board 2 bridges to board 1.
+      const bs1 = boardState[1];
+      const bs2 = boardState[2];
+
+      if (bs1.hasTopRail || bs1.hasBotRail) {
+        if (bs1.hasTopRail && !bs1.hasBotRail) {
+          result.push({ from: 'arduino.GND', to: 'breadboard1.-1.30', color: gndColor });
+        } else if (!bs1.hasTopRail && bs1.hasBotRail) {
+          result.push({ from: 'arduino.GND', to: 'breadboard1.-2.30', color: gndColor });
+        } else {
+          result.push({ from: 'arduino.GND', to: 'breadboard1.-1.30', color: gndColor });
+          result.push({ from: 'breadboard1.-2.30', to: 'breadboard1.-1.30', color: gndColor });
+        }
+        if (bs2.hasTopRail || bs2.hasBotRail) {
+          result.push({ from: 'breadboard2.-1.30', to: 'breadboard1.-1.30', color: gndColor });
+        }
+      } else if (bs2.hasTopRail || bs2.hasBotRail) {
+        // Only board 2 has GND — route directly to Arduino.
+        result.push({ from: 'arduino.GND', to: 'breadboard2.-1.30', color: gndColor });
+      }
+    }
+  }
+
+  return result;
 };
 
-CircuitRenderer.prototype._segsOverlap = function(a, b) {
-  // 0.55 = ~half a grid unit; prevents parallel wires crowding each other.
-  // Adjacent rows/cols are 1 unit apart so those are still routable.
-  const NEAR = 0.55;
-  const aH = a.y0 === a.y1, bH = b.y0 === b.y1;
-  const aV = a.x0 === a.x1, bV = b.x0 === b.x1;
-  if (aH && bH && Math.abs(a.y0 - b.y0) < NEAR) return a.x0 < b.x1 && a.x1 > b.x0;
-  if (aV && bV && Math.abs(a.x0 - b.x0) < NEAR) return a.y0 < b.y1 && a.y1 > b.y0;
-  return false;
-};
 
-CircuitRenderer.prototype._segmentClear = function(seg) {
+// ── GRID ROUTING ─────────────────────────────────────────────────────────────
+
+const GRID_STEP = 0.5;
+const GRID_COST_FREE    = 1.0;
+const GRID_COST_NEAR    = 3.0;
+const GRID_COST_WIRE    = 15.0;
+const GRID_COST_BLOCKED = Infinity;
+const TURN_PENALTY      = 0.5;
+const DX = [1, 0, -1, 0];   // East, South, West, North
+const DY = [0, 1, 0, -1];
+
+CircuitRenderer.prototype._initGrid = function() {
+  const STEP = GRID_STEP;
+  const ard  = this.ARD_ANCHOR, bb = this.BB_ANCHOR;
+  const bbRightEdge = this._isDualBoard ? bb.x + this.BOARD2_X_OFFSET + 32 : bb.x + 32;
+
+  this._gxMin = Math.floor((ard.x - 4) / STEP);
+  this._gxMax = Math.ceil( bbRightEdge  / STEP);
+  this._gyMin = Math.floor((ard.y - 4) / STEP);
+  this._gyMax = Math.ceil( (bb.y  + 20) / STEP);
+
+  const W = this._gxMax - this._gxMin + 1;
+  const H = this._gyMax - this._gyMin + 1;
+  this._gridW = W;
+  this._gridH = H;
+
+  // One flat Float32Array in row-major order (gx-major)
+  this._grid = new Float32Array(W * H).fill(GRID_COST_FREE);
+
   for (let i = 0; i < this._obstacles.length; i++) {
-    if (this._segHitsRect(seg, this._obstacles[i])) return false;
+    const r = this._obstacles[i];
+    const gx0 = Math.floor(r.x0 / STEP) - this._gxMin;
+    const gx1 = Math.ceil( r.x1 / STEP) - this._gxMin;
+    const gy0 = Math.floor(r.y0 / STEP) - this._gyMin;
+    const gy1 = Math.ceil( r.y1 / STEP) - this._gyMin;
+    for (let gx = Math.max(0, gx0); gx <= Math.min(W - 1, gx1); gx++) {
+      for (let gy = Math.max(0, gy0); gy <= Math.min(H - 1, gy1); gy++) {
+        this._grid[gx * H + gy] = GRID_COST_BLOCKED;
+      }
+    }
   }
-  for (let i = 0; i < this._segments.length; i++) {
-    if (this._segsOverlap(seg, this._segments[i])) return false;
+};
+
+CircuitRenderer.prototype._gridGet = function(gx, gy) {
+  const lx = gx - this._gxMin, ly = gy - this._gyMin;
+  if (lx < 0 || lx >= this._gridW || ly < 0 || ly >= this._gridH) return GRID_COST_BLOCKED;
+  return this._grid[lx * this._gridH + ly];
+};
+
+CircuitRenderer.prototype._gridSet = function(gx, gy, val) {
+  const lx = gx - this._gxMin, ly = gy - this._gyMin;
+  if (lx < 0 || lx >= this._gridW || ly < 0 || ly >= this._gridH) return;
+  this._grid[lx * this._gridH + ly] = val;
+};
+
+CircuitRenderer.prototype._astar = function(startSVG, endSVG) {
+  const STEP = GRID_STEP;
+  const sgx = Math.round(startSVG.x / STEP), sgy = Math.round(startSVG.y / STEP);
+  const egx = Math.round(endSVG.x   / STEP), egy = Math.round(endSVG.y   / STEP);
+
+  if (sgx === egx && sgy === egy) return [startSVG, endSVG];
+
+  function key(gx, gy, dir) { return (gx << 16) | (gy << 8) | dir; }
+  function h(gx, gy) { return Math.abs(gx - egx) + Math.abs(gy - egy); }
+
+  const open  = new MinHeap();
+  const dist  = new Map();
+  const parent = new Map();
+
+  for (let d = 0; d < 4; d++) {
+    const k = key(sgx, sgy, d);
+    dist.set(k, 0);
+    open.push({ f: h(sgx, sgy), g: 0, gx: sgx, gy: sgy, dir: d });
   }
-  return true;
+
+  while (open.size > 0) {
+    const cur = open.pop();
+    const ck  = key(cur.gx, cur.gy, cur.dir);
+    if (cur.g > (dist.get(ck) !== undefined ? dist.get(ck) : Infinity)) continue;
+
+    if (cur.gx === egx && cur.gy === egy) {
+      return this._reconstructAndSimplify(parent, cur, sgx, sgy, key);
+    }
+
+    for (let nd = 0; nd < 4; nd++) {
+      const ngx = cur.gx + DX[nd], ngy = cur.gy + DY[nd];
+      const isGoal = (ngx === egx && ngy === egy);
+      const cellCost = isGoal ? GRID_COST_FREE : this._gridGet(ngx, ngy);
+      if (cellCost === GRID_COST_BLOCKED) continue;
+
+      const turnCost = (nd !== cur.dir) ? TURN_PENALTY : 0;
+      const ng = cur.g + cellCost + turnCost;
+      const nk = key(ngx, ngy, nd);
+      const prev = dist.get(nk);
+      if (prev === undefined || ng < prev) {
+        dist.set(nk, ng);
+        parent.set(nk, { gx: cur.gx, gy: cur.gy, dir: cur.dir });
+        open.push({ f: ng + h(ngx, ngy), g: ng, gx: ngx, gy: ngy, dir: nd });
+      }
+    }
+  }
+
+  return [startSVG, endSVG];
+};
+
+CircuitRenderer.prototype._reconstructAndSimplify = function(parent, goalState, sgx, sgy, keyFn) {
+  const STEP = GRID_STEP;
+  const cells = [];
+  let cur = { gx: goalState.gx, gy: goalState.gy, dir: goalState.dir };
+  while (cur.gx !== sgx || cur.gy !== sgy) {
+    cells.push({ x: cur.gx * STEP, y: cur.gy * STEP });
+    const p = parent.get(keyFn(cur.gx, cur.gy, cur.dir));
+    if (!p) break;
+    cur = p;
+  }
+  cells.push({ x: sgx * STEP, y: sgy * STEP });
+  cells.reverse();
+  return this._simplifyWaypoints(cells);
+};
+
+CircuitRenderer.prototype._simplifyWaypoints = function(pts) {
+  if (pts.length <= 2) return pts;
+  function dirKey(a, b) { return Math.sign(b.x - a.x) + ',' + Math.sign(b.y - a.y); }
+  const result = [pts[0]];
+  let prevDir = dirKey(pts[0], pts[1]);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const curDir = dirKey(pts[i], pts[i + 1]);
+    if (curDir !== prevDir) { result.push(pts[i]); prevDir = curDir; }
+  }
+  result.push(pts[pts.length - 1]);
+  return result;
+};
+
+CircuitRenderer.prototype._markWireCells = function(waypoints) {
+  const STEP = GRID_STEP;
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const a = waypoints[i], b = waypoints[i + 1];
+    const gxa = Math.round(a.x / STEP), gya = Math.round(a.y / STEP);
+    const gxb = Math.round(b.x / STEP), gyb = Math.round(b.y / STEP);
+    const cells = [];
+    if (gxa === gxb) {
+      const y0 = Math.min(gya, gyb), y1 = Math.max(gya, gyb);
+      for (let gy = y0; gy <= y1; gy++) cells.push([gxa, gy]);
+    } else {
+      const x0 = Math.min(gxa, gxb), x1 = Math.max(gxa, gxb);
+      for (let gx = x0; gx <= x1; gx++) cells.push([gx, gya]);
+    }
+    for (let c = 0; c < cells.length; c++) {
+      const gx = cells[c][0], gy = cells[c][1];
+      const v = this._gridGet(gx, gy);
+      if (v !== GRID_COST_BLOCKED) this._gridSet(gx, gy, GRID_COST_WIRE);
+      const ortho = [[gx+1,gy],[gx-1,gy],[gx,gy+1],[gx,gy-1]];
+      for (let o = 0; o < ortho.length; o++) {
+        const ax = ortho[o][0], ay = ortho[o][1];
+        const av = this._gridGet(ax, ay);
+        if (av > 0 && av < GRID_COST_WIRE) this._gridSet(ax, ay, Math.max(av, GRID_COST_NEAR));
+      }
+    }
+  }
 };
 
 CircuitRenderer.prototype._buildObstacleRegistry = function() {
@@ -1400,111 +2121,14 @@ CircuitRenderer.prototype._buildObstacleRegistry = function() {
     if (!renderer || !renderer.bbox) continue;
     const pinsRaw = component.pins || {};
     const pinsSVG = {};
+    const board = component.board || 1;
     for (const name in pinsRaw) {
       const h = pinsRaw[name];
-      pinsSVG[name] = this.holeToSVG(h.col, h.row);
+      pinsSVG[name] = this.holeToSVG(h.col, h.row, board);
     }
     this._obstacles.push(renderer.bbox(pinsSVG, component.properties || {}));
   }
 };
 
-CircuitRenderer.prototype._drawBundledWires = function() {
-  if (!this._wirePaths || !this._wirePaths.length) return;
 
-  const segs = [];
-  for (let i = 0; i < this._wirePaths.length; i++) {
-    const p = this._wirePaths[i];
-    segs.push(Object.assign(this._normSeg(p.start.x, p.start.y, p.mid.x, p.mid.y), { wi: i, si: 0 }));
-    segs.push(Object.assign(this._normSeg(p.mid.x, p.mid.y, p.end.x, p.end.y),     { wi: i, si: 1 }));
-  }
 
-  function collinear(a, b) {
-    if (a.y0 === a.y1 && b.y0 === b.y1 && Math.abs(a.y0 - b.y0) < 0.01)
-      return a.x0 < b.x1 && a.x1 > b.x0;
-    if (a.x0 === a.x1 && b.x0 === b.x1 && Math.abs(a.x0 - b.x0) < 0.01)
-      return a.y0 < b.y1 && a.y1 > b.y0;
-    return false;
-  }
-
-  function bundleOffsets(n) {
-    if (n === 2) return [-0.25, 0.25];
-    if (n === 3) return [-0.3, 0, 0.3];
-    const half = 0.25 * (n - 1);
-    return Array.from({ length: n }, function(_, k) { return -half + k * 0.5; });
-  }
-
-  const offsets = new Array(segs.length).fill(0);
-  const bundled = new Array(segs.length).fill(false);
-  for (let i = 0; i < segs.length; i++) {
-    if (bundled[i]) continue;
-    const bundle = [i];
-    for (let j = i + 1; j < segs.length; j++) {
-      if (!bundled[j] && collinear(segs[i], segs[j])) bundle.push(j);
-    }
-    if (bundle.length >= 2) {
-      const boff = bundleOffsets(bundle.length);
-      for (let k = 0; k < bundle.length; k++) {
-        offsets[bundle[k]] = boff[k];
-        bundled[bundle[k]] = true;
-      }
-    }
-  }
-
-  for (let i = 0; i < this._wirePaths.length; i++) {
-    const p = this._wirePaths[i];
-    const seg0 = segs[i * 2], seg1 = segs[i * 2 + 1];
-    const off0 = offsets[i * 2], off1 = offsets[i * 2 + 1];
-    const isH0 = seg0.y0 === seg0.y1, isH1 = seg1.y0 === seg1.y1;
-
-    let sx = p.start.x, sy = p.start.y;
-    let mx = p.mid.x,   my = p.mid.y;
-    let ex = p.end.x,   ey = p.end.y;
-
-    if (off0 !== 0) { if (isH0) { sy += off0; my += off0; } else { sx += off0; mx += off0; } }
-    if (off1 !== 0) { if (isH1) { my += off1; ey += off1; } else { mx += off1; ex += off1; } }
-
-    this.svgEl.appendChild(this._el('path', {
-      d: 'M '+sx+' '+sy+' L '+mx+' '+my+' L '+ex+' '+ey,
-      stroke: p.color, 'stroke-width': 0.4, fill: 'none',
-      'stroke-linecap': 'round', 'stroke-linejoin': 'round'
-    }));
-    this._drawnSegs.push(this._normSeg(sx, sy, mx, my));
-    this._drawnSegs.push(this._normSeg(mx, my, ex, ey));
-    if (this._isInBreadboard({ x: sx, y: sy }))
-      this.svgEl.appendChild(this._el('circle', { cx: sx, cy: sy, r: 0.22, fill: p.color }));
-    if (this._isInBreadboard({ x: ex, y: ey }))
-      this.svgEl.appendChild(this._el('circle', { cx: ex, cy: ey, r: 0.22, fill: p.color }));
-  }
-};
-
-CircuitRenderer.prototype._drawHopArcs = function() {
-  if (!this._drawnSegs || this._drawnSegs.length < 2) return;
-
-  const r = 0.18;
-  const segs = this._drawnSegs;
-
-  for (let i = 0; i < segs.length - 1; i++) {
-    for (let j = i + 1; j < segs.length; j++) {
-      const a = segs[i];
-      const b = segs[j];
-
-      if (a.y0 === a.y1 && b.x0 === b.x1) {
-        const cx = b.x0, cy = a.y0;
-        if (cx > a.x0 && cx < a.x1 && cy > b.y0 && cy < b.y1) {
-          this.svgEl.appendChild(this._el('path', {
-            d: 'M '+cx+' '+(cy-r)+' A '+r+' '+r+' 0 0 1 '+cx+' '+(cy+r),
-            stroke: '#FFFFFF', 'stroke-width': 0.5, fill: 'none', 'stroke-linecap': 'round'
-          }));
-        }
-      } else if (a.x0 === a.x1 && b.y0 === b.y1) {
-        const cx = a.x0, cy = b.y0;
-        if (cy > a.y0 && cy < a.y1 && cx > b.x0 && cx < b.x1) {
-          this.svgEl.appendChild(this._el('path', {
-            d: 'M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 0 '+(cx+r)+' '+cy,
-            stroke: '#FFFFFF', 'stroke-width': 0.5, fill: 'none', 'stroke-linecap': 'round'
-          }));
-        }
-      }
-    }
-  }
-};

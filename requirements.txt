@@ -12,3 +12,4 @@ supabase
 respx
 lark
 openai
+google-genai

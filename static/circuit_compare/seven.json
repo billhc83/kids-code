@@ -1,0 +1,230 @@
+{
+  "project": "seven",
+  "llm_input": {
+    "topic": "Project 7: The Automagic Night Light",
+    "components": "LDR, LED (color=red)",
+    "pins": [
+      "A0",
+      "D13"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Automagic Night Light",
+      "difficulty": "easy",
+      "description": "Build a night light that turns on automatically when it's dark.",
+      "learning_goal": "Understanding how sensors can control LED brightness based on ambient light.",
+      "code_hint": "Read the LDR's analog value and turn the LED on when the light level is below a threshold"
+    },
+    "components": [
+      {
+        "id": "LDR1",
+        "type": "LDR",
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "properties": {
+          "color": "red"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "LDR1.pin1"
+      },
+      {
+        "from": "LDR1.pin2",
+        "to": "R_LDR1.pin1"
+      },
+      {
+        "from": "R_LDR1.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "LDR1.pin2",
+        "to": "arduino.A0"
+      },
+      {
+        "from": "arduino.D13",
+        "to": "LED1.anode"
+      },
+      {
+        "from": "LED1.cathode",
+        "to": "R_LED1.pin1"
+      },
+      {
+        "from": "R_LED1.pin2",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Automagic Night Light",
+      "difficulty": "easy",
+      "description": "Build a night light that turns on automatically when it's dark.",
+      "learning_goal": "Understanding how sensors can control LED brightness based on ambient light.",
+      "code_hint": "Read the LDR's analog value and turn the LED on when the light level is below a threshold"
+    },
+    "components": [
+      {
+        "id": "LDR1",
+        "type": "LDR",
+        "pins": {
+          "pin1": {
+            "col": "E",
+            "row": 12
+          },
+          "pin2": {
+            "col": "E",
+            "row": 9
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "R_LDR1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 9
+          },
+          "pin2": {
+            "col": "D",
+            "row": 5
+          }
+        },
+        "properties": {
+          "ohms": 10000
+        }
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "pins": {
+          "anode": {
+            "col": "E",
+            "row": 20
+          },
+          "cathode": {
+            "col": "E",
+            "row": 19
+          }
+        },
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "R_LED1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 19
+          },
+          "pin2": {
+            "col": "D",
+            "row": 15
+          }
+        },
+        "properties": {
+          "ohms": 220
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "breadboard.D12",
+        "color": "#CC0000"
+      },
+      {
+        "from": "breadboard.E5",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "breadboard.A9",
+        "to": "arduino.A0",
+        "color": "#00AA00"
+      },
+      {
+        "from": "arduino.D13",
+        "to": "breadboard.A20",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.E15",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "LDR1",
+        "instruction": "Place the photoresistor (LDR) on the breadboard with one leg in row 12, column E and the other leg in row 9, column E.",
+        "tip": "The photoresistor changes resistance based on light \u2014 brighter light means lower resistance!"
+      },
+      {
+        "type": "component",
+        "id": "R_LDR1",
+        "instruction": "Put the 10000\u03a9 resistor on the breadboard with one leg in row 9, column D and the other leg in row 5, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "component",
+        "id": "LED1",
+        "instruction": "Put the red LED on the breadboard with the long leg (anode) in row 20, column E and the short leg (cathode) in row 19, column E.",
+        "tip": "The long leg is positive \u2014 it's called the anode!"
+      },
+      {
+        "type": "component",
+        "id": "R_LED1",
+        "instruction": "Put the 220\u03a9 resistor on the breadboard with one leg in row 19, column D and the other leg in row 15, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.5V",
+        "to": "breadboard.D12",
+        "instruction": "Connect a red wire from the Arduino's 5V pin to the breadboard at row 12, column D.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E5",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 5, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.A9",
+        "to": "arduino.A0",
+        "instruction": "Connect a green wire from the breadboard at row 9, column A to Arduino pin A0.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D13",
+        "to": "breadboard.A20",
+        "instruction": "Connect a green wire from Arduino pin D13 to the breadboard at row 20, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E15",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 15, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}
