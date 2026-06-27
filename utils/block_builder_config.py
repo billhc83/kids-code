@@ -3,7 +3,7 @@ from flask import render_template
 import json
 from utils.block_parser import parse_sketch, parse_steps, collect_types
 
-def build_config(preset, username=None, page=None, supabase_url=None, supabase_key=None, lock_mode=None, is_overlay=False):    
+def build_config(preset, username=None, page=None, lock_mode=None, is_overlay=False):
     # resolve preset → sketch string + drawer + meta
     from utils.project_registry import PROJECTS
 
@@ -68,13 +68,11 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
     config.update({
         "username": username,
         "page": str(page) if page else None,
-        "supabase_url": supabase_url or "",
-        "supabase_key": supabase_key or "",
         "drawer": drawer,
         "lock_mode": lock_mode or False,
         "is_overlay": is_overlay,
-        "default_view": dv,      # ← is this here?
-        "lock_view": lv,         # ← and this?
+        "default_view": dv,
+        "lock_view": lv,
         "readonly_mode": rv,
         "force_preset": True
     })
@@ -83,6 +81,8 @@ def build_config(preset, username=None, page=None, supabase_url=None, supabase_k
 
 
 def render_builder(preset, username=None, page=None, **kwargs):
+    kwargs.pop("supabase_url", None)
+    kwargs.pop("supabase_key", None)
     config = build_config(preset, username, page, **kwargs)
     config_json = json.dumps(config).replace('</', '<\\/')    
     return render_template("block_builder.html", config=config_json)

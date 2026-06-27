@@ -69,13 +69,7 @@
 </div>
 
 
-<script>  
-  window.BB_CONFIG = {{ config | safe }};
-</script>
-<script>
-  ("BB_CONFIG keys:", Object.keys(window.BB_CONFIG));
-  ("steps count:", window.BB_CONFIG.steps ? window.BB_CONFIG.steps.length : 'none');
-</script>
+<script type="application/json" id="bb-config-json">{{ config | safe }}</script>
 <script src="/static/js/bb-blocks.js"></script>
 <script src="/static/js/bb-render.js"></script>
 <script src="/static/js/bb-validation.js"></script>

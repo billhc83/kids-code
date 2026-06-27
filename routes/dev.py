@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort
 from utils.project_registry import PROJECTS
 from utils.assembly_guide_flask import render_assembly_guide
+from utils.decorators import admin_required
 import importlib
 import json
 import os
@@ -11,6 +12,7 @@ _COMPARE_DIR = os.path.join(os.path.dirname(__file__), '..', 'static', 'circuit_
 
 
 @dev_bp.route('/circuit/sandbox')
+@admin_required
 def circuit_sandbox():
     all_keys = [k for k, p in PROJECTS.items() if p.get('circuit_definition')]
     return render_template(
@@ -23,6 +25,7 @@ def circuit_sandbox():
 
 
 @dev_bp.route('/circuit/compare/<project_key>')
+@admin_required
 def circuit_compare(project_key):
     path = os.path.join(_COMPARE_DIR, f'{project_key}.json')
     if not os.path.exists(path):
@@ -60,6 +63,7 @@ def circuit_compare(project_key):
 
 
 @dev_bp.route('/circuit/<project_key>')
+@admin_required
 def circuit_preview(project_key):
     project = PROJECTS.get(project_key)
     if project is None:

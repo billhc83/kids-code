@@ -1,14 +1,22 @@
 import os
+import re
 import requests
-from flask import Blueprint, request, session, render_template, redirect, url_for, flash, current_app
+from flask import Blueprint, request, session, render_template, redirect, url_for, flash, current_app, jsonify
 from utils.decorators import login_required, admin_required
 from utils.feedback import add_message, delete_thread, get_all_threads
 from utils.challenges import get_all_submissions, review_submission
 from utils.activity import get_most_active_users, get_all_activity
 from utils.progression import get_completed_lessons
+from utils.deletion import run_purge, get_pending_deletions
+from utils.audit import log_admin_action, get_audit_log
 from config import SUPABASE_URL, SUPABASE_KEY
 
 admin_bp = Blueprint('admin', __name__)
+
+_UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+
+def _is_valid_uuid(value):
+    return bool(value and _UUID_RE.match(value))
 
 CHALLENGE_UNLOCKS = {
     "challenge_one": "project_eleven",
@@ -25,20 +33,31 @@ def admin_dashboard():
         if action == "reply":
             thread_id = request.form.get("thread_id")
             message = request.form.get("message", "").strip()
-            if thread_id and message:
+            if not _is_valid_uuid(thread_id):
+                flash("Invalid thread ID.")
+            elif message:
                 add_message(thread_id, session["user_id"],
                            session["username"], message, is_admin=True)
+                log_admin_action(session["user_id"], session["username"],
+                                 "feedback_reply", "thread", thread_id,
+                                 {"preview": message[:120]})
                 flash("Reply sent!")
 
         elif action == "delete":
             thread_id = request.form.get("thread_id")
-            if thread_id:
+            if not _is_valid_uuid(thread_id):
+                flash("Invalid thread ID.")
+            else:
                 delete_thread(thread_id)
+                log_admin_action(session["user_id"], session["username"],
+                                 "feedback_delete", "thread", thread_id)
                 flash("Thread deleted.")
 
         elif action == "resolve":
             thread_id = request.form.get("thread_id")
-            if thread_id:
+            if not _is_valid_uuid(thread_id):
+                flash("Invalid thread ID.")
+            else:
                 requests.patch(
                     f"{SUPABASE_URL}/rest/v1/feedback_threads?id=eq.{thread_id}",
                     headers={
@@ -48,6 +67,8 @@ def admin_dashboard():
                     },
                     json={"status": "resolved"}
                 )
+                log_admin_action(session["user_id"], session["username"],
+                                 "feedback_resolve", "thread", thread_id)
                 flash("Thread marked as resolved.")
 
         elif action == "review_challenge":
@@ -56,35 +77,53 @@ def admin_dashboard():
             challenge_key = request.form.get("challenge_key")
             status = request.form.get("status")
             feedback = request.form.get("feedback", "")
-            next_key = CHALLENGE_UNLOCKS.get(challenge_key)
-            review_submission(submission_id, status, feedback,
-                            user_id, challenge_key, next_key)
-            flash(f"Submission marked as {status}")
+            if not _is_valid_uuid(submission_id) or not _is_valid_uuid(user_id):
+                flash("Invalid submission or user ID.")
+            else:
+                next_key = CHALLENGE_UNLOCKS.get(challenge_key)
+                review_submission(submission_id, status, feedback,
+                                user_id, challenge_key, next_key)
+                log_admin_action(session["user_id"], session["username"],
+                                 "challenge_review", "submission", submission_id,
+                                 {"status": status, "challenge_key": challenge_key,
+                                  "target_user_id": user_id})
+                flash(f"Submission marked as {status}")
 
         elif action == "toggle_admin":
             user_id = request.form.get("user_id")
             is_admin = request.form.get("is_admin") == "true"
-            requests.patch(
-                f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
-                headers={
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={"is_admin": is_admin}
-            )
-            flash("Admin status updated.")
+            if not _is_valid_uuid(user_id):
+                flash("Invalid user ID.")
+            else:
+                requests.patch(
+                    f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
+                    headers={
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={"is_admin": is_admin}
+                )
+                log_admin_action(session["user_id"], session["username"],
+                                 "admin_toggle", "user", user_id,
+                                 {"is_admin": is_admin})
+                flash("Admin status updated.")
 
         elif action == "delete_user":
             user_id = request.form.get("user_id")
-            requests.delete(
-                f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
-                headers={
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}"
-                }
-            )
-            flash("User deleted.")
+            if not _is_valid_uuid(user_id):
+                flash("Invalid user ID.")
+            else:
+                requests.delete(
+                    f"{SUPABASE_URL}/rest/v1/users?id=eq.{user_id}",
+                    headers={
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_KEY}"
+                    }
+                )
+                log_admin_action(session["user_id"], session["username"],
+                                 "user_delete", "user", user_id)
+                flash("User deleted.")
 
         return redirect(url_for("admin.admin_dashboard"))
 
@@ -93,6 +132,8 @@ def admin_dashboard():
     submissions = get_all_submissions()
     active_users = get_most_active_users()
     project_time = get_all_activity()
+    pending_deletions = get_pending_deletions()
+    audit_log = get_audit_log(limit=100)
 
     # Fetch users with progress
     from utils.lessons import LESSONS
@@ -118,7 +159,9 @@ def admin_dashboard():
         submissions=submissions,
         users=users,
         active_users=active_users,
-        project_time=project_time
+        project_time=project_time,
+        pending_deletions=pending_deletions,
+        audit_log=audit_log
     )
 
 @admin_bp.route("/admin/preset-builder")
@@ -156,12 +199,22 @@ def step_builder_preview():
     image_src = data.get("image_src")
     highlights = data.get("highlights", [])
 
+    _ALLOWED_MIME = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+    _MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+
     if not image_src:
         img = Image.new("RGB", (400, 200), "#f4f8ff")
     elif image_src.startswith("data:"):
         import base64
+        if "," not in image_src:
+            return ("Invalid image data", 400)
         header, b64data = image_src.split(",", 1)
+        mime = header.split(";")[0].replace("data:", "").strip()
+        if mime not in _ALLOWED_MIME:
+            return ("Unsupported image type", 400)
         img_bytes = base64.b64decode(b64data)
+        if len(img_bytes) > _MAX_IMAGE_BYTES:
+            return ("Image too large (max 5 MB)", 400)
         img = Image.open(BytesIO(img_bytes)).convert("RGBA")
     else:
         path = image_src.lstrip("/")
@@ -209,3 +262,14 @@ def step_builder_preview():
     img.convert("RGB").save(buf, format="PNG")
     buf.seek(0)
     return send_file(buf, mimetype="image/png")
+
+
+@admin_bp.route("/admin/run-purge", methods=["POST"])
+@login_required
+@admin_required
+def run_account_purge():
+    count = run_purge()
+    log_admin_action(session["user_id"], session["username"],
+                     "account_purge", detail={"accounts_deleted": count})
+    flash(f"Purge complete. {count} account(s) permanently deleted.")
+    return redirect(url_for("admin.admin_dashboard"))

@@ -1,9 +1,64 @@
 import json
-from flask import Blueprint, request, session, render_template, abort
+import datetime
+from flask import Blueprint, request, session, render_template, abort, jsonify
 from utils.decorators import login_required
-from config import SUPABASE_URL, SUPABASE_ANON_KEY
+from utils.db_client import supabase
 
 builder_bp = Blueprint('builder', __name__)
+
+_DEMO_SKETCH = """\
+//>> Ready! | open | blocks
+//## int ledPin = 13;
+//>> Turn it ON | guided | blocks
+void setup() {
+  //## pinMode(ledPin, OUTPUT);
+}
+void loop() {
+  //?? Turn the LED on
+}
+//>> Add a pause | guided | blocks
+void setup() {
+  //## pinMode(ledPin, OUTPUT);
+}
+void loop() {
+  //## digitalWrite(ledPin, HIGH);
+  //?? Wait 500 milliseconds
+}
+//>> Turn it OFF | guided | blocks
+void setup() {
+  //## pinMode(ledPin, OUTPUT);
+}
+void loop() {
+  //## digitalWrite(ledPin, HIGH);
+  //## delay(500);
+  //?? Turn the LED off
+}
+//>> Mission Complete | open | blocks
+"""
+
+@builder_bp.route("/demo/builder")
+def demo_builder():
+    from utils.block_parser import parse_steps
+    steps = parse_steps(_DEMO_SKETCH)
+    config = {
+        "mode": "progression",
+        "steps": steps,
+        "palette": None,
+        "master": None,
+        "username": None,
+        "page": "splash_demo",
+        "drawer": {},
+        "lock_mode": False,
+        "is_overlay": False,
+        "default_view": "blocks",
+        "lock_view": True,
+        "readonly_mode": False,
+        "force_preset": True,
+        "supabase_url": "",
+        "supabase_key": "",
+    }
+    config_json = json.dumps(config).replace('</', '<\\/')
+    return render_template("block_builder_fragment.html", config=config_json)
 
 def normalize_drawer_steps(steps):
     result = []
@@ -46,8 +101,6 @@ def builder_endpoint():
         preset=preset,
         username=session.get("user_id"),
         page=page,
-        supabase_url=SUPABASE_URL,
-        supabase_key=SUPABASE_ANON_KEY,
         is_overlay=False,
     )
     config_json = json.dumps(config).replace('</', '<\\/')
@@ -186,3 +239,32 @@ def standalone_ide(preset):
         preset=preset,
         default_view=default_view
     )
+
+
+@builder_bp.route("/api/blocks/save", methods=["POST"])
+@login_required
+def blocks_save():
+    data = request.get_json(silent=True) or {}
+    page = data.get("page")
+    blocks_json = data.get("blocks_json")
+    if not page or blocks_json is None:
+        return jsonify({"error": "missing fields"}), 400
+    user_id = session["user_id"]
+    supabase.table("block_saves").upsert({
+        "username": user_id,
+        "page": str(page),
+        "blocks_json": blocks_json,
+        "updated_at": datetime.datetime.utcnow().isoformat()
+    }, on_conflict="username,page").execute()
+    return jsonify({"ok": True})
+
+
+@builder_bp.route("/api/blocks/load", methods=["GET"])
+@login_required
+def blocks_load():
+    page = request.args.get("page")
+    if not page:
+        return jsonify({"data": []})
+    user_id = session["user_id"]
+    resp = supabase.table("block_saves").select("blocks_json").eq("username", user_id).eq("page", page).execute()
+    return jsonify({"data": resp.data})

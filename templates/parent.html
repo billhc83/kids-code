@@ -213,13 +213,39 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
                 <details class="reset-wrap">
                     <summary>🔑 Reset Password</summary>
                     <form method="POST" class="reset-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="reset_password">
                         <input type="hidden" name="student_id" value="{{ student.id }}">
-                        <input type="password" name="new_password" 
+                        <input type="password" name="new_password"
                                placeholder="New password" required>
                         <button type="submit" class="reset-btn">Reset</button>
                     </form>
                 </details>
+
+                <!-- Delete student account -->
+                {% if not student.deletion_requested_at %}
+                <details class="reset-wrap" style="margin-top:8px;">
+                    <summary style="color:#cf222e;">🗑 Delete Account</summary>
+                    <p style="font-size:12px;color:#57606a;margin:8px 0;">
+                        All progress, saved code, and data will be permanently removed within 30 days.
+                    </p>
+                    <form method="POST" class="reset-form"
+                          onsubmit="return confirm('Schedule deletion for {{ student.username }}? This cannot be undone within 30 days.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="request_student_deletion">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <button type="submit" class="reset-btn"
+                                style="background:#cf222e;color:#fff;border-color:#cf222e;">
+                            Schedule Deletion
+                        </button>
+                    </form>
+                </details>
+                {% else %}
+                <div style="font-size:12px;color:#cf222e;margin-top:8px;padding:8px 12px;
+                            background:#fff5f5;border-radius:6px;border:1px solid #fca5a5;">
+                    ⏳ Deletion scheduled — data will be removed within 30 days.
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -235,12 +261,24 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
     <div class="dash-card">
         <div class="dash-card-label">➕ Create Student Account</div>
         <form method="POST" class="create-student-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="create">
             <div class="create-fields">
-                <input type="text" name="username" 
+                <input type="text" name="username"
                     placeholder="Username" required>
-                <input type="password" name="password" 
+                <input type="password" name="password"
                     placeholder="Password" required>
+                <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;
+                              color:#24292f;line-height:1.5;cursor:pointer;margin-top:4px;">
+                    <input type="checkbox" name="parent_consent" required
+                           style="margin-top:2px;flex-shrink:0;width:16px;height:16px;cursor:pointer;">
+                    <span>
+                        I confirm I am the parent or guardian of this child and consent to
+                        the collection and use of their data as described in the
+                        <a href="{{ url_for('main.privacy') }}" target="_blank"
+                           style="color:#0969da;">Privacy Policy</a>.
+                    </span>
+                </label>
                 <button type="submit" class="next-btn">
                     Create Account
                 </button>

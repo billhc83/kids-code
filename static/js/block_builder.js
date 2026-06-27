@@ -12,8 +12,7 @@
   BB.USERNAME     = CFG.username;
   BB.PAGE         = CFG.page;
   BB.MASTER_SKETCH = CFG.master || null;
-  BB.SUPABASE_URL  = CFG.supabase_url;
-  BB.SUPABASE_KEY  = CFG.supabase_key;
+
   BB.DEFAULT_VIEW  = CFG.default_view;
   BB.LOCK_VIEW     = CFG.lock_view;
   BB.READONLY_MODE = CFG.readonly_mode;
@@ -202,23 +201,20 @@
     } else {
       state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
     }
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?on_conflict=username,page', {
+    fetch('/api/blocks/save', {
       method: 'POST',
-      headers: {
-        'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY,
-        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ username: BB.USERNAME, page: BB.PAGE, blocks_json: JSON.stringify(state), updated_at: new Date().toISOString() })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: BB.PAGE, blocks_json: JSON.stringify(state) })
     }).then(function (r) { if (r.ok) BB.flash('Saved!'); else BB.flash('Save failed'); });
   };
   window.saveBlocks = BB.saveBlocks;
 
   BB.loadBlocks = function () {
     if (!BB.USERNAME || !BB.PAGE || BB.PAGE === 'null' || BB.PAGE === 'undefined') return;
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?username=eq.' + BB.USERNAME + '&page=eq.' + BB.PAGE,
-      { headers: { 'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY } })
+    fetch('/api/blocks/load?page=' + encodeURIComponent(BB.PAGE))
       .then(function (r) { return r.json(); })
-      .then(function (data) {
+      .then(function (resp) {
+        var data = resp.data;
         console.log('[BB:loadBlocks] response rows=' + (data ? data.length : 'null'));
         if (data && data.length > 0) {
           var saved = JSON.parse(data[0].blocks_json);
@@ -281,13 +277,10 @@
     } else {
       state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
     }
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?on_conflict=username,page', {
+    fetch('/api/blocks/save', {
       method: 'POST',
-      headers: {
-        'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY,
-        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ username: BB.USERNAME, page: BB.PAGE, blocks_json: JSON.stringify(state), updated_at: new Date().toISOString() })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: BB.PAGE, blocks_json: JSON.stringify(state) })
     }).then(function (r) { if (r.ok) BB.flash('Auto-saved'); });
   };
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}KidsCode{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
@@ -56,6 +57,12 @@
             </a>
             {% endif %}
             <a href="{{ url_for('main.open_coding') }}" class="{% if current_endpoint == 'open_coding' %}active{% endif %}">Open Coding</a>
+        {% endif %}
+        {% if session.user_id and not session.is_parent %}
+            <a href="{{ url_for('main.download_page') }}"
+               class="{% if current_endpoint == 'download_page' %}active{% endif %}">
+                ⬇ KidsCode Link
+            </a>
         {% endif %}
         <a href="{{ url_for('main.feedback') }}">Feedback</a>
     </div>
@@ -164,6 +171,51 @@ document.addEventListener('click', function(e) {
         });
     }
 });
+</script>
+
+<footer style="text-align:center;padding:20px 24px;border-top:1px solid #eaeef2;
+               font-size:12px;color:#57606a;margin-top:40px;">
+    <a href="{{ url_for('main.privacy') }}"
+       style="color:#57606a;text-decoration:none;"
+       onmouseover="this.style.color='#0969da'"
+       onmouseout="this.style.color='#57606a'">Privacy Policy</a>
+    &nbsp;·&nbsp;
+    <a href="{{ url_for('main.terms') }}"
+       style="color:#57606a;text-decoration:none;"
+       onmouseover="this.style.color='#0969da'"
+       onmouseout="this.style.color='#57606a'">Terms of Use</a>
+    &nbsp;·&nbsp;
+    <a href="{{ url_for('main.privacy_contact') }}"
+       style="color:#57606a;text-decoration:none;"
+       onmouseover="this.style.color='#0969da'"
+       onmouseout="this.style.color='#57606a'">Privacy Contact</a>
+    &nbsp;·&nbsp; © 2026 KidsCode (kidscode.ca)
+</footer>
+
+<script>
+(function() {
+    var _csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!_csrfToken) return;
+    var token = _csrfToken.getAttribute('content');
+    var _origFetch = window.fetch;
+    window.fetch = function(url, opts) {
+        opts = opts || {};
+        var method = (opts.method || 'GET').toUpperCase();
+        if (method !== 'GET' && method !== 'HEAD') {
+            var isSameOrigin = (typeof url === 'string' && !url.startsWith('http')) ||
+                               (typeof url === 'string' && url.startsWith(window.location.origin));
+            if (isSameOrigin) {
+                opts.headers = opts.headers || {};
+                if (opts.headers instanceof Headers) {
+                    opts.headers.set('X-CSRFToken', token);
+                } else {
+                    opts.headers['X-CSRFToken'] = token;
+                }
+            }
+        }
+        return _origFetch.call(this, url, opts);
+    };
+})();
 </script>
 
 {% block scripts %}{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Delete My Account — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:48px auto;padding:0 24px 60px;">
+
+<div style="background:#fff5f5;border:2px solid #fca5a5;border-radius:12px;padding:24px;margin-bottom:28px;">
+    <h1 style="font-size:22px;font-weight:800;color:#991b1b;margin:0 0 8px;">⚠️ Delete Your Account</h1>
+    <p style="font-size:14px;color:#7f1d1d;margin:0;line-height:1.6;">
+        This will schedule your account and all associated data for permanent deletion.
+    </p>
+</div>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#fff3cd;border:1px solid #fbbf24;border-radius:8px;
+                    padding:12px 16px;margin-bottom:16px;font-size:14px;color:#92400e;">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<h2 style="font-size:16px;font-weight:700;color:#1f2328;margin:0 0 12px;">What will be deleted</h2>
+<ul style="font-size:14px;color:#24292f;line-height:1.75;padding-left:20px;margin:0 0 24px;">
+    <li>Your account and login credentials</li>
+    <li>All lesson progress and completed lessons</li>
+    <li>All code you have saved in the block builder</li>
+    <li>Your badges and activity history</li>
+    <li>All feedback and support messages you have sent</li>
+    <li>Any challenge submissions</li>
+</ul>
+
+<div style="background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;padding:16px;margin-bottom:24px;">
+    <p style="font-size:13px;color:#57606a;margin:0;line-height:1.6;">
+        🕐 <strong>Your data will not be deleted immediately.</strong>
+        Your account will be scheduled for permanent deletion in <strong>30 days</strong>.
+        During this window, contact us at
+        <a href="{{ url_for('main.privacy_contact') }}" style="color:#0969da;">kidscode.ca/privacy/contact</a>
+        if you change your mind.
+    </p>
+</div>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label style="display:block;font-size:13px;font-weight:700;color:#1f2328;margin-bottom:6px;">
+        Type <strong>DELETE</strong> to confirm
+    </label>
+    <input type="text" name="confirm" required
+           autocomplete="off"
+           placeholder="DELETE"
+           style="width:100%;padding:10px 12px;border:2px solid #fca5a5;border-radius:8px;
+                  font-size:14px;font-family:inherit;box-sizing:border-box;margin-bottom:16px;">
+
+    <div style="display:flex;gap:12px;align-items:center;">
+        <button type="submit"
+                style="background:#cf222e;color:#fff;border:none;border-radius:8px;
+                       padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;
+                       font-family:inherit;">
+            Schedule Deletion
+        </button>
+        <a href="{{ url_for('main.dashboard') }}"
+           style="font-size:14px;color:#57606a;text-decoration:none;">
+            ← Cancel
+        </a>
+    </div>
+</form>
+
+</div>
+{% endblock %}

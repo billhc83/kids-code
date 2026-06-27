@@ -128,6 +128,7 @@ def _next_button(lesson_key, label, note):
     return (
         '<div style="display:flex;align-items:center;gap:16px;margin-top:24px;">\n'
         '    <form method="POST" action="{{ url_for(\'lessons.complete_lesson_route\') }}">\n'
+        '        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">\n'
         f'        <input type="hidden" name="lesson_key" value="{lesson_key}">\n'
         f'        <button type="submit" class="next-btn">{label}</button>\n'
         '    </form>\n'

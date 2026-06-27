@@ -150,15 +150,100 @@
 
 <hr>
 
-<!-- Videos -->
-<h2>Arduino IDE Download Walkthrough</h2>
-<video controls style="width:100%;border-radius:12px;margin:16px 0;">
-    <source src="https://github.com/billhc83/arduino_project/releases/download/v1.0.0/download_arduino.mp4" type="video/mp4">
+<!-- Upload method: KidsCode Link -->
+<h2>⚡ Method 1 — KidsCode Link <span style="background:#ddf4ff;color:#0550ae;border:1px solid #b6e3ff;border-radius:20px;font-size:14px;font-weight:700;padding:3px 12px;vertical-align:middle;">Recommended</span></h2>
+<p style="color:#57606a;margin-bottom:16px;">KidsCode Link is a small helper app that connects this website directly to your Arduino. No Arduino IDE needed — just click Upload in your lesson and your code goes straight to the board.</p>
+
+<div style="background:#f4f8ff;border:2px solid #dbeafe;border-radius:14px;padding:24px 28px;margin:16px 0 24px;">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <span style="font-size:24px;">🎬</span>
+        <div>
+            <p style="font-weight:800;color:#0969da;font-size:16px;margin:0;">Video walkthrough coming soon!</p>
+            <p style="font-size:13px;color:#57606a;margin:2px 0 0;">Follow this guide in the meantime — it covers everything the video will show.</p>
+        </div>
+    </div>
+
+    <!-- Phase 1: Download & Install -->
+    <p style="font-size:13px;font-weight:800;color:#57606a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Step 1 — Download &amp; Install</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
+            <p style="font-size:14px;margin:0;">Visit the <a href="{{ url_for('main.download_page') }}" style="color:#0969da;font-weight:600;">KidsCode Link download page</a> and click <strong>⬇ Download KidsCode Link</strong>. Requires Chrome or Edge browser on Windows 10 or 11.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
+            <p style="font-size:14px;margin:0;">Run the installer. Windows may show a security warning — click <strong>More info</strong> then <strong>Run anyway</strong>. This is normal for new apps.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
+            <p style="font-size:14px;margin:0;">Click through the installer (Next → Install → Finish). When it's done you'll see the <strong>KidsCode Link icon</strong> appear in the system tray — the bottom-right corner of your screen.</p>
+        </div>
+    </div>
+
+    <!-- Phase 2: Connect Arduino -->
+    <p style="font-size:13px;font-weight:800;color:#57606a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Step 2 — Connect your Arduino</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">4</span>
+            <p style="font-size:14px;margin:0;">Plug your Arduino into your computer using a <strong>USB-A to USB-B cable</strong> — that's the one with the square plug on the Arduino end.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">5</span>
+            <p style="font-size:14px;margin:0;">Open your lesson in KidsCode. Look at the top bar — you should see <strong style="color:#22c55e;">● KidsCode Link</strong> in green. If it shows in red, click it and follow the prompts.</p>
+        </div>
+    </div>
+
+    <!-- Phase 3: Using the interface -->
+    <p style="font-size:13px;font-weight:800;color:#57606a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Step 3 — Upload your code</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">6</span>
+            <p style="font-size:14px;margin:0;">Use the <strong>port dropdown</strong> at the top left to select your Arduino. It usually shows up as something like <em>Arduino UNO (COM3)</em>. If nothing appears, click <strong>Refresh</strong>.</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">7</span>
+            <p style="font-size:14px;margin:0;"><strong>Compile</strong> checks your code for mistakes without sending it to the board. <strong>Upload</strong> compiles and sends it — your circuit will respond straight away!</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#0969da;color:#fff;font-weight:800;font-size:12px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">8</span>
+            <p style="font-size:14px;margin:0;">Click <strong>Show Monitor</strong> to open the Serial Monitor — this shows messages printed by your Arduino, great for seeing what your code is doing.</p>
+        </div>
+    </div>
+
+    <!-- Troubleshooting -->
+    <div style="background:#fff8c5;border:1px solid #d4a72c;border-radius:10px;padding:14px 16px;">
+        <p style="font-weight:700;font-size:13px;margin-bottom:6px;">🔧 If something isn't working</p>
+        <ul style="font-size:13px;color:#24292f;margin:0;padding-left:18px;line-height:1.8;">
+            <li><strong>Board not in the port list</strong> — unplug the USB cable, plug it back in, then click Refresh.</li>
+            <li><strong>KidsCode Link shows offline</strong> — check your system tray and open it from there, or click the red status indicator.</li>
+            <li><strong>Upload fails</strong> — make sure the correct port is selected and no other program (like Arduino IDE) is using it.</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- Upload method: Arduino IDE -->
+<h2>🛠️ Method 2 — Arduino IDE</h2>
+<p style="color:#57606a;margin-bottom:16px;">You can also use the free Arduino IDE app to upload your code. This works on Windows and Mac and doesn't require KidsCode Link.</p>
+
+<h3>Downloading the Arduino IDE</h3>
+<video controls style="width:100%;border-radius:12px;margin:12px 0 24px;">
+    <source src="https://github.com/billhc83/kids-code/releases/download/Download_Arduino/download_arduino.mp4" type="video/mp4">
+    <p style="padding:16px;background:#fff8c5;border-radius:8px;font-size:13px;">
+        Video unavailable — <a href="{{ url_for('main.download_page') }}">visit the download page</a> for instructions.
+    </p>
 </video>
 
-<h2>How To Load Your Code</h2>
-<video controls style="width:100%;border-radius:12px;margin:16px 0;">
-    <source src="https://github.com/billhc83/arduino_project/releases/download/v1.0.1/First.arduino.code.mp4" type="video/mp4">
+<h3>Loading your code with the Arduino IDE</h3>
+<video controls style="width:100%;border-radius:12px;margin:12px 0;">
+    <source src="https://github.com/billhc83/kids-code/releases/download/upload_via_IDE/First.arduino.code.mp4" type="video/mp4">
+    <p style="padding:16px;background:#fff8c5;border-radius:8px;font-size:13px;">
+        Video unavailable — <a href="{{ url_for('main.download_page') }}">visit the download page</a> for instructions.
+    </p>
 </video>
 
 <hr>
@@ -166,6 +251,7 @@
 <!-- Next button -->
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
     <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
         <button type="submit" class="next-btn">Next Project →</button>
 </form>

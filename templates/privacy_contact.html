@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Privacy Contact — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:48px auto;padding:0 24px 60px;">
+
+<h1 style="font-size:26px;font-weight:800;color:#1f2328;margin:0 0 8px;">Privacy & Data Request</h1>
+<p style="font-size:14px;color:#57606a;margin:0 0 28px;line-height:1.6;">
+    Use this form to request access to, correction of, or deletion of your personal data —
+    or to ask any question about how KidsCode handles your information.
+    We respond within <strong>30 days</strong>.
+</p>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;
+                    padding:14px 18px;margin-bottom:20px;font-size:14px;
+                    color:#15803d;font-weight:600;">
+            ✅ {{ msg }}
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<form method="POST" style="display:flex;flex-direction:column;gap:16px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#1f2328;margin-bottom:6px;">
+            Your name <span style="color:#cf222e;">*</span>
+        </label>
+        <input type="text" name="name" required
+               placeholder="First and last name"
+               style="width:100%;padding:10px 12px;border:2px solid #d0d7de;border-radius:8px;
+                      font-size:14px;font-family:inherit;box-sizing:border-box;
+                      transition:border-color 0.15s;"
+               onfocus="this.style.borderColor='#0969da'"
+               onblur="this.style.borderColor='#d0d7de'">
+    </div>
+
+    <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#1f2328;margin-bottom:6px;">
+            Your email address <span style="color:#cf222e;">*</span>
+        </label>
+        <input type="email" name="email" required
+               placeholder="we'll reply to this address"
+               style="width:100%;padding:10px 12px;border:2px solid #d0d7de;border-radius:8px;
+                      font-size:14px;font-family:inherit;box-sizing:border-box;
+                      transition:border-color 0.15s;"
+               onfocus="this.style.borderColor='#0969da'"
+               onblur="this.style.borderColor='#d0d7de'">
+    </div>
+
+    <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#1f2328;margin-bottom:6px;">
+            Type of request <span style="color:#cf222e;">*</span>
+        </label>
+        <select name="request_type" required
+                style="width:100%;padding:10px 12px;border:2px solid #d0d7de;border-radius:8px;
+                       font-size:14px;font-family:inherit;box-sizing:border-box;background:#fff;
+                       transition:border-color 0.15s;"
+                onfocus="this.style.borderColor='#0969da'"
+                onblur="this.style.borderColor='#d0d7de'">
+            <option value="" disabled selected>Select a request type</option>
+            <option value="Access my data">Access my data</option>
+            <option value="Correct my data">Correct my data</option>
+            <option value="Delete my account">Delete my account</option>
+            <option value="Delete my child's account">Delete my child's account</option>
+            <option value="Withdraw AI tutor consent">Withdraw AI tutor consent</option>
+            <option value="General privacy question">General privacy question</option>
+        </select>
+    </div>
+
+    <div>
+        <label style="display:block;font-size:13px;font-weight:700;color:#1f2328;margin-bottom:6px;">
+            Message <span style="color:#cf222e;">*</span>
+        </label>
+        <p style="font-size:12px;color:#57606a;margin:0 0 6px;">
+            Include your KidsCode username and any details that will help us locate your account.
+        </p>
+        <textarea name="message" required rows="5"
+                  placeholder="Describe your request..."
+                  style="width:100%;padding:10px 12px;border:2px solid #d0d7de;border-radius:8px;
+                         font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical;
+                         transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='#0969da'"
+                  onblur="this.style.borderColor='#d0d7de'"></textarea>
+    </div>
+
+    <button type="submit"
+            style="background:#2ea44f;color:#fff;border:none;border-radius:8px;
+                   padding:12px 24px;font-size:15px;font-weight:700;cursor:pointer;
+                   font-family:inherit;transition:background 0.15s;align-self:flex-start;"
+            onmouseover="this.style.background='#2c974b'"
+            onmouseout="this.style.background='#2ea44f'">
+        Submit Request
+    </button>
+</form>
+
+<div style="margin-top:36px;padding-top:24px;border-top:1px solid #eaeef2;">
+    <p style="font-size:12px;color:#57606a;line-height:1.6;margin:0;">
+        This form is rate-limited. If you have an urgent concern or do not receive a response
+        within 30 days, you may also contact the
+        <a href="https://www.priv.gc.ca" target="_blank" rel="noopener"
+           style="color:#0969da;">Office of the Privacy Commissioner of Canada</a>.
+    </p>
+    <p style="font-size:12px;color:#57606a;margin:8px 0 0;">
+        ← <a href="{{ url_for('main.privacy') }}" style="color:#0969da;">Back to Privacy Policy</a>
+    </p>
+</div>
+
+</div>
+{% endblock %}

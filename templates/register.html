@@ -160,8 +160,9 @@
             {% endif %}
         {% endwith %}
 
-        <form method="POST" id="register-form" 
+        <form method="POST" id="register-form"
       data-type="{{ request.form.get('is_parent', '') == 'true' and 'parent' or (request.form.get('is_parent', '') == 'false' and 'student' or '') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <!-- Hidden input that gets set when a card is selected -->
             <input type="hidden" name="is_parent" id="is_parent_input" value="">
 
@@ -188,6 +189,19 @@
                 <input type="email" name="email" placeholder="Email address" required>
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="password" name="password" placeholder="Password" required>
+                <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;
+                              color:#24292f;line-height:1.5;cursor:pointer;margin-top:4px;">
+                    <input type="checkbox" name="agree_tos" required
+                           style="margin-top:2px;flex-shrink:0;width:16px;height:16px;cursor:pointer;">
+                    <span>
+                        I have read and agree to the
+                        <a href="{{ url_for('main.privacy') }}" target="_blank"
+                           style="color:#0969da;">Privacy Policy</a>
+                        and
+                        <a href="{{ url_for('main.terms') }}" target="_blank"
+                           style="color:#0969da;">Terms of Use</a>.
+                    </span>
+                </label>
                 <button type="submit" id="submit-btn">Create Account</button>
             </div>
         </form>

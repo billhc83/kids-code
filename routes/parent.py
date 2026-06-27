@@ -1,7 +1,9 @@
-from flask import Blueprint, request, session, render_template
+import datetime
+from flask import Blueprint, request, session, render_template, flash, redirect, url_for
 from utils.decorators import login_required, parent_required
 from utils.auth import get_students_for_parent, create_student_for_parent, reset_student_password, mark_first_login_complete
 from utils.progression import get_completed_lessons
+from utils.deletion import request_account_deletion
 
 parent_bp = Blueprint('parent', __name__)
 
@@ -28,19 +30,24 @@ def parent_dashboard():
         if action == "create":
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "")
-            student, err = create_student_for_parent(
-                session["user_id"], username, password
-            )
-            if err:
-                error = err
+            if not request.form.get("parent_consent"):
+                error = "You must confirm parental consent before creating a student account."
             else:
-                success = f"Account created for {username}!"
-                students = get_students_for_parent(session["user_id"])
-                for s in students:
-                    completed = get_completed_lessons(s["id"])
-                    s["completed_count"] = len(completed)
-                    s["total"] = total
-                    s["progress_pct"] = int((len(completed) / total) * 100)
+                consent_given_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                student, err = create_student_for_parent(
+                    session["user_id"], username, password,
+                    consent_given_at=consent_given_at
+                )
+                if err:
+                    error = err
+                else:
+                    success = f"Account created for {username}!"
+                    students = get_students_for_parent(session["user_id"])
+                    for s in students:
+                        completed = get_completed_lessons(s["id"])
+                        s["completed_count"] = len(completed)
+                        s["total"] = total
+                        s["progress_pct"] = int((len(completed) / total) * 100)
 
         elif action == "reset_password":
             student_id = request.form.get("student_id")
@@ -49,6 +56,22 @@ def parent_dashboard():
                 success = "Password reset successfully"
             else:
                 error = "Failed to reset password"
+
+        elif action == "request_student_deletion":
+            student_id = request.form.get("student_id")
+            # Verify this student belongs to the requesting parent
+            linked = [s for s in students if s["id"] == student_id]
+            if linked:
+                request_account_deletion(student_id)
+                success = f"Account deletion scheduled for {linked[0]['username']}. All data will be removed within 30 days."
+                students = get_students_for_parent(session["user_id"])
+                for s in students:
+                    completed = get_completed_lessons(s["id"])
+                    s["completed_count"] = len(completed)
+                    s["total"] = total
+                    s["progress_pct"] = int((len(completed) / total) * 100)
+            else:
+                error = "Student account not found."
 
     return render_template(
         "parent.html",

@@ -79,6 +79,7 @@ function showTab(name, btn) {
 
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
     <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="lesson_key" value="project_eighteen_part_two">
         <button type="submit" class="next-btn">Cross the Finish Line →</button>
     </form>

@@ -47,8 +47,8 @@ _slices_svg = '\n    '.join(_slice_svg(*s) for s in _SLICE_DEFS)
 
 def get_builder_html(preset, username=None, page=None,
                      drawer_content=None, pin_refs=None, height=500,
-                     supabase_url=None, supabase_key=None, is_overlay=False, builder_url=None, lock_mode=None,
-                     chips=None):
+                     is_overlay=False, builder_url=None, lock_mode=None,
+                     chips=None, **_ignored):
 
     try:
         if not is_overlay:
@@ -56,8 +56,6 @@ def get_builder_html(preset, username=None, page=None,
                 preset=preset,
                 username=str(username) if username else None,
                 page=page,
-                supabase_url=supabase_url,
-                supabase_key=supabase_key,
                 lock_mode=lock_mode,
                 is_overlay=False,
             )
@@ -69,8 +67,6 @@ def get_builder_html(preset, username=None, page=None,
                 preset=preset,
                 username=str(username) if username else None,
                 page=page,
-                supabase_url=supabase_url,
-                supabase_key=supabase_key,
                 lock_mode=lock_mode,
                 is_overlay=True,
             )
@@ -282,6 +278,41 @@ def get_builder_html(preset, username=None, page=None,
   </div>
 </div>
 
+<div id="bb-ai-consent-modal" style="display:none;position:fixed;inset:0;
+     background:rgba(15,23,42,0.75);z-index:1000002;
+     align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;
+              box-shadow:0 20px 60px rgba(0,0,0,0.3);padding:28px 24px;">
+    <div style="font-size:28px;text-align:center;margin-bottom:12px;">🤖</div>
+    <h3 style="font-size:16px;font-weight:800;color:#1f2328;margin:0 0 10px;text-align:center;">
+      AI Hint — Quick Note
+    </h3>
+    <p style="font-size:13px;color:#57606a;line-height:1.65;margin:0 0 16px;">
+      To generate a hint, your current code and question will be sent to
+      <strong>OpenAI</strong>. OpenAI does not use this to train its models.
+    </p>
+    <p style="font-size:12px;color:#57606a;line-height:1.6;margin:0 0 20px;">
+      See our <a href="/privacy" target="_blank"
+        style="color:#0969da;">Privacy Policy</a> for full details.
+      This message only shows once.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button id="bb-consent-confirm"
+              style="flex:1;background:#2ea44f;color:#fff;border:none;border-radius:8px;
+                     padding:10px;font-size:14px;font-weight:700;cursor:pointer;
+                     font-family:system-ui,sans-serif;">
+        Got it, continue
+      </button>
+      <button id="bb-consent-cancel"
+              style="flex:1;background:#f6f8fa;color:#24292f;border:1px solid #d0d7de;
+                     border-radius:8px;padding:10px;font-size:14px;font-weight:600;
+                     cursor:pointer;font-family:system-ui,sans-serif;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="bb-overlay">
   <iframe id="bb-iframe" src="{builder_url}"></iframe>
 </div>
@@ -480,14 +511,36 @@ def get_builder_html(preset, username=None, page=None,
     }}).catch(function() {{ aiBubble.textContent = 'Something went wrong — try again!'; }});
   }}
 
+  function maybeRequestConsent(callback) {{
+    if (localStorage.getItem('ai_tutor_consented')) {{
+      callback();
+      return;
+    }}
+    var modal = document.getElementById('bb-ai-consent-modal');
+    modal.style.display = 'flex';
+    document.getElementById('bb-consent-confirm').onclick = function() {{
+      localStorage.setItem('ai_tutor_consented', 'true');
+      modal.style.display = 'none';
+      callback();
+    }};
+    document.getElementById('bb-consent-cancel').onclick = function() {{
+      modal.style.display = 'none';
+    }};
+  }}
+
   document.querySelectorAll('.bb-chip').forEach(function(chip) {{
-    chip.addEventListener('click', function(e) {{ e.preventDefault(); sendHelp(chip.textContent.trim(), ''); }});
+    chip.addEventListener('click', function(e) {{
+      e.preventDefault();
+      maybeRequestConsent(function() {{ sendHelp(chip.textContent.trim(), ''); }});
+    }});
   }});
 
   var helpInput = document.getElementById('bb-help-input');
   document.getElementById('bb-help-send').addEventListener('click', function() {{
     var txt = helpInput.value.trim();
-    if (txt) {{ sendHelp('', txt); helpInput.value = ''; }}
+    if (txt) {{
+      maybeRequestConsent(function() {{ sendHelp('', txt); helpInput.value = ''; }});
+    }}
   }});
   helpInput.addEventListener('keydown', function(e) {{
     if (e.key === 'Enter') {{ document.getElementById('bb-help-send').click(); }}

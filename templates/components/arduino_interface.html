@@ -756,44 +756,56 @@ function isWindows() {
   return navigator.userAgent.toLowerCase().includes('windows');
 }
 
+function isChromiumBased() {
+  // Chrome, Edge, Brave, Opera all carry 'Chrome' in the UA; Firefox and Safari do not.
+  return navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Firefox');
+}
+
 function showKCLinkModal() {
   const installed = localStorage.getItem('kclink_installed') === 'true';
-  const win = isWindows();
+  const win      = isWindows();
+  const chromium = isChromiumBased();
 
-  const title = document.getElementById('kclink-modal-title');
+  const title    = document.getElementById('kclink-modal-title');
   const subtitle = document.getElementById('kclink-modal-subtitle');
-  const msg = document.getElementById('kclink-modal-msg');
-  const actions = document.getElementById('kclink-modal-actions');
+  const msg      = document.getElementById('kclink-modal-msg');
+  const actions  = document.getElementById('kclink-modal-actions');
 
   actions.innerHTML = '';
 
   if (!win) {
-    title.textContent = 'Windows only for now';
+    title.textContent    = 'Windows only for now';
     subtitle.textContent = 'KidsCode Link';
-    msg.textContent = 'KidsCode Link is currently only available on Windows. Mac support is coming soon — check back!';
+    msg.textContent      = 'KidsCode Link is currently only available on Windows. Mac support is coming soon — check back!';
+  } else if (!chromium) {
+    title.textContent    = 'Chrome or Edge required';
+    subtitle.textContent = 'Browser not supported for uploads';
+    msg.textContent      = 'KidsCode Link can\'t connect through Firefox or Safari — browser security rules block local app connections in those browsers. Please open this page in Chrome or Edge to upload to your Arduino.';
+    const browserNote = document.createElement('p');
+    browserNote.className = 'kclink-os-note';
+    browserNote.textContent = '💡 Switch to Chrome or Edge and reload this page.';
+    actions.appendChild(browserNote);
   } else if (installed) {
-    title.textContent = 'KidsCode Link is sleeping';
+    title.textContent    = 'KidsCode Link is sleeping';
     subtitle.textContent = 'It just needs a nudge';
-    msg.textContent = 'KidsCode Link is installed but not running. Open it on your computer to connect, then come back here.';
+    msg.textContent      = 'KidsCode Link is installed but not running. Open it on your computer to connect, then come back here.';
     const openBtn = document.createElement('a');
-    openBtn.href = 'kclink://launch';
+    openBtn.href      = 'kclink://launch';
     openBtn.className = 'kclink-btn-primary';
     openBtn.textContent = 'Open KidsCode Link';
     actions.appendChild(openBtn);
     const reinstallLink = document.createElement('a');
-    reinstallLink.href = 'https://github.com/billhc83/kids-code/releases/download/KidsCode_Link/KidsCode.Link.Setup.1.0.0.exe';
-    reinstallLink.target = '_blank';
+    reinstallLink.href      = '/download';
     reinstallLink.className = 'kclink-os-note';
     reinstallLink.style.cssText = 'display:block; margin-top:12px; text-decoration:underline; cursor:pointer;';
     reinstallLink.textContent = 'Reinstall KidsCode Link';
     actions.appendChild(reinstallLink);
   } else {
-    title.textContent = 'KidsCode Link needed';
+    title.textContent    = 'KidsCode Link needed';
     subtitle.textContent = 'One-time setup — takes about a minute';
-    msg.textContent = 'To upload code to your Arduino, you need KidsCode Link — a small helper app that connects this website to your board. Download it once and you\'re all set!';
+    msg.textContent      = 'To upload code to your Arduino, you need KidsCode Link — a small helper app that connects this website to your board. Download it once and you\'re all set!';
     const dlBtn = document.createElement('a');
-    dlBtn.href = 'https://github.com/billhc83/kids-code/releases/download/KidsCode_Link/KidsCode.Link.Setup.1.0.0.exe';
-    dlBtn.target = '_blank';
+    dlBtn.href      = '/download';
     dlBtn.className = 'kclink-btn-primary';
     dlBtn.textContent = '⬇ Download KidsCode Link';
     actions.appendChild(dlBtn);
@@ -803,7 +815,7 @@ function showKCLinkModal() {
     actions.appendChild(parentNote);
     const note = document.createElement('p');
     note.className = 'kclink-os-note';
-    note.textContent = '🪟 Windows only';
+    note.textContent = '🪟 Windows · Chrome or Edge required';
     actions.appendChild(note);
   }
 
@@ -1109,21 +1121,20 @@ async function loadBlockBuilder() {
     const temp = document.createElement('div');
     temp.innerHTML = html;
 
-    // Pull all script elements out before injecting, so the browser never
-    // tries to run them via the normal (unreliable async) dynamic-insert path.
+    // Read the config from the JSON data script tag (no eval needed).
+    const configEl = temp.querySelector('script[type="application/json"]#bb-config-json');
+    if (configEl) {
+      try { window.BB_CONFIG = JSON.parse(configEl.textContent); }
+      catch (e) { console.error('[BB] config parse error:', e); }
+      configEl.remove();
+    }
+
+    // Pull remaining script elements out before injecting (external src scripts only).
     const scripts = [...temp.querySelectorAll('script')];
     scripts.forEach(s => s.remove());
 
     // Inject the script-free HTML (link stylesheet + block builder markup)
     blocksView.innerHTML = temp.innerHTML;
-
-    // Execute inline scripts first (e.g. the BB_CONFIG = {...} assignment)
-    for (const s of scripts) {
-      if (!s.getAttribute('src')) {
-        try { (new Function(s.textContent))(); }
-        catch (e) { console.error('[BB] inline script error:', e); }
-      }
-    }
 
     // Load each external script sequentially, awaiting onload before the next.
     // This guarantees bb-blocks → bb-render → bb-validation → block_builder
