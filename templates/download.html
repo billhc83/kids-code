@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Download KidsCode Link — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;margin:48px auto;padding:0 24px 60px;">
+
+<style>
+.dl-hero { text-align:center;margin-bottom:40px; }
+.dl-icon { font-size:56px;margin-bottom:16px; }
+.dl-title { font-size:28px;font-weight:800;color:#1f2328;margin:0 0 10px; }
+.dl-sub { font-size:16px;color:#57606a;margin:0 0 28px;line-height:1.6; }
+.dl-btn {
+    display:inline-block;background:#2ea44f;color:#fff;text-decoration:none;
+    padding:14px 36px;border-radius:10px;font-size:16px;font-weight:700;
+    transition:background 0.15s;
+}
+.dl-btn:hover { background:#2c974b; }
+.dl-version { font-size:12px;color:#57606a;margin-top:10px; }
+.dl-card {
+    background:#f6f8fa;border:1px solid #d0d7de;border-radius:12px;
+    padding:24px;margin-bottom:20px;
+}
+.dl-card-title { font-size:15px;font-weight:700;color:#1f2328;margin:0 0 14px; }
+.dl-list { list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px; }
+.dl-list li { font-size:14px;color:#24292f;display:flex;gap:12px;align-items:flex-start;line-height:1.55; }
+.dl-list li .ico { font-size:18px;flex-shrink:0;margin-top:1px; }
+.dl-steps { counter-reset:step;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px; }
+.dl-steps li {
+    font-size:14px;color:#24292f;display:flex;gap:14px;align-items:flex-start;
+    line-height:1.55;
+}
+.dl-steps li::before {
+    counter-increment:step;
+    content:counter(step);
+    background:#0969da;color:#fff;font-weight:700;font-size:12px;
+    width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.dl-req { display:flex;gap:8px;align-items:center;font-size:14px;color:#24292f;margin-bottom:8px; }
+.dl-req .badge {
+    background:#ddf4ff;color:#0550ae;border:1px solid #b6e3ff;
+    border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700;
+}
+</style>
+
+<!-- Hero -->
+<div class="dl-hero">
+    <div class="dl-icon">🔌</div>
+    <h1 class="dl-title">KidsCode Link</h1>
+    <p class="dl-sub">
+        A small helper app that connects your KidsCode lessons to your Arduino board.
+        Install it once — it runs quietly in the background whenever you need it.
+    </p>
+    <a href="https://github.com/billhc83/kids-code/releases/download/KidsCode_Link/KidsCode.Link.Setup.exe"
+       class="dl-btn">
+        ⬇ Download KidsCode Link
+    </a>
+    <p class="dl-version">Free · Windows 10 / 11 · No account required</p>
+</div>
+
+<!-- What it does -->
+<div class="dl-card">
+    <p class="dl-card-title">What does KidsCode Link do?</p>
+    <ul class="dl-list">
+        <li><span class="ico">🌐</span>
+            <span>Bridges your browser and your Arduino — so when you click Upload in your lesson, the code goes straight to your board.</span>
+        </li>
+        <li><span class="ico">🔒</span>
+            <span>Only talks to KidsCode. It doesn't send data anywhere else and doesn't run unless KidsCode needs it.</span>
+        </li>
+        <li><span class="ico">💤</span>
+            <span>Stays in the system tray and wakes up automatically when you open a lesson with an Arduino step.</span>
+        </li>
+    </ul>
+</div>
+
+<!-- System requirements -->
+<div class="dl-card">
+    <p class="dl-card-title">System requirements</p>
+    <div class="dl-req"><span class="badge">Windows</span> Windows 10 or Windows 11 (64-bit)</div>
+    <div class="dl-req"><span class="badge">Browser</span> Chrome or Edge (Chromium-based) — Firefox and Safari are not supported for uploads</div>
+    <div class="dl-req"><span class="badge">Hardware</span> Arduino UNO (or compatible board)</div>
+    <div class="dl-req"><span class="badge">Cable</span> USB-A to USB-B cable (the square plug)</div>
+    <p style="font-size:13px;color:#cf222e;margin:12px 0 0;">
+        ⚠ Mac is not supported yet. Mac support is coming — check back!
+    </p>
+</div>
+
+<!-- Install steps -->
+<div class="dl-card">
+    <p class="dl-card-title">How to install</p>
+    <ol class="dl-steps">
+        <li>Click the Download button above and run the installer.</li>
+        <li>Windows may show a security warning — click <strong>More info</strong> then <strong>Run anyway</strong>. This is normal for new apps.</li>
+        <li>Follow the installer steps (just click Next → Install → Finish).</li>
+        <li>KidsCode Link will appear in your system tray (bottom-right corner of your screen).</li>
+        <li>Come back to your lesson and try uploading — it should connect automatically.</li>
+    </ol>
+</div>
+
+<!-- Uninstall -->
+<div style="font-size:13px;color:#57606a;line-height:1.7;margin-top:8px;">
+    <strong>To uninstall:</strong> Open Windows Settings → Apps → search for "KidsCode Link" → Uninstall.
+    Nothing else is left behind.
+</div>
+
+</div>
+{% endblock %}

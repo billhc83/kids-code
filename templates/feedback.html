@@ -21,6 +21,7 @@
     <div class="dash-card">
         <div class="dash-card-label">✉️ New Message</div>
         <form method="POST" class="feedback-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="new_thread">
             <div class="feedback-fields">
                 <select name="category" required>
@@ -80,6 +81,7 @@
 
                 <!-- Reply form -->
                 <form method="POST" class="reply-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="reply">
                     <input type="hidden" name="thread_id" value="{{ thread.id }}">
                     <div class="reply-row">

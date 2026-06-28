@@ -55,7 +55,7 @@ directive: STEP_DIR      -> step
 empty_arg: -> empty_val
 
 // Terminals
-TYPE.2: "int" | "long" | "unsigned" "long" | "bool" | "String" | "float" | "byte" | "char"
+TYPE.2: "int" | "long" | "unsigned" "long" | "bool" | "String" | "float" | "byte" | "char" | "Servo"
 COMP_OP: "==" | "!=" | ">=" | "<=" | ">" | "<"
 JOIN_OP: "&&" | "||"
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/

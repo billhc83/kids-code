@@ -7,6 +7,7 @@ from utils.project_registry import PROJECTS
 from utils.assembly_guide_flask import render_assembly_guide
 from config import SUPABASE_URL, SUPABASE_KEY
 import json
+import os
 
 lessons_bp = Blueprint('lessons', __name__)
 
@@ -54,8 +55,11 @@ def lesson(lesson_key):
         img = meta.get("circuit_image") or project_data.get("image")
         steps = project_data.get("steps", [])
         title = meta.get("title") or project_data.get("title")
-        if img and steps:
+        if img and steps and os.path.exists(img):
             extra["assembly_guide_html"] = render_assembly_guide(img, steps, title)
+        circuit_def = project_data.get("circuit_definition")
+        if circuit_def:
+            extra["circuit_def_json"] = json.dumps(circuit_def)
 
     if lesson_key == "project_fourteen_part_one":
         from utils.code_breaker import serial_monitor
@@ -104,7 +108,8 @@ def lesson(lesson_key):
             username=session.get("user_id"),
             page=lesson_key,
             is_overlay=True,
-            builder_url=ide_url
+            builder_url=ide_url,
+            chips=project_data.get("chips") if project_data else None,
         )
         
         if drawer_content:

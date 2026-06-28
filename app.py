@@ -5,7 +5,7 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
-from extensions import limiter
+from extensions import limiter, csrf
 
 # Routes imports
 from routes.auth import auth_bp
@@ -14,6 +14,9 @@ from routes.admin import admin_bp
 from routes.parent import parent_bp
 from routes.builder import builder_bp
 from routes.main import main_bp
+from routes.help import help_bp
+from routes.dev import dev_bp
+from routes.account import account_bp
 
 from utils.progression import get_user_progression
 from utils.lessons import get_sidebar_groups, LESSON_BY_KEY
@@ -28,11 +31,12 @@ if not SUPABASE_KEY:
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-app.permanent_session_lifetime = timedelta(days=30)
+app.permanent_session_lifetime = timedelta(hours=8)
 app.json.sort_keys = False
 
 # Initialize extensions
 limiter.init_app(app)
+csrf.init_app(app)
 
 # Register blueprints
 app.register_blueprint(auth_bp)
@@ -41,6 +45,27 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(parent_bp)
 app.register_blueprint(builder_bp)
 app.register_blueprint(main_bp)
+app.register_blueprint(help_bp)
+app.register_blueprint(dev_bp)
+app.register_blueprint(account_bp)
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data:; "
+        "media-src 'self' https://github.com https://*.githubusercontent.com; "
+        "connect-src 'self' http://127.0.0.1:52010 ws://127.0.0.1:52011 https://cdnjs.cloudflare.com; "
+        "worker-src blob:; "
+        "frame-ancestors 'self';"
+    )
+    return response
 
 @app.context_processor
 def inject_globals():

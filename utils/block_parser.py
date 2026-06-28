@@ -131,9 +131,18 @@ class BlockTransformer(Transformer):
         }
         if len(items) > 3:
             res['joiner'] = 'and' if str(items[3]) == '&&' else 'or'
-            res['leftExpr2'] = items[4]
-            res['op2'] = str(items[5])
-            res['rightExpr2'] = items[6]
+            inner = items[4]
+            if isinstance(inner, dict) and 'leftExpr' in inner:
+                # Recursive parse: condition(A op B && condition(C op D))
+                # Unpack the nested condition into the flat leftExpr2/op2/rightExpr2 fields
+                res['leftExpr2'] = inner.get('leftExpr')
+                res['op2'] = inner.get('op', '==')
+                res['rightExpr2'] = inner.get('rightExpr')
+            else:
+                # Flat 7-item parse: [A, op, B, &&, C, op, D]
+                res['leftExpr2'] = items[4]
+                res['op2'] = str(items[5]) if len(items) > 5 else '=='
+                res['rightExpr2'] = items[6] if len(items) > 6 else None
         return res
 
     def stmt(self, items):
@@ -145,6 +154,8 @@ class BlockTransformer(Transformer):
     def var_decl(self, items):
         typ, name = str(items[0]), str(items[1])
         val = items[2] if len(items) > 2 else None
+        if typ == 'Servo':
+            return {'type': 'servodeclare', 'params': [name]}
         vtype = 'intvar' if typ == 'int' else 'longvar' if 'long' in typ else 'boolvar' if typ == 'bool' else 'stringvar'
         if vtype == 'boolvar':
              return {'type': vtype, 'params': [name, str(val['params'][0]) if val else '']}
@@ -187,7 +198,12 @@ class BlockTransformer(Transformer):
              return {'type': 'serialbegin', 'params': [str(args[0]['params'][0]) if args else '']}
         if full_name in ["Serial.print", "Serial.println"]:
              return {'type': 'serialprint', 'params': ['', name], 'exChildren': [args[0] if args else None]}
-        
+        if name == 'attach' and prefix:
+            pin = str(args[0]['params'][0]) if args and 'params' in args[0] else '9'
+            return {'type': 'servoattach', 'params': [prefix, pin]}
+        if name == 'write' and prefix:
+            return {'type': 'servowrite', 'params': [prefix, ''], 'exChildren': [None, args[0] if args else None]}
+
         # Fallback for other func calls
         return {'type': 'codeblock', 'params': [f"{full_name}(...);"], 'locked': True}
 
@@ -239,6 +255,8 @@ class BlockTransformer(Transformer):
                  'params': ['', *[str(a['params'][0]) if a else '' for a in args[1:]]],
                  'children': [args[0] if args else None, None, None]
              }
+        if name == 'read' and prefix:
+            return {'type': 'servoread', 'params': [prefix], 'children': []}
         return {'type': 'value', 'params': [f"{full_name}(...)"], 'children': []}
 
 
@@ -271,6 +289,7 @@ def strip_expr_values(node):
     t = node['type']
     if t == 'value': return None
     if t in ('millis', 'serialavailable', 'serialreadstring'): return node
+    if t == 'servoread': return {'type': 'servoread', 'params': [''], 'children': []}
     if t in ('analogread', 'digitalread'): return {'type': t, 'params': [''], 'children': []}
     if t == 'pulsein': return {'type': 'pulsein', 'params': ['', 'HIGH'], 'children': []}
     if t == 'random': return {'type': 'random', 'params': ['', ''], 'children': []}
@@ -301,7 +320,8 @@ def strip_block_values(block):
     res = {k: v for k, v in block.items()}
     
     # Strip params for specific types
-    if res.get('type') in ('pinmode', 'digitalwrite', 'analogwrite', 'tone', 'serialbegin', 'boolvar'):
+    if res.get('type') in ('pinmode', 'digitalwrite', 'analogwrite', 'tone', 'serialbegin', 'boolvar',
+                           'servodeclare', 'servoattach', 'servowrite'):
          res['params'] = ["" for _ in res['params']]
     
     # Recurse into exChildren

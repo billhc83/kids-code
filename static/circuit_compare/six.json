@@ -1,0 +1,140 @@
+{
+  "project": "six",
+  "llm_input": {
+    "topic": "Project 6: Deep Sea Explorer",
+    "components": "LDR",
+    "pins": [
+      "A0"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Deep Sea Explorer",
+      "difficulty": "easy",
+      "description": "Build a light sensor that reacts to changes in ambient light levels.",
+      "learning_goal": "Understanding analog input and how sensors convert physical inputs into electrical signals",
+      "code_hint": "Read the analog value from A0 and use it to control an output (e.g., LED brightness or sound)"
+    },
+    "components": [
+      {
+        "id": "LDR1",
+        "type": "LDR",
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "LDR1.pin1"
+      },
+      {
+        "from": "LDR1.pin2",
+        "to": "R_LDR1.pin1"
+      },
+      {
+        "from": "R_LDR1.pin2",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "LDR1.pin2",
+        "to": "arduino.A0"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Deep Sea Explorer",
+      "difficulty": "easy",
+      "description": "Build a light sensor that reacts to changes in ambient light levels.",
+      "learning_goal": "Understanding analog input and how sensors convert physical inputs into electrical signals",
+      "code_hint": "Read the analog value from A0 and use it to control an output (e.g., LED brightness or sound)"
+    },
+    "components": [
+      {
+        "id": "LDR1",
+        "type": "LDR",
+        "pins": {
+          "pin1": {
+            "col": "E",
+            "row": 12
+          },
+          "pin2": {
+            "col": "E",
+            "row": 9
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "R_LDR1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 9
+          },
+          "pin2": {
+            "col": "D",
+            "row": 5
+          }
+        },
+        "properties": {
+          "ohms": 10000
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "breadboard.D12",
+        "color": "#CC0000"
+      },
+      {
+        "from": "breadboard.E5",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "breadboard.A9",
+        "to": "arduino.A0",
+        "color": "#00AA00"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "LDR1",
+        "instruction": "Place the photoresistor (LDR) on the breadboard with one leg in row 12, column E and the other leg in row 9, column E.",
+        "tip": "The photoresistor changes resistance based on light \u2014 brighter light means lower resistance!"
+      },
+      {
+        "type": "component",
+        "id": "R_LDR1",
+        "instruction": "Put the 10000\u03a9 resistor on the breadboard with one leg in row 9, column D and the other leg in row 5, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.5V",
+        "to": "breadboard.D12",
+        "instruction": "Connect a red wire from the Arduino's 5V pin to the breadboard at row 12, column D.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E5",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 5, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.A9",
+        "to": "arduino.A0",
+        "instruction": "Connect a green wire from the breadboard at row 9, column A to Arduino pin A0.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      }
+    ]
+  }
+}

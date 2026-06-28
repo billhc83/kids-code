@@ -29,14 +29,79 @@
 </div>
 
 <div class="lesson-tab-panel active" id="tab-overview">
-    {% if circuit_image %}
-    {{ hover_zoom("static/graphics/" + circuit_image, height=500, key=lesson_key)|safe }}
+    {% if circuit_def_json %}
+        <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
+        <div id="circuit-canvas-{{ lesson_key }}" style="max-width:900px; margin:0 auto; background:#f8f5e8; border-radius:8px; padding:12px;"></div>
+        <script>
+            const circuitDef_{{ lesson_key }} = {{ circuit_def_json | safe }};
+            const renderer_{{ lesson_key }} = new CircuitRenderer(circuitDef_{{ lesson_key }}, 'circuit-canvas-{{ lesson_key }}');
+            renderer_{{ lesson_key }}.render();
+        </script>
+    {% elif circuit_image %}
+        {{ hover_zoom("static/graphics/" + circuit_image, height=500, key=lesson_key)|safe }}
     {% endif %}
 </div>
 
 <div class="lesson-tab-panel" id="tab-stepbystep">
-    {% if assembly_guide_html %}
-    {{ assembly_guide_html|safe }}
+    {% if circuit_def_json %}
+        <div style="max-width:900px; margin:0 auto;">
+            <div id="circuit-walk-canvas-{{ lesson_key }}" style="background:#f8f5e8; border-radius:8px; padding:12px; margin-bottom:16px;"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <button id="walk-prev-{{ lesson_key }}" class="lesson-tab-btn" style="padding:6px 18px;" disabled>← Previous</button>
+                <span id="walk-counter-{{ lesson_key }}" style="font-size:0.9em; color:#888;">Step 0 / 0</span>
+                <button id="walk-next-{{ lesson_key }}" class="lesson-tab-btn" style="padding:6px 18px;">Next →</button>
+            </div>
+            <div id="walk-instruction-{{ lesson_key }}" style="font-size:1.05em; font-weight:600; min-height:1.4em; margin-bottom:4px;"></div>
+            <div id="walk-tip-{{ lesson_key }}" style="font-size:0.9em; color:#2a7a2a; min-height:1.2em;"></div>
+        </div>
+        <script>
+        (function() {
+            const walkDef = circuitDef_{{ lesson_key }};
+            const steps = (walkDef.walkthrough || []).map(function(w) {
+                return { instruction: w.instruction, tip: w.tip || '', highlights: [{ type: w.type, id: w.id, from: w.from, to: w.to }] };
+            });
+
+            let idx = -1;
+            let walkRenderer = null;
+
+            const btnPrev = document.getElementById('walk-prev-{{ lesson_key }}');
+            const btnNext = document.getElementById('walk-next-{{ lesson_key }}');
+            const counter = document.getElementById('walk-counter-{{ lesson_key }}');
+            const instEl  = document.getElementById('walk-instruction-{{ lesson_key }}');
+            const tipEl   = document.getElementById('walk-tip-{{ lesson_key }}');
+
+            function update() {
+                btnPrev.disabled = idx <= 0;
+                btnNext.disabled = idx >= steps.length - 1;
+                counter.textContent = idx < 0 ? 'Step 0 / ' + steps.length : 'Step ' + (idx + 1) + ' / ' + steps.length;
+                if (idx < 0) {
+                    instEl.textContent = 'Click Next → to start the step-by-step guide.';
+                    tipEl.textContent = '';
+                    if (walkRenderer) walkRenderer.applyHighlight([]);
+                } else {
+                    instEl.textContent = steps[idx].instruction;
+                    tipEl.textContent  = steps[idx].tip;
+                    if (walkRenderer) walkRenderer.applyHighlight(steps[idx].highlights);
+                }
+            }
+
+            btnPrev.addEventListener('click', function() { if (idx > 0) { idx--; update(); } });
+            btnNext.addEventListener('click', function() { if (idx < steps.length - 1) { idx++; update(); } });
+
+            // Lazy-render on first tab click so the container is visible and sized correctly
+            document.querySelector('[onclick="showTab(\'stepbystep\', this)"]').addEventListener('click', function() {
+                if (!walkRenderer) {
+                    walkRenderer = new CircuitRenderer(walkDef, 'circuit-walk-canvas-{{ lesson_key }}');
+                    walkRenderer.render();
+                    update();
+                }
+            });
+
+            update();
+        })();
+        </script>
+    {% elif assembly_guide_html %}
+        {{ assembly_guide_html|safe }}
     {% endif %}
 </div>
 
@@ -49,6 +114,7 @@
 <hr>
 <div style="display:flex;align-items:center;gap:16px;margin-top:24px;">
     <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="lesson_key" value="{{ lesson_key }}">
         <button type="submit" class="next-btn">Next Project →</button>
     </form>

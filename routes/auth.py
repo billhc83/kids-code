@@ -1,10 +1,12 @@
 from flask import Blueprint, request, session, render_template, redirect, url_for, flash
 from extensions import limiter
+import datetime
 from utils.auth import (
     get_user_by_username, check_password, create_user,
     hash_password, send_verification_email, verify_token,
     resend_verification_email, create_reset_token, send_reset_email,
-    verify_reset_token, reset_password_with_token, mark_first_login_complete
+    verify_reset_token, reset_password_with_token, mark_first_login_complete,
+    is_legacy_hash, upgrade_password_hash
 )
 from utils.progression import seed_first_lesson
 
@@ -23,6 +25,8 @@ def login():
         if not check_password(password, user["password_hash"]):
             flash("Incorrect password")
             return render_template("login.html")
+        if is_legacy_hash(user["password_hash"]):
+            upgrade_password_hash(user["id"], password)
         if not user["is_verified"]:
             session["pending_email"] = user["email"]
             flash("Please verify your email before logging in.")
@@ -51,15 +55,24 @@ def register():
         if is_parent_val not in ("true", "false"):
             flash("Please select an account type")
             return render_template("register.html")
-        
+
         is_parent = is_parent_val == "true"
+
+        if not request.form.get("agree_tos"):
+            flash("You must agree to the Privacy Policy and Terms of Use to create an account.")
+            return render_template("register.html")
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters")
+            return render_template("register.html")
 
         if get_user_by_username(username):
             flash("Username already taken")
             return render_template("register.html")
-        
+
+        agreed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         password_hash = hash_password(password)
-        user = create_user(email, username, password_hash, is_parent)
+        user = create_user(email, username, password_hash, is_parent, agreed_at=agreed_at)
         if not user:
             flash("Registration failed, please try again")
             return render_template("register.html")
@@ -127,6 +140,9 @@ def reset_password(token):
     if request.method == "POST":
         new_password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
+        if len(new_password) < 8:
+            flash("Password must be at least 8 characters")
+            return render_template("reset_password.html", token=token)
         if new_password != confirm:
             flash("Passwords do not match")
             return render_template("reset_password.html", token=token)

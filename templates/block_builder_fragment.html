@@ -23,6 +23,9 @@
         <button class="block-btn" data-type="delaymicroseconds">delayMicroseconds</button>
         <button class="block-btn" data-type="serialbegin">Serial.begin</button>
         <button class="block-btn" data-type="serialprint">Serial.print</button>
+        <button class="block-btn" data-type="servodeclare">Servo declare</button>
+        <button class="block-btn" data-type="servoattach">servo.attach</button>
+        <button class="block-btn" data-type="servowrite">servo.write</button>
         <button class="block-btn" data-type="ifblock">if</button>
         <button class="block-btn" data-type="elseifclause">else if</button>
         <button class="block-btn" data-type="elseclause">else</button>
@@ -41,6 +44,7 @@
         <button class="block-btn expr-btn" data-type="constrain">constrain</button>
         <button class="block-btn expr-btn" data-type="serialavailable">Serial.available</button>
         <button class="block-btn expr-btn" data-type="serialreadstring">Serial.readString</button>
+        <button class="block-btn expr-btn" data-type="servoread">servo.read</button>
       </div>
     </div>
     <div id="workspace">
@@ -65,13 +69,7 @@
 </div>
 
 
-<script>  
-  window.BB_CONFIG = {{ config | safe }};
-</script>
-<script>
-  ("BB_CONFIG keys:", Object.keys(window.BB_CONFIG));
-  ("steps count:", window.BB_CONFIG.steps ? window.BB_CONFIG.steps.length : 'none');
-</script>
+<script type="application/json" id="bb-config-json">{{ config | safe }}</script>
 <script src="/static/js/bb-blocks.js"></script>
 <script src="/static/js/bb-render.js"></script>
 <script src="/static/js/bb-validation.js"></script>

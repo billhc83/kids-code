@@ -12,8 +12,7 @@
   BB.USERNAME     = CFG.username;
   BB.PAGE         = CFG.page;
   BB.MASTER_SKETCH = CFG.master || null;
-  BB.SUPABASE_URL  = CFG.supabase_url;
-  BB.SUPABASE_KEY  = CFG.supabase_key;
+
   BB.DEFAULT_VIEW  = CFG.default_view;
   BB.LOCK_VIEW     = CFG.lock_view;
   BB.READONLY_MODE = CFG.readonly_mode;
@@ -94,12 +93,31 @@
     return pad + BB.BLOCKS[blockToGen.type].genStmt(blockToGen.params, blockToGen.exChildren || []);
   };
 
+  function hasServoBlocks() {
+    function walkArr(arr) {
+      if (!arr) return false;
+      for (var i = 0; i < arr.length; i++) {
+        var b = arr[i].type === 'slot' ? arr[i].content : arr[i];
+        if (!b) continue;
+        if (b.type && b.type.indexOf('servo') === 0) return true;
+        if (b.ifbody && walkArr(b.ifbody)) return true;
+        if (b.elseifs) for (var j = 0; j < b.elseifs.length; j++) { if (walkArr(b.elseifs[j].body)) return true; }
+        if (b.elsebody && walkArr(b.elsebody)) return true;
+        if (b.body && walkArr(b.body)) return true;
+      }
+      return false;
+    }
+    return walkArr(BB.SECTIONS.global) || walkArr(BB.SECTIONS.setup) || walkArr(BB.SECTIONS.loop);
+  }
+
   BB.genCode = function () {
     var co = document.getElementById('codeout');
     var gv = BB.genBlocks(BB.SECTIONS.global, 0);
     var sc = BB.genBlocks(BB.SECTIONS.setup, 1);
     var lc = BB.genBlocks(BB.SECTIONS.loop, 1);
+    var includes = hasServoBlocks() ? '#include <Servo.h>\n\n' : '';
     co.textContent = '// Arduino Sketch\n// Block Builder\n// ------------\n\n'
+      + includes
       + (gv ? gv + '\n\n' : '')
       + 'void setup() {\n' + (sc ? sc + '\n' : '') + '}'
       + '\n\nvoid loop() {\n' + (lc ? lc + '\n' : '') + '}';
@@ -183,23 +201,20 @@
     } else {
       state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
     }
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?on_conflict=username,page', {
+    fetch('/api/blocks/save', {
       method: 'POST',
-      headers: {
-        'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY,
-        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ username: BB.USERNAME, page: BB.PAGE, blocks_json: JSON.stringify(state), updated_at: new Date().toISOString() })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: BB.PAGE, blocks_json: JSON.stringify(state) })
     }).then(function (r) { if (r.ok) BB.flash('Saved!'); else BB.flash('Save failed'); });
   };
   window.saveBlocks = BB.saveBlocks;
 
   BB.loadBlocks = function () {
     if (!BB.USERNAME || !BB.PAGE || BB.PAGE === 'null' || BB.PAGE === 'undefined') return;
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?username=eq.' + BB.USERNAME + '&page=eq.' + BB.PAGE,
-      { headers: { 'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY } })
+    fetch('/api/blocks/load?page=' + encodeURIComponent(BB.PAGE))
       .then(function (r) { return r.json(); })
-      .then(function (data) {
+      .then(function (resp) {
+        var data = resp.data;
         console.log('[BB:loadBlocks] response rows=' + (data ? data.length : 'null'));
         if (data && data.length > 0) {
           var saved = JSON.parse(data[0].blocks_json);
@@ -262,13 +277,10 @@
     } else {
       state = { global: BB.SECTIONS.global, setup: BB.SECTIONS.setup, loop: BB.SECTIONS.loop };
     }
-    fetch(BB.SUPABASE_URL + '/rest/v1/block_saves?on_conflict=username,page', {
+    fetch('/api/blocks/save', {
       method: 'POST',
-      headers: {
-        'apikey': BB.SUPABASE_KEY, 'Authorization': 'Bearer ' + BB.SUPABASE_KEY,
-        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ username: BB.USERNAME, page: BB.PAGE, blocks_json: JSON.stringify(state), updated_at: new Date().toISOString() })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: BB.PAGE, blocks_json: JSON.stringify(state) })
     }).then(function (r) { if (r.ok) BB.flash('Auto-saved'); });
   };
 

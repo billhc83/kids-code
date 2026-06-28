@@ -151,6 +151,7 @@
         {% endwith %}
 
         <form method="POST" action="{{ url_for('auth.resend_verification') }}" style="margin-bottom:20px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if email %}
             <input type="hidden" name="email" value="{{ email }}">
             {% else %}

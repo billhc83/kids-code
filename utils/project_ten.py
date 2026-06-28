@@ -279,10 +279,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "My LED won’t light up",
+    "Resistor isn’t connected right",
+    "Switch 1 won’t toggle output",
+    "No ground reference from GND",
+    "Wire on Pin 8 feels loose",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

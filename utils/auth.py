@@ -22,6 +22,16 @@ def check_password(password, stored):
         return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
     return False
 
+def is_legacy_hash(stored):
+    return not (stored.startswith("$2b$") or stored.startswith("$2a$"))
+
+def upgrade_password_hash(user_id, password):
+    new_hash = hash_password(password)
+    try:
+        supabase.table("users").update({"password_hash": new_hash}).eq("id", user_id).execute()
+    except Exception:
+        pass
+
 def get_user_by_username(username):
     resp = supabase.table("users").select("*").eq("username", username).execute()
     return resp.data[0] if resp.data else None
@@ -30,7 +40,7 @@ def get_user_by_email(email):
     resp = supabase.table("users").select("*").eq("email", email).execute()
     return resp.data[0] if resp.data else None
 
-def create_user(email, username, password_hash, is_parent=False):
+def create_user(email, username, password_hash, is_parent=False, agreed_at=None):
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
     resp = supabase.table("users").insert({
@@ -42,7 +52,8 @@ def create_user(email, username, password_hash, is_parent=False):
         "is_admin": False,
         "verification_token": token,
         "verification_token_expires": expires,
-        "first_login_completed": False
+        "first_login_completed": False,
+        "agreed_at": agreed_at,
     }).execute()
     return resp.data[0] if resp.data else None
 
@@ -134,10 +145,13 @@ def get_students_for_parent(parent_id):
             students.append(resp.data[0])
     return students
 
-def create_student_for_parent(parent_id, username, password, email=None):
+def create_student_for_parent(parent_id, username, password, email=None, consent_given_at=None):
     if count_students_for_parent(parent_id) >= 3:
         return None, "Maximum of 3 student accounts reached"
-    
+
+    if len(password) < 8:
+        return None, "Password must be at least 8 characters"
+
     if get_user_by_username(username):
         return None, "Username already taken"
 
@@ -161,7 +175,11 @@ def create_student_for_parent(parent_id, username, password, email=None):
         return None, "Failed to create account"
     
     student = resp.data[0]
-    supabase.table("parent_student_links").insert({"parent_id": parent_id, "student_id": student["id"]}).execute()
+    supabase.table("parent_student_links").insert({
+        "parent_id": parent_id,
+        "student_id": student["id"],
+        "consent_given_at": consent_given_at,
+    }).execute()
     
     from utils.progression import unlock_lesson, LESSON_SEQUENCE
     unlock_lesson(student["id"], LESSON_SEQUENCE[0])

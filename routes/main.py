@@ -6,8 +6,14 @@ from utils.feedback import get_threads_for_user, CATEGORIES, create_thread, add_
 from utils.activity import log_activity
 from utils.lessons import LESSONS, LESSON_BY_KEY
 from utils.auth import mark_first_login_complete
+from extensions import limiter
+import requests as http_requests
+from config import RESEND_API_KEY
 
 main_bp = Blueprint('main', __name__)
+
+_PRIVACY_EMAIL = "no-reply@kidscode.ca"
+_PRIVACY_TO    = "billhc83@gmail.com"
 
 @main_bp.route("/ping")
 def ping():
@@ -19,7 +25,7 @@ def index():
         if session.get("is_parent"):
             return redirect(url_for("parent.parent_dashboard"))
         return redirect(url_for("main.dashboard"))
-    return redirect(url_for("auth.login"))
+    return render_template("splash.html")
 
 @main_bp.route("/dashboard")
 @login_required
@@ -92,12 +98,7 @@ def log_activity_route():
     lesson_key = data.get("lesson_key")
     duration = data.get("duration_seconds", 0)
     if lesson_key and duration > 5:
-        log_activity(
-            session["user_id"],
-            session["username"],
-            lesson_key,
-            int(duration)
-        )
+        log_activity(session["user_id"], lesson_key, int(duration))
     return {"ok": True}
 
 @main_bp.route("/feedback", methods=["GET", "POST"])
@@ -143,3 +144,51 @@ def feedback():
 @login_required
 def open_coding():
     return render_template("open_coding.html")
+
+@main_bp.route("/download")
+def download_page():
+    return render_template("download.html")
+
+@main_bp.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@main_bp.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+@main_bp.route("/privacy/contact", methods=["GET", "POST"])
+@limiter.limit("3 per hour")
+def privacy_contact():
+    if request.method == "POST":
+        name         = request.form.get("name", "").strip()
+        email        = request.form.get("email", "").strip()
+        request_type = request.form.get("request_type", "General inquiry")
+        message      = request.form.get("message", "").strip()
+        if not name or not email or not message:
+            flash("Please fill in all required fields.")
+            return render_template("privacy_contact.html")
+        body = (
+            f"<h3>Privacy / Data Request</h3>"
+            f"<p><strong>Name:</strong> {name}</p>"
+            f"<p><strong>Email:</strong> {email}</p>"
+            f"<p><strong>Request type:</strong> {request_type}</p>"
+            f"<p><strong>Message:</strong><br>{message}</p>"
+        )
+        http_requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": f"KidsCode Privacy Form <{_PRIVACY_EMAIL}>",
+                "to": _PRIVACY_TO,
+                "reply_to": email,
+                "subject": f"[Privacy Request] {request_type} — {name}",
+                "html": body
+            }
+        )
+        flash("Your request has been received. We will respond within 30 days.")
+        return redirect(url_for("main.privacy_contact"))
+    return render_template("privacy_contact.html")

@@ -1,0 +1,48 @@
+{% extends "lessons/project_base.html" %}
+{% set banner_image = "project_nineteen_banner.png" %}
+{% block title %}Project 19: The Robot Gatekeeper — KidsCode{% endblock %}
+
+{% set project_title = "🤖 Project 19 — The Robot Gatekeeper" %}
+{% set circuit_image = "project_nineteen_circuit.png" %}
+
+{% block intro %}
+<h2>Goal</h2>
+<p>Program a servo motor to act as a security gate — press the button to swing it open, watch the green LED light up, then the gate closes automatically after 2 seconds. 🔐</p>
+
+<h3>New ideas 💭</h3>
+<hr>
+
+<h4>🔧 Servo Motors</h4>
+<p>A servo motor is a special motor that moves to an exact angle you tell it — unlike a regular motor that just spins. You command it with <code>servo.write(angle)</code> where angle is between 0 and 180 degrees. Think of it like a mechanical arm that obeys precise instructions.</p>
+
+<h4>📡 The Servo Library</h4>
+<p>Arduino needs a helper called the Servo library to understand how to talk to a servo. You load it with <code>#include &lt;Servo.h&gt;</code> at the top of your sketch. Then you create a Servo object — a variable that represents your specific motor — and attach it to a PWM pin.</p>
+
+<h4>🔌 INPUT_PULLUP — The Built-in Resistor</h4>
+<p>When you configure a button pin as <code>INPUT_PULLUP</code>, Arduino turns on an internal resistor that keeps the pin reading HIGH (1) when the button is not pressed. When you press the button and connect the pin to GND, it reads LOW (0). This means pressed = LOW — the opposite of what you might expect!</p>
+
+<h4>⚙️ PWM Pins for Precise Control</h4>
+<p>Servo motors need a special signal called PWM (Pulse Width Modulation) — a rapidly repeating pulse that tells the motor its target angle. On the Arduino, only certain pins (marked with a ~) can produce this signal: pins 3, 5, 6, 9, 10, and 11. Always plug your servo signal wire into one of these pins.</p>
+{% endblock %}
+
+{% block parts %}
+<h2>🔌 Build the circuit</h2>
+<h4>What parts do I need?</h4>
+<ul class="parts-list">
+    <li>🟦 <strong>Arduino UNO</strong> — the brain that runs your program and controls all the other parts</li>
+    <li>🔵 <strong>Servo Motor (SG90)</strong> — the mechanical gate that sweeps to 90° on your command</li>
+    <li>⬜ <strong>Push Button</strong> — the access control button that triggers the gate sequence</li>
+    <li>🟢 <strong>Green LED</strong> — the status indicator that glows while the gate is open</li>
+    <li>🟫 <strong>220Ω Resistor</strong> — protects the LED from getting too much current</li>
+    <li>🍞 <strong>Breadboard</strong> — holds all your components without soldering</li>
+    <li>🔌 <strong>Jumper Wires</strong> — the wires connecting everything together</li>
+</ul>
+{% endblock %}
+
+{% block tips %}
+<div class="tips-box">
+    <p>⚙️ <strong>Servo power tip:</strong> The SG90 servo runs off the Arduino 5V pin — connect its red wire to 5V, brown/black to GND, and orange/yellow signal wire to pin D9. Plugging power and ground backwards can damage the servo!</p>
+    <p>🔄 <strong>Servo position tip:</strong> When you first run the program, the servo will snap to 0°. If your gate arm is pointing the wrong direction, you can rotate the plastic horn slightly on the servo shaft to adjust the starting position.</p>
+    <p>⏱️ <strong>Delay and blocking:</strong> The <code>delay(2000)</code> call pauses the entire program for 2 seconds. During this time, Arduino ignores button presses. That is fine for this project, but in more advanced projects you would use <code>millis()</code> instead to stay responsive while waiting.</p>
+</div>
+{% endblock %}

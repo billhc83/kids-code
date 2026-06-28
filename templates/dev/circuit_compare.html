@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Circuit Compare — {{ project_key }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #1e1e2e;
+            font-family: monospace, sans-serif;
+            color: #cdd6f4;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: #89b4fa; margin-bottom: 4px; }
+        .subtitle { font-size: 0.85em; color: #a6adc8; margin-bottom: 16px; }
+
+        .hint-box {
+            background: #2a2a3e;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85em;
+            max-width: 1400px;
+        }
+        .hint-box span { color: #f9e2af; }
+
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            max-width: 1400px;
+            align-items: start;
+        }
+        .panel {
+            background: #2a2a3e;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .panel-label {
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #444;
+        }
+        .panel-label.original  { color: #89dceb; }
+        .panel-label.generated { color: #a6e3a1; }
+
+        /* Generated renderer panel */
+        .circuit-canvas {
+            background: #f8f5e8;
+            border-radius: 6px;
+            padding: 10px;
+            min-height: 200px;
+        }
+        .steps-panel {
+            margin-top: 12px;
+            background: #1e1e2e;
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .step-nav { display: flex; gap: 8px; margin-bottom: 8px; }
+        .dbg-btn {
+            padding: 5px 12px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2a2a3e;
+            color: #cdd6f4;
+        }
+        .dbg-btn:hover { background: #3a3a5e; }
+        .dbg-btn:disabled { opacity: 0.4; cursor: default; }
+        .step-instruction { font-size: 0.95em; color: #a6e3a1; min-height: 1.4em; }
+        .step-tip { font-size: 0.82em; color: #f9e2af; min-height: 1.2em; margin-top: 4px; }
+
+        details { margin-top: 12px; }
+        summary { cursor: pointer; color: #a6adc8; font-size: 0.82em; }
+        pre {
+            font-size: 0.75em;
+            background: #12121e;
+            padding: 10px;
+            border-radius: 6px;
+            overflow: auto;
+            max-height: 320px;
+            color: #cdd6f4;
+        }
+
+        .nav-links { margin-bottom: 20px; }
+        .nav-link {
+            display: inline-block;
+            padding: 4px 10px;
+            margin-right: 6px;
+            background: #31748f;
+            color: #e6ecf0;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.82em;
+        }
+        .nav-link.active { background: #89b4fa; color: #1e1e2e; }
+
+        /* Override assembly guide background for dark page */
+        .assembly-guide {
+            background: #f0f4ff;
+            border-radius: 6px;
+        }
+    </style>
+    <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
+</head>
+<body>
+    <h1>Circuit Compare — {{ project_key }}</h1>
+    <div class="subtitle">
+        Left: original PNG step builder &nbsp;|&nbsp; Right: LLM + engine (SVG renderer)
+        &nbsp;|&nbsp; <a href="/dev/circuit/{{ project_key }}" style="color:#89b4fa;">Full preview</a>
+    </div>
+
+    <div class="hint-box">
+        <strong>LLM was given:</strong>
+        &nbsp; Topic: <span>{{ llm_input.topic }}</span>
+        &nbsp; Components: <span>{{ llm_input.components }}</span>
+        {% if llm_input.pins %}
+        &nbsp; Pins: <span>{{ llm_input.pins | join(', ') }}</span>
+        {% endif %}
+    </div>
+
+    {% if compare_keys %}
+    <div class="nav-links">
+        {% for key in compare_keys %}
+        <a href="/dev/circuit/compare/{{ key }}"
+           class="nav-link {% if key == project_key %}active{% endif %}">{{ key }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="compare-grid">
+
+        <!-- LEFT: original PNG step builder -->
+        <div class="panel">
+            <div class="panel-label original">Original — PNG step builder</div>
+            {% if assembly_guide_html %}
+                {{ assembly_guide_html | safe }}
+            {% else %}
+                <p style="color:#a6adc8; font-size:0.85em;">
+                    No STEPS or circuit image found for project_{{ project_key }}.
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT: LLM + engine CircuitRenderer -->
+        <div class="panel">
+            <div class="panel-label generated">Generated — LLM + engine (SVG)</div>
+            <div id="canvas-generated" class="circuit-canvas"></div>
+
+            <div class="steps-panel">
+                <div class="step-nav">
+                    <button id="gen-prev" class="dbg-btn" disabled>◀ Prev</button>
+                    <button id="gen-next" class="dbg-btn">Next ▶</button>
+                    <button id="gen-clear" class="dbg-btn">Clear</button>
+                </div>
+                <div id="gen-instruction" class="step-instruction">Click Next to step through...</div>
+                <div id="gen-tip" class="step-tip"></div>
+            </div>
+
+            <details>
+                <summary>LLM logical JSON</summary>
+                <pre>{{ llm_output_json }}</pre>
+            </details>
+            <details>
+                <summary>Engine output JSON</summary>
+                <pre>{{ generated_json }}</pre>
+            </details>
+        </div>
+
+    </div>
+
+    <script>
+    const generatedDef = {{ generated_json | safe }};
+
+    const rendererGen = new CircuitRenderer(generatedDef, 'canvas-generated');
+    rendererGen.render();
+
+    (function() {
+        const steps = (generatedDef && generatedDef.walkthrough)
+            ? generatedDef.walkthrough.map(function(s) {
+                return {
+                    instruction: s.instruction,
+                    tip: s.tip || '',
+                    highlight: s,
+                };
+            })
+            : [];
+
+        let idx = -1;
+        const prevBtn = document.getElementById('gen-prev');
+        const nextBtn = document.getElementById('gen-next');
+        const clearBtn = document.getElementById('gen-clear');
+        const instEl  = document.getElementById('gen-instruction');
+        const tipEl   = document.getElementById('gen-tip');
+
+        function update() {
+            prevBtn.disabled = idx < 0;
+            nextBtn.disabled = idx >= steps.length - 1;
+            if (idx < 0) {
+                instEl.textContent = 'Click Next to step through...';
+                tipEl.textContent  = '';
+                rendererGen.applyHighlight([]);
+            } else {
+                const s = steps[idx];
+                instEl.textContent = 'Step ' + (idx + 1) + '/' + steps.length + ': ' + s.instruction;
+                tipEl.textContent  = s.tip;
+                rendererGen.applyHighlight([s.highlight]);
+            }
+        }
+
+        prevBtn.addEventListener('click',  function() { if (idx >= 0)               { idx--; update(); } });
+        nextBtn.addEventListener('click',  function() { if (idx < steps.length - 1) { idx++; update(); } });
+        clearBtn.addEventListener('click', function() { idx = -1; update(); });
+
+        update();
+    })();
+    </script>
+</body>
+</html>

@@ -210,6 +210,35 @@ Add one entry to the `LESSONS` list:
 
 ---
 
+## Security Rules for Generated Code
+
+### CSRF tokens — required in every POST form
+
+Every `<form method="POST">` in every generated template **must** include a CSRF hidden input
+as its first child:
+
+```html
+<form method="POST" action="...">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    ...
+</form>
+```
+
+`lesson_scaffold.py` handles this automatically for the lesson completion button (`_next_button()`).
+If you manually write any template that contains a POST form, include this line or the form
+will be rejected with a 400 CSRF error at runtime.
+
+AJAX POST calls (via `fetch`) do not need this — the global fetch interceptor in `base.html`
+auto-injects `X-CSRFToken` for all same-origin non-GET requests.
+
+### Dev routes — admin login required
+
+All routes under `/dev/` (`/dev/circuit/<key>`, `/dev/circuit/compare/<key>`, `/dev/circuit/sandbox`)
+require an admin session. When testing a new lesson's circuit preview, you must be logged in
+as an admin user. Reference these URLs in checklists as requiring admin access.
+
+---
+
 ## Skills — Lesson Generation Pipeline
 
 Lessons are built in stages using modular skills. Run them in order:

@@ -187,6 +187,36 @@ LESSONS = [
         "block_builder": None
     },
 
+    {
+        "key": "project_eighteen_part_one",
+        "title": "🏁 Drag Race: Mission Briefing",
+        "template": "lessons/project_eighteen_part_one.html",
+        "part": "Drag Race",
+        "block_builder": None
+    },
+    {
+        "key": "project_eighteen_part_two",
+        "title": "🏁 Drag Race: Build the Speed Trap",
+        "template": "lessons/project_eighteen_part_two.html",
+        "part": "Drag Race",
+        "block_builder": "project_eighteen"
+    },
+    {
+        "key": "project_eighteen_part_three",
+        "title": "🏁 Drag Race: Speed Champion!",
+        "template": "lessons/project_eighteen_part_three.html",
+        "part": "Drag Race",
+        "block_builder": None
+    },
+
+    {
+        "key": "project_nineteen",
+        "title": "🤖 Project 19: The Robot Gatekeeper",
+        "template": "lessons/project_nineteen.html",
+        "part": None,
+        "block_builder": "project_nineteen"
+    },
+
 ]
 
 # Quick lookups

@@ -327,10 +327,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I placed LED but it's not lighting",
+    "My photoresistor value isn't changing",
+    "The buzzer won't buzz when dark",
+    "I can't get A0 wire in row 15 J",
+    "My 220Ω resistor leg seems loose",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

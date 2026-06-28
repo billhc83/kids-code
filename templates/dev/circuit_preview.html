@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Circuit Preview</title>
+    <style>
+        body {
+            background-color: #1e1e2e;
+            font-family: monospace, sans-serif;
+            color: #cdd6f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #89b4fa;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .reload-link {
+            text-decoration: none;
+            color: inherit;
+            margin-left: 5px;
+        }
+        .circuit-link {
+            display: inline-block;
+            padding: 5px 10px;
+            margin-right: 5px;
+            background-color: #31748f;
+            color: #e6ecf0;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .circuit-link.active {
+            background-color: #89b4fa;
+            color: #1e1e2e;
+        }
+        details {
+            margin-top: 20px;
+        }
+        .dbg-toolbar {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            max-width: 900px;
+        }
+        .dbg-btn {
+            padding: 6px 14px;
+            font-family: monospace;
+            font-size: 13px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2a2a3e;
+            color: #cdd6f4;
+            transition: background 0.15s;
+        }
+        .dbg-btn:hover { background: #3a3a5e; }
+        .dbg-btn.active { background: #FF44FF; color: #1e1e2e; border-color: #FF44FF; }
+        .dbg-btn.copied { background: #00AA55; color: #fff; border-color: #00AA55; }
+        .sandbox-textarea {
+            width: 100%;
+            max-width: 900px;
+            height: 260px;
+            font-family: monospace;
+            font-size: 12px;
+            background: #12121e;
+            color: #cdd6f4;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        .sandbox-error {
+            color: #f38ba8;
+            font-size: 0.85em;
+            margin-top: 6px;
+            min-height: 1.2em;
+        }
+    </style>
+    <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
+</head>
+<body>
+    <h1>Circuit Preview</h1>
+    <div class="subtitle">
+        {{ project_title }} ({{ project_key }}) |
+        <a href="/dev/circuit/{{ project_key }}" class="reload-link">Reload</a>
+    </div>
+
+    {% if circuit_json %}
+        <div id="circuit-canvas" style="max-width:900px;margin:0 auto;background:#f8f5e8;border-radius:8px;padding:12px;"></div>
+
+        <div class="dbg-toolbar">
+            <button id="btn-dbg-overlay" class="dbg-btn">Debug Overlay</button>
+            <button id="btn-dbg-copy" class="dbg-btn">Copy Debug Text</button>
+        </div>
+
+        <div style="margin: 20px 0; max-width: 900px; padding: 15px; background: #2a2a3e; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Step-by-step Prototype</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button id="btn-step-prev" class="dbg-btn" disabled>Previous Step</button>
+                <button id="btn-step-next" class="dbg-btn">Next Step</button>
+                <button id="btn-step-clear" class="dbg-btn">Clear Highlight</button>
+            </div>
+            <div id="step-instruction" style="font-size: 1.1em; color: #a6e3a1; min-height: 1.5em;">Click Next Step to begin...</div>
+            <div id="step-tip" style="color: #f9e2af; font-size: 0.9em; min-height: 1.2em;"></div>
+        </div>
+
+        <script>
+            const circuitDef = {{ circuit_json | safe }};
+            const renderer = new CircuitRenderer(circuitDef, 'circuit-canvas');
+            renderer.render();
+        </script>
+
+        <script>
+            document.getElementById('btn-dbg-overlay').addEventListener('click', function() {
+                var on = renderer.toggleDebugOverlay();
+                this.classList.toggle('active', on);
+            });
+            document.getElementById('btn-dbg-copy').addEventListener('click', function() {
+                var btn = this;
+                var text = renderer.describe();
+                navigator.clipboard.writeText(text).then(function() {
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = 'Copy Debug Text';
+                        btn.classList.remove('copied');
+                    }, 1500);
+                });
+            });
+
+            // Prototype Steps Logic
+            const protoSteps = [];
+            if (circuitDef && circuitDef.walkthrough) {
+                protoSteps.push(...circuitDef.walkthrough.map(wStep => ({
+                    instruction: wStep.instruction,
+                    tip: wStep.tip || '',
+                    highlights: [{ ...wStep }]
+                })));
+            } else if (circuitDef) {
+                if (circuitDef.components) {
+                    circuitDef.components.forEach(comp => {
+                        protoSteps.push({
+                            instruction: `Place component ${comp.id} (${comp.type}) on the breadboard.`,
+                            tip: '',
+                            highlights: [{ type: 'component', id: comp.id }]
+                        });
+                    });
+                }
+                if (circuitDef.connections) {
+                    circuitDef.connections.forEach(conn => {
+                        protoSteps.push({
+                            instruction: `Connect wire from ${conn.from} to ${conn.to}.`,
+                            tip: '',
+                            highlights: [{ type: 'wire', from: conn.from, to: conn.to }]
+                        });
+                    });
+                }
+            }
+
+            let currentStepIdx = -1;
+            const btnPrev = document.getElementById('btn-step-prev');
+            const btnNext = document.getElementById('btn-step-next');
+            const btnClear = document.getElementById('btn-step-clear');
+            const instDiv = document.getElementById('step-instruction');
+            const tipDiv = document.getElementById('step-tip');
+
+            function updateStep() {
+                btnPrev.disabled = currentStepIdx < 0;
+                btnNext.disabled = currentStepIdx >= protoSteps.length - 1;
+
+                if (currentStepIdx < 0) {
+                    instDiv.textContent = 'Click Next Step to begin...';
+                    tipDiv.textContent = '';
+                    renderer.applyHighlight([]);
+                } else {
+                    const step = protoSteps[currentStepIdx];
+                    instDiv.textContent = `Step ${currentStepIdx + 1}/${protoSteps.length}: ${step.instruction}`;
+                    tipDiv.textContent = step.tip || '';
+                    renderer.applyHighlight(step.highlights);
+                }
+            }
+
+            btnPrev.addEventListener('click', () => { if (currentStepIdx >= 0) { currentStepIdx--; updateStep(); } });
+            btnNext.addEventListener('click', () => { if (currentStepIdx < protoSteps.length - 1) { currentStepIdx++; updateStep(); } });
+            btnClear.addEventListener('click', () => { currentStepIdx = -1; updateStep(); });
+        </script>
+
+        <details id="highlights-panel" style="margin-top: 20px;">
+            <summary>Step highlights JSON</summary>
+            <pre id="highlights-out"></pre>
+        </details>
+        <script>
+            document.getElementById('highlights-out').textContent =
+                JSON.stringify(renderer.getHighlights(), null, 2);
+        </script>
+    {% else %}
+        <p>No circuit definition found. Please add a circuit_definition to view the preview.</p>
+    {% endif %}
+
+    {% if circuit_keys %}
+        <div style="margin-top: 20px;">
+            Switch circuit:
+            {% for key in circuit_keys %}
+                <a href="{{ url_for('dev.circuit_preview', project_key=key) }}" class="circuit-link {{ 'active' if key == project_key else '' }}">{{ key }}</a>
+            {% endfor %}
+            <a href="{{ url_for('dev.circuit_sandbox') }}" class="circuit-link {{ 'active' if project_key == 'sandbox' else '' }}">sandbox</a>
+        </div>
+    {% endif %}
+
+    <details style="margin-top: 20px;">
+        <summary>Raw circuit JSON</summary>
+        <pre>{{ circuit_json or 'null' }}</pre>
+    </details>
+
+<div style="margin-top: 30px; max-width: 900px;">
+    <h2 style="color: #89b4fa;">JSON Sandbox</h2>
+    <p style="font-size: 0.85em; color: #a6adc8; margin-bottom: 8px;">
+        Paste a <code>CIRCUIT_DEFINITION</code> JSON object and click Generate.
+    </p>
+    <textarea id="sandbox-input" class="sandbox-textarea"
+        placeholder='{ "components": [...], "connections": [...] }'
+    ></textarea>
+    <div class="sandbox-error" id="sandbox-error"></div>
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button id="btn-sandbox-generate" class="dbg-btn" style="background:#31748f; border-color:#31748f; color:#fff;">
+            Generate
+        </button>
+        <button id="btn-sandbox-clear-canvas" class="dbg-btn">Clear</button>
+    </div>
+    <div id="sandbox-canvas"
+         style="max-width:900px; margin-top: 16px; background:#f8f5e8; border-radius:8px; padding:12px; display:none;">
+    </div>
+</div>
+
+<script>
+(function() {
+    var sandboxRenderer = null;
+
+    {% if circuit_json %}
+    document.getElementById('sandbox-input').value = {{ circuit_json | tojson }};
+    {% endif %}
+
+    document.getElementById('btn-sandbox-generate').addEventListener('click', function() {
+        var raw = document.getElementById('sandbox-input').value.trim();
+        var errEl = document.getElementById('sandbox-error');
+        var canvas = document.getElementById('sandbox-canvas');
+        errEl.textContent = '';
+        if (!raw) { errEl.textContent = 'Paste a circuit JSON object first.'; return; }
+        var def;
+        try { def = JSON.parse(raw); } catch(e) {
+            errEl.textContent = 'JSON parse error: ' + e.message;
+            return;
+        }
+        canvas.style.display = 'block';
+        canvas.innerHTML = '';
+        try {
+            sandboxRenderer = new CircuitRenderer(def, 'sandbox-canvas');
+            sandboxRenderer.render();
+        } catch(e) {
+            errEl.textContent = 'Render error: ' + e.message;
+            canvas.style.display = 'none';
+        }
+    });
+
+    document.getElementById('btn-sandbox-clear-canvas').addEventListener('click', function() {
+        document.getElementById('sandbox-canvas').style.display = 'none';
+        document.getElementById('sandbox-canvas').innerHTML = '';
+        document.getElementById('sandbox-error').textContent = '';
+        sandboxRenderer = null;
+    });
+})();
+</script>
+</body>
+</html>

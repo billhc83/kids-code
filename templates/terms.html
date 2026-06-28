@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Terms of Use — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;margin:40px auto;padding:0 24px 60px;">
+
+<style>
+.policy-h1 { font-size:28px;font-weight:800;color:#1f2328;margin:0 0 6px; }
+.policy-meta { font-size:13px;color:#57606a;margin-bottom:36px; }
+.policy-h2 { font-size:18px;font-weight:700;color:#1f2328;margin:36px 0 10px;border-bottom:2px solid #eaeef2;padding-bottom:6px; }
+.policy-p  { font-size:14px;line-height:1.75;color:#24292f;margin:0 0 12px; }
+.policy-ul { font-size:14px;line-height:1.75;color:#24292f;margin:0 0 12px;padding-left:20px; }
+.policy-ul li { margin-bottom:4px; }
+.policy-box { background:#f0f6ff;border-left:4px solid #0969da;border-radius:6px;padding:14px 18px;margin:16px 0; }
+.policy-box p { margin:0;font-size:13px;color:#0550ae; }
+</style>
+
+<h1 class="policy-h1">Terms of Use</h1>
+<p class="policy-meta">
+    <strong>Platform:</strong> KidsCode (kidscode.ca) &nbsp;·&nbsp;
+    <strong>Jurisdiction:</strong> Ontario, Canada &nbsp;·&nbsp;
+    <strong>Last updated:</strong> June 26, 2026
+</p>
+
+<h2 class="policy-h2">1. Acceptance</h2>
+<p class="policy-p">
+    By accessing or using KidsCode (kidscode.ca) you agree to these Terms of Use and our
+    <a href="{{ url_for('main.privacy') }}">Privacy Policy</a>.
+    If you are creating or managing an account for a child under 18, you (the parent or guardian)
+    are agreeing to these Terms on their behalf and are responsible for their use of the platform.
+</p>
+<p class="policy-p">If you do not agree to these Terms, do not use the platform.</p>
+
+<h2 class="policy-h2">2. Who May Use KidsCode</h2>
+<ul class="policy-ul">
+    <li><strong>Students (ages 8–14):</strong> A parent or guardian must create and manage their account.</li>
+    <li><strong>Parents and guardians:</strong> Must be 18 or older. Responsible for their child's account and activity on the platform.</li>
+    <li><strong>Independent learners (age 13+):</strong> May create their own account directly.</li>
+</ul>
+
+<h2 class="policy-h2">3. Account Responsibilities</h2>
+<p class="policy-p">You are responsible for:</p>
+<ul class="policy-ul">
+    <li>Keeping your login credentials confidential</li>
+    <li>All activity that occurs under your account</li>
+    <li>Ensuring that student accounts you manage are used appropriately</li>
+    <li>Notifying us if you become aware of unauthorised access to your account</li>
+</ul>
+<p class="policy-p">
+    Parent and guardian accounts are responsible for the conduct of any linked student accounts.
+</p>
+
+<h2 class="policy-h2">4. Acceptable Use</h2>
+<p class="policy-p">You agree not to:</p>
+<ul class="policy-ul">
+    <li>Share account credentials with others</li>
+    <li>Attempt to access, view, or modify another user's account or data</li>
+    <li>Submit harmful, offensive, threatening, or illegal content through any part of the platform</li>
+    <li>Use the platform or its AI tutor to generate content that is hateful, adult, or unrelated to learning</li>
+    <li>Attempt to reverse engineer, scrape, or exploit the platform, its API, or its content</li>
+    <li>Interfere with the platform's normal operation</li>
+</ul>
+
+<h2 class="policy-h2">5. AI Tutor</h2>
+<p class="policy-p">
+    The <strong>Get a Hint</strong> feature sends your current lesson code and question to OpenAI's API
+    to generate an educational hint. By using this feature:
+</p>
+<ul class="policy-ul">
+    <li>You acknowledge that your code and question text will be transmitted to OpenAI for processing</li>
+    <li>You understand that AI-generated hints are for educational guidance only and may occasionally be imperfect</li>
+    <li>You agree not to attempt to use the hint feature to generate content unrelated to the lesson</li>
+</ul>
+<p class="policy-p">
+    See our <a href="{{ url_for('main.privacy') }}#openai">Privacy Policy</a> for details on how OpenAI
+    handles this data.
+</p>
+
+<h2 class="policy-h2">6. Intellectual Property</h2>
+<p class="policy-p">
+    The KidsCode platform, its lesson content, circuit diagrams, graphics, and instructional materials
+    are owned by KidsCode (kidscode.ca). You may not copy, reproduce, republish, or redistribute
+    any lesson content without written permission.
+</p>
+<p class="policy-p">
+    <strong>The code you write in the block builder is yours.</strong> We do not claim ownership of
+    student-created work.
+</p>
+
+<h2 class="policy-h2">7. Platform Availability</h2>
+<p class="policy-p">
+    We aim to keep KidsCode available but do not guarantee uninterrupted access. We may perform
+    maintenance, updates, or changes to the platform at any time. We are not liable for disruptions
+    to your access.
+</p>
+
+<h2 class="policy-h2">8. Limitation of Liability</h2>
+<p class="policy-p">
+    KidsCode is provided <strong>"as is"</strong> without warranties of any kind. To the maximum extent
+    permitted by Ontario law, KidsCode (kidscode.ca) is not liable for:
+</p>
+<ul class="policy-ul">
+    <li>Loss of data — we recommend keeping copies of important code you create</li>
+    <li>Service interruptions or downtime</li>
+    <li>Errors in AI-generated hints</li>
+    <li>Indirect, incidental, or consequential damages arising from your use of the platform</li>
+</ul>
+
+<h2 class="policy-h2">9. Changes to These Terms</h2>
+<p class="policy-p">
+    We may update these Terms at any time. The "last updated" date at the top of this page
+    will reflect any changes. Continued use of the platform after a change constitutes acceptance
+    of the updated Terms.
+</p>
+
+<h2 class="policy-h2">10. Governing Law</h2>
+<p class="policy-p">
+    These Terms are governed by and construed in accordance with the laws of the Province of Ontario
+    and the federal laws of Canada applicable therein. Any disputes shall be resolved in the courts
+    of Ontario.
+</p>
+
+<h2 class="policy-h2">11. Contact</h2>
+<p class="policy-p">
+    For questions about these Terms, or to submit a privacy or data request, use our contact form:
+    <a href="{{ url_for('main.privacy_contact') }}">kidscode.ca/privacy/contact</a>
+</p>
+
+</div>
+{% endblock %}

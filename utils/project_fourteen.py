@@ -338,10 +338,19 @@ CHALLENGE_PRESET = {
 PROGRESSION_PRESET = {
     'sketch': '...',  # contains //>> markers
 }
+CHIPS = [
+    "I see no output in Serial Monitor",
+    "I can't set the answer variable",
+    "I can't reset likeness to 0",
+    "I can't remove spaces with guess.trim()",
+    "I never hit the serial.available() if-block",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,

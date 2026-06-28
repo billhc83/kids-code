@@ -1,0 +1,32 @@
+{
+  "project": "hcsr04_test",
+  "llm_input": { "topic": "HC-SR04 Ultrasonic Sensor Test" },
+  "llm_output": {},
+  "original": {
+    "meta": { "title": "HC-SR04 Test" },
+    "components": [],
+    "connections": []
+  },
+  "generated": {
+    "meta": { "title": "HC-SR04 Ultrasonic Sensor Test" },
+    "components": [
+      {
+        "id": "SONAR1",
+        "type": "HC_SR04",
+        "pins": {
+          "vcc":  { "col": "J", "row": 15 },
+          "trig": { "col": "J", "row": 14 },
+          "echo": { "col": "J", "row": 13 },
+          "gnd":  { "col": "J", "row": 12 }
+        }
+      }
+    ],
+    "connections": [
+      { "from": "arduino.5V",  "to": "breadboard.A10" },
+      { "from": "arduino.D9",  "to": "breadboard.A11" },
+      { "from": "arduino.D10", "to": "breadboard.A12" },
+      { "from": "breadboard.A13", "to": "arduino.GND" }
+    ],
+    "walkthrough": []
+  }
+}

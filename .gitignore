@@ -23,6 +23,12 @@ instance/
 
 # Lesson generation — temp spec file written during /generate-lesson
 lesson_spec.json
+banner_spec.json
+
+# Temp planning and output files
+direction_shift.md
+routing_plan.md
+my_output.json
 
 .agent
 

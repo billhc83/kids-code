@@ -207,10 +207,19 @@ DRAWER_CONTENT = {
 }
 
 
+CHIPS = [
+    "My LED isn't lighting up.",
+    "My LED is very dim.",
+    "One resistor leg isn't in row 7.",
+    "Wire from GND isn't making contact.",
+    "Signal wire isn't in Pin 8.",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
     }

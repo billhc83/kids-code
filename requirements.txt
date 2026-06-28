@@ -1,4 +1,5 @@
 flask
+flask-wtf
 gunicorn
 python-dotenv
 requests
@@ -11,3 +12,5 @@ responses
 supabase
 respx
 lark
+openai
+google-genai

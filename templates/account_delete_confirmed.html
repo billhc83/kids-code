@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Account Deletion Scheduled — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:80px auto;text-align:center;padding:0 24px;">
+
+<div style="font-size:56px;margin-bottom:16px;">📋</div>
+<h1 style="font-size:24px;font-weight:800;color:#1f2328;margin:0 0 12px;">
+    Deletion Scheduled
+</h1>
+<p style="font-size:15px;color:#57606a;line-height:1.7;margin:0 0 24px;">
+    Your account has been scheduled for permanent deletion.
+    All of your data will be removed within <strong>30 days</strong>.
+</p>
+<p style="font-size:14px;color:#57606a;line-height:1.6;margin:0 0 32px;">
+    Changed your mind? Contact us within 30 days and we can cancel the deletion.
+</p>
+
+<a href="{{ url_for('main.privacy_contact') }}"
+   style="display:inline-block;background:#2ea44f;color:#fff;text-decoration:none;
+          padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;">
+    Contact Us to Cancel →
+</a>
+
+<p style="margin-top:24px;">
+    <a href="{{ url_for('auth.login') }}" style="font-size:13px;color:#57606a;">Back to login</a>
+</p>
+
+</div>
+{% endblock %}

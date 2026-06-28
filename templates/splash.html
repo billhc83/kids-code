@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KidsCode — Learn Arduino with Real Circuits</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* ── Base ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: #fff;
+      color: #24292f;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    .splash-nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 56px;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #e8edf5;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      z-index: 1000;
+      box-shadow: 0 1px 8px rgba(9,105,218,0.07);
+    }
+    .nav-logo img { height: 52px; width: auto; }
+    .nav-links { display: flex; gap: 10px; align-items: center; }
+    .nav-link {
+      font-size: 14px; font-weight: 600;
+      color: #57606a; text-decoration: none;
+      padding: 7px 16px; border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-link:hover { background: #dbeafe; color: #0969da; }
+    .nav-link.primary {
+      background: #0969da; color: #fff; padding: 7px 20px;
+    }
+    .nav-link.primary:hover { background: #0550ae; }
+
+    /* ── Hero ── */
+    .splash-hero {
+      padding: 110px 32px 88px;
+      background: linear-gradient(148deg, #050d22 0%, #0b1a42 50%, #0b3280 100%);
+      min-height: 500px;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+    }
+    .hero-inner { max-width: 780px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.11);
+      color: rgba(255,255,255,0.82);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      padding: 5px 14px; margin-bottom: 22px;
+    }
+    .hero-h1 {
+      font-size: clamp(34px, 5.5vw, 64px);
+      font-weight: 900; color: #fff;
+      line-height: 1.08; letter-spacing: -0.025em;
+      margin-bottom: 20px;
+    }
+    .hero-h1 .accent { color: #60b4ff; }
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 19px);
+      color: rgba(255,255,255,0.68);
+      line-height: 1.65; font-weight: 400;
+      margin-bottom: 38px; max-width: 620px; margin-left: auto; margin-right: auto;
+    }
+    .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .cta-primary {
+      display: inline-block;
+      background: #0969da; color: #fff;
+      font-size: 16px; font-weight: 700; font-family: inherit;
+      padding: 14px 32px; border-radius: 12px; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(9,105,218,0.45);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .cta-primary:hover { background: #0550ae; transform: translateY(-2px); }
+    .cta-secondary {
+      display: inline-block;
+      background: rgba(255,255,255,0.1); color: #fff;
+      border: 2px solid rgba(255,255,255,0.28);
+      font-size: 16px; font-weight: 600; font-family: inherit;
+      padding: 12px 28px; border-radius: 12px; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .cta-secondary:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── Shared section utilities ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .section-title {
+      font-size: 28px; font-weight: 800; color: #0969da;
+      text-align: center; margin-bottom: 8px;
+    }
+    .section-sub {
+      text-align: center; color: #57606a; font-size: 15px;
+      margin-bottom: 48px; line-height: 1.6;
+    }
+
+    /* ── Features ── */
+    .splash-features { background: #f4f8ff; padding: 72px 32px; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 24px; max-width: 1100px; margin: 0 auto;
+    }
+    .feature-card {
+      background: #fff; border: 2px solid #e4edf8;
+      border-radius: 16px; padding: 32px 26px; text-align: center;
+    }
+    .feature-icon { font-size: 42px; margin-bottom: 14px; display: block; }
+    .feature-h3 { font-size: 17px; font-weight: 700; color: #0969da; margin-bottom: 10px; }
+    .feature-p { font-size: 14px; color: #57606a; line-height: 1.7; }
+
+    /* ── Demo ── */
+    .splash-demo { background: #080f28; padding: 64px 32px; }
+    .demo-header { text-align: center; margin-bottom: 36px; }
+    .demo-header h2 { font-size: 30px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .demo-header p  { font-size: 15px; color: rgba(255,255,255,0.58); }
+
+    .demo-grid {
+      display: grid; grid-template-columns: 1fr 370px;
+      gap: 20px; max-width: 1200px; margin: 0 auto; align-items: start;
+    }
+
+    /* Builder pane */
+    .demo-builder-pane {
+      background: #fff; border-radius: 12px; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+    }
+    .demo-step-nav {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; background: #0969da; color: #fff;
+      flex-wrap: wrap;
+    }
+    .demo-step-label   { flex: 1; font-size: 12px; font-weight: 700; min-width: 100px; }
+    .demo-step-progress { font-size: 11px; opacity: 0.75; white-space: nowrap; }
+    #splash-bb-feedback {
+      display: none; font-size: 12px; font-weight: 800;
+      padding: 3px 12px; border-radius: 6px;
+      animation: fbPop 0.3s ease;
+    }
+    #splash-bb-feedback.success { background: #22c55e; color: #fff; }
+    #splash-bb-feedback.error   { background: #ef4444; color: #fff; }
+    @keyframes fbPop {
+      0% { transform: scale(0.7); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    #splash-prev-btn, #splash-next-btn, #splash-restart-btn {
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      padding: 5px 14px; border-radius: 8px; border: none;
+      cursor: pointer; transition: background 0.2s, opacity 0.2s;
+    }
+    #splash-prev-btn    { background: rgba(255,255,255,0.18); color: #fff; }
+    #splash-prev-btn:hover { background: rgba(255,255,255,0.28); }
+    #splash-next-btn    { background: #fff; color: #0969da; }
+    #splash-next-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    #splash-next-btn:not(:disabled):hover { background: #e8f1ff; }
+    #splash-restart-btn { background: rgba(255,255,255,0.15); color: #fff; }
+    #splash-restart-btn:hover { background: rgba(255,255,255,0.25); }
+
+    #splash-builder-view { height: 460px; overflow: hidden; }
+
+    /* Force the injected block builder to fill the container */
+    #splash-builder-view #block-builder-ui,
+    #splash-builder-view #app { height: 100% !important; }
+
+    /* Right pane */
+    .demo-right-pane { display: flex; flex-direction: column; gap: 16px; }
+    .demo-panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; overflow: hidden;
+    }
+    .demo-panel-header {
+      background: rgba(255,255,255,0.07);
+      padding: 9px 14px;
+      font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65);
+      letter-spacing: 0.07em; text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Circuit panel */
+    #demo-circuit-container {
+      background: #fff; padding: 10px;
+    }
+    #demo-circuit-container svg { width: 100%; height: auto; display: block; }
+
+    /* Sim panel */
+    .demo-sim-body {
+      padding: 18px 14px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .demo-sim-status {
+      font-size: 12px; font-weight: 600;
+      text-align: center; padding: 8px 12px;
+      border-radius: 8px; width: 100%;
+      color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: background 0.35s, color 0.35s, border-color 0.35s;
+      line-height: 1.5;
+    }
+    .demo-sim-status.on {
+      background: rgba(34,197,94,0.14); color: #86efac;
+      border-color: rgba(34,197,94,0.28);
+    }
+    .demo-sim-status.blink {
+      background: rgba(251,191,36,0.14); color: #fcd34d;
+      border-color: rgba(251,191,36,0.28);
+    }
+    .demo-sim-status.celebrate {
+      background: rgba(96,180,255,0.14); color: #93c5fd;
+      border-color: rgba(96,180,255,0.28);
+    }
+
+    /* LED SVG internals use CSS transitions via inline style — no extra rules needed */
+
+    /* ── How it works ── */
+    .splash-how { background: #fff; padding: 72px 32px; }
+    .how-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 20px; max-width: 1100px; margin: 0 auto;
+      position: relative;
+    }
+    .how-step { text-align: center; }
+    .how-num {
+      width: 52px; height: 52px;
+      background: #0969da; color: #fff;
+      border-radius: 50%; font-size: 20px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .how-step h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .how-step p  { font-size: 13px; color: #57606a; line-height: 1.65; }
+    /* connector between steps */
+    .how-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 26px;
+      width: calc(25% - 52px);
+      height: 2px;
+      background: #dbeafe;
+    }
+    .how-step:nth-child(1)::after { left: calc(12.5% + 26px); }
+    .how-step:nth-child(2)::after { left: calc(37.5% + 26px); }
+    .how-step:nth-child(3)::after { left: calc(62.5% + 26px); }
+
+    /* ── Lessons ── */
+    .splash-lessons { background: #f4f8ff; padding: 72px 32px; }
+    .lessons-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 18px; max-width: 1200px; margin: 0 auto;
+    }
+    .lesson-card {
+      background: #fff; border: 2px solid #e4edf8;
+      border-radius: 14px; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .lesson-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(9,105,218,0.13);
+    }
+    .lesson-card-img {
+      width: 100%; height: 150px; object-fit: cover;
+      display: block; background: #dbeafe;
+    }
+    .lesson-card-body { padding: 14px 16px; }
+    .lesson-card-title { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .lesson-card-desc  { font-size: 12px; color: #57606a; line-height: 1.6; }
+
+    /* ── Parents ── */
+    .splash-parents { background: #fff; padding: 72px 32px; }
+    .parents-inner {
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 56px; align-items: center;
+    }
+    .parents-text h2 { font-size: 26px; font-weight: 800; margin-bottom: 14px; line-height: 1.25; }
+    .parents-text p  { font-size: 14px; color: #57606a; line-height: 1.75; margin-bottom: 10px; }
+    .parent-features { display: flex; flex-direction: column; gap: 12px; }
+    .parent-feat {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: #f4f8ff; border-radius: 10px;
+      padding: 14px; border: 1px solid #dbeafe;
+    }
+    .parent-feat-icon { font-size: 22px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+    .parent-feat-body h4 { font-size: 14px; font-weight: 700; color: #0969da; margin-bottom: 2px; }
+    .parent-feat-body p  { font-size: 12px; color: #57606a; line-height: 1.6; }
+
+    /* ── Footer ── */
+    .splash-footer {
+      background: #050d22; padding: 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo img { height: 44px; }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a {
+      color: rgba(255,255,255,0.45); font-size: 13px;
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,0.85); }
+    .footer-copy { color: rgba(255,255,255,0.3); font-size: 12px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .features-grid { grid-template-columns: repeat(2,1fr); }
+      .how-grid      { grid-template-columns: repeat(2,1fr); }
+      .lessons-grid  { grid-template-columns: repeat(2,1fr); }
+      .demo-grid     { grid-template-columns: 1fr; }
+      .demo-right-pane { display: grid; grid-template-columns: 1fr 1fr; }
+      .parents-inner { grid-template-columns: 1fr; gap: 32px; }
+      .how-step::after { display: none; }
+    }
+    @media (max-width: 600px) {
+      .features-grid, .lessons-grid { grid-template-columns: 1fr; }
+      .demo-right-pane { grid-template-columns: 1fr; }
+      .how-grid { grid-template-columns: 1fr; }
+      .hero-ctas { flex-direction: column; align-items: center; }
+      .splash-footer { flex-direction: column; text-align: center; }
+      .splash-nav { padding: 0 16px; }
+      .splash-demo, .splash-features, .splash-how, .splash-lessons, .splash-parents { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="splash-nav">
+  <a href="{{ url_for('main.index') }}" class="nav-logo">
+    <img src="{{ url_for('static', filename='graphics/logo.png') }}" alt="KidsCode">
+  </a>
+  <div class="nav-links">
+    <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
+    <a href="{{ url_for('auth.register') }}" class="nav-link primary">Get Started →</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="splash-hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Ages 8–14 · Arduino · No experience needed</div>
+    <h1 class="hero-h1">Real Code.<br><span class="accent">Real Circuits.</span><br>Real Confidence.</h1>
+    <p class="hero-sub">KidsCode teaches kids Arduino programming through story-driven missions, hands-on circuit building, and a step-by-step block coding environment that generates real code as you go.</p>
+    <div class="hero-ctas">
+      <a href="{{ url_for('auth.register') }}" class="cta-primary">Start Your First Mission →</a>
+      <a href="{{ url_for('auth.login') }}" class="cta-secondary">Log In</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section class="splash-features">
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🔌</span>
+      <h3 class="feature-h3">Real Circuits</h3>
+      <p class="feature-p">Build actual circuits on a breadboard with an Arduino UNO. LEDs, buttons, buzzers, sensors — real components, real connections, real results.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧩</span>
+      <h3 class="feature-h3">Block-Based Coding</h3>
+      <p class="feature-p">Drag and drop code blocks into a guided workspace. Real Arduino C++ appears as you build — see the code, don't just write it.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏅</span>
+      <h3 class="feature-h3">Story-Driven Missions</h3>
+      <p class="feature-p">Spy gadgets, dragon alarms, magic harps. Each project is a themed mission that builds real skills — complete it, earn a badge, unlock the next.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Demo ── -->
+<section class="splash-demo">
+  <div class="demo-header">
+    <h2>Try the block builder — right now</h2>
+    <p>Drag a block into the highlighted slot, then click Complete Step to see your circuit react.</p>
+  </div>
+  <div class="demo-grid">
+
+    <!-- Block builder -->
+    <div class="demo-builder-pane">
+      <div class="demo-step-nav" id="splash-step-nav">
+        <span class="demo-step-label"  id="splash-step-label">Loading builder…</span>
+        <span class="demo-step-progress" id="splash-step-progress"></span>
+        <span id="splash-bb-feedback"></span>
+        <button id="splash-restart-btn" style="display:none" onclick="restartDemo()">↺ Start Over</button>
+        <button id="splash-prev-btn"    style="display:none" onclick="if(window.bbPrev) window.bbPrev()">← Back</button>
+        <button id="splash-next-btn"    disabled onclick="if(window.bbNext) window.bbNext()">Complete Step →</button>
+      </div>
+      <div id="splash-builder-view"></div>
+    </div>
+
+    <!-- Right: circuit diagram + LED sim -->
+    <div class="demo-right-pane">
+
+      <div class="demo-panel">
+        <div class="demo-panel-header">🔌 Your Circuit</div>
+        <div id="demo-circuit-container"></div>
+      </div>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header">💡 What Your Code Does</div>
+        <div class="demo-sim-body">
+          <!-- LED SVG — same proportions as SimEngine ledSVG -->
+          <svg id="demo-led-svg" viewBox="-32 -15 64 102" width="64" height="102" style="overflow:visible;display:block">
+            <!-- Glow halos (CSS transition via inline style) -->
+            <circle id="dls-gr3" cx="0" cy="21" r="34" fill="#ff2222" opacity="0" style="transition:opacity 0.38s ease"/>
+            <circle id="dls-gr2" cx="0" cy="21" r="24" fill="#ff4444" opacity="0" style="transition:opacity 0.38s ease"/>
+            <circle id="dls-gr1" cx="0" cy="21" r="16" fill="#ff6666" opacity="0" style="transition:opacity 0.38s ease"/>
+            <!-- Leads -->
+            <line x1="-7" y1="47" x2="-7" y2="72" stroke="#888" stroke-width="2" stroke-linecap="round"/>
+            <line x1="7"  y1="47" x2="7"  y2="78" stroke="#888" stroke-width="2" stroke-linecap="round"/>
+            <!-- Body (fill transitions) -->
+            <path id="dls-dome" d="M -16,21 A 16,16 0 0,0 16,21 Z" fill="#7a1010" style="transition:fill 0.38s ease"/>
+            <rect id="dls-body" x="-16" y="21" width="32" height="20" fill="#7a1010" style="transition:fill 0.38s ease"/>
+            <rect x="-16" y="38" width="32" height="8" rx="2" fill="#4d0a0a"/>
+            <!-- Specular shine -->
+            <path d="M -6,10 A 16,16 0 0,0 6,10 L 4,21 L -4,21 Z" fill="white" opacity="0.22" pointer-events="none"/>
+          </svg>
+          <div class="demo-sim-status" id="demo-sim-status">Your circuit is ready! 🔌</div>
+        </div>
+      </div>
+
+    </div><!-- /demo-right-pane -->
+  </div><!-- /demo-grid -->
+</section>
+
+<!-- ── How it works ── -->
+<section class="splash-how">
+  <div class="container">
+    <h2 class="section-title">How it works</h2>
+    <p class="section-sub">From unboxing to a blinking circuit in your first session.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h4>Get your kit</h4>
+        <p>An Arduino UNO, a breadboard, and a handful of components. Affordable and available everywhere.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h4>Build the circuit</h4>
+        <p>Follow the step-by-step wiring guide with a clear circuit diagram. No soldering, no guesswork.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h4>Write the code</h4>
+        <p>Drag blocks in the browser-based editor. Watch real Arduino code appear as you build.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <h4>Upload &amp; run it</h4>
+        <p>One click sends your code to the Arduino. Watch your circuit come to life — you built that.</p>
+        <p style="font-size:11px;color:#0969da;margin-top:8px;font-weight:600;">Requires Chrome or Edge · Windows 10/11</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Lesson showcase ── -->
+<section class="splash-lessons">
+  <div class="container">
+    <h2 class="section-title">19 projects. Endless fun.</h2>
+    <p class="section-sub">Each mission builds on the last — from your first blinking LED to multi-sensor adventures.</p>
+  </div>
+  <div class="lessons-grid">
+    <div class="lesson-card">
+      <img class="lesson-card-img"
+           src="{{ url_for('static', filename='graphics/project_one_banner.png') }}"
+           alt="Lights On"
+           onerror="this.style.background='#dbeafe';this.style.display='block';this.removeAttribute('src')">
+      <div class="lesson-card-body">
+        <div class="lesson-card-title">💡 Lights On</div>
+        <div class="lesson-card-desc">Your very first circuit. Wire an LED to the Arduino and write the code that turns it on.</div>
+      </div>
+    </div>
+    <div class="lesson-card">
+      <img class="lesson-card-img"
+           src="{{ url_for('static', filename='graphics/spy_vault_banner.png') }}"
+           alt="Spy Vault"
+           onerror="this.style.background='#dbeafe';this.style.display='block';this.removeAttribute('src')">
+      <div class="lesson-card-body">
+        <div class="lesson-card-title">⚡ Spy Vault</div>
+        <div class="lesson-card-desc">Build a combination lock with real buttons and if-logic. Crack the code or trigger the alarm.</div>
+      </div>
+    </div>
+    <div class="lesson-card">
+      <img class="lesson-card-img"
+           src="{{ url_for('static', filename='graphics/project_seven_banner.png') }}"
+           alt="Automatic Night Light"
+           onerror="this.style.background='#dbeafe';this.style.display='block';this.removeAttribute('src')">
+      <div class="lesson-card-body">
+        <div class="lesson-card-title">🚨 Automatic Night Light</div>
+        <div class="lesson-card-desc">Add a light sensor. Your circuit detects darkness and responds automatically.</div>
+      </div>
+    </div>
+    <div class="lesson-card">
+      <img class="lesson-card-img"
+           src="{{ url_for('static', filename='graphics/project_seventeen_banner.png') }}"
+           alt="Magical Harp"
+           onerror="this.style.background='#dbeafe';this.style.display='block';this.removeAttribute('src')">
+      <div class="lesson-card-body">
+        <div class="lesson-card-title">🎻 Magical Harp</div>
+        <div class="lesson-card-desc">Play music with motion sensors. A multi-part adventure combining servos, sensors, and timing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Parents ── -->
+<section class="splash-parents">
+  <div class="parents-inner">
+    <div class="parents-text">
+      <h2>Built for kids.<br>Designed for parents.</h2>
+      <p>KidsCode gives parents full visibility into their child's progress — and gives kids a structured, focused environment to learn real engineering skills at their own pace.</p>
+      <p>No social features. No distractions.</p>
+    </div>
+    <div class="parent-features">
+      <div class="parent-feat">
+        <span class="parent-feat-icon">📊</span>
+        <div class="parent-feat-body">
+          <h4>Parent Dashboard</h4>
+          <p>See which projects your child has completed, what skills they've practiced, and badges they've earned.</p>
+        </div>
+      </div>
+      <div class="parent-feat">
+        <span class="parent-feat-icon">🔒</span>
+        <div class="parent-feat-body">
+          <h4>No Social Features</h4>
+          <p>Focused, distraction-free learning. No chat, no feeds, no accounts for kids to manage independently.</p>
+        </div>
+      </div>
+      <div class="parent-feat">
+        <span class="parent-feat-icon">🌐</span>
+        <div class="parent-feat-body">
+          <h4>Fully Browser-Based</h4>
+          <p>The block builder, lesson guides, and circuit diagrams all run in the browser. No software to install.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="splash-footer">
+  <div class="footer-logo">
+    <img src="{{ url_for('static', filename='graphics/logo.png') }}" alt="KidsCode">
+  </div>
+  <div class="footer-links">
+    <a href="{{ url_for('auth.register') }}">Get Started</a>
+    <a href="{{ url_for('auth.login') }}">Log In</a>
+    <a href="{{ url_for('main.privacy') }}">Privacy</a>
+    <a href="{{ url_for('main.terms') }}">Terms</a>
+  </div>
+  <div class="footer-copy">© 2025 KidsCode</div>
+</footer>
+
+<!-- ── Scripts ── -->
+<script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
+<script>
+// ── Circuit diagram ──────────────────────────────────────────────────────────
+const DEMO_CIRCUIT_DEF = {
+  "components": [
+    {
+      "id": "LED1", "type": "LED",
+      "pins": {"anode": {"col": "E", "row": 12}, "cathode": {"col": "E", "row": 11}},
+      "properties": {"color": "red"}
+    },
+    {
+      "id": "R1", "type": "RESISTOR",
+      "pins": {"pin1": {"col": "D", "row": 11}, "pin2": {"col": "D", "row": 7}},
+      "properties": {"ohms": 220}
+    }
+  ],
+  "connections": [
+    {"from": "arduino.D13", "to": "breadboard.A12", "color": "#00AA00"},
+    {"from": "breadboard.E7",  "to": "arduino.GND",  "color": "#111111"}
+  ]
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    new CircuitRenderer(DEMO_CIRCUIT_DEF, 'demo-circuit-container').render();
+  } catch(e) {
+    console.warn('[Splash] Circuit render error:', e);
+    document.getElementById('demo-circuit-container').style.cssText =
+      'padding:24px;text-align:center;font-size:12px;color:#888;background:#fff;';
+    document.getElementById('demo-circuit-container').textContent = 'Circuit preview unavailable';
+  }
+});
+
+// ── LED sim choreography ─────────────────────────────────────────────────────
+var _blinkInterval = null;
+
+function _applyLED(bodyFill, gr1, gr2, gr3) {
+  document.getElementById('dls-dome').setAttribute('fill', bodyFill);
+  document.getElementById('dls-body').setAttribute('fill', bodyFill);
+  document.getElementById('dls-gr1').setAttribute('opacity', String(gr1));
+  document.getElementById('dls-gr2').setAttribute('opacity', String(gr2));
+  document.getElementById('dls-gr3').setAttribute('opacity', String(gr3));
+}
+
+var SIM_STEPS = {
+  'Ready!': {
+    ledOn: false, hint: false, fast: false,
+    text: 'Your circuit is ready! 🔌', cls: ''
+  },
+  'Turn it ON': {
+    ledOn: false, hint: true, fast: false,
+    text: 'Place the block — the LED is waiting! 💡', cls: ''
+  },
+  'Add a pause': {
+    ledOn: true, hint: false, fast: false,
+    text: '🎉 Your code turned on the LED!', cls: 'on'
+  },
+  'Turn it OFF': {
+    ledOn: true, hint: false, fast: false,
+    text: 'LED is ON — place the OFF block to start blinking ⏱', cls: 'on'
+  },
+  'Mission Complete': {
+    ledOn: 'blink', hint: false, fast: true,
+    text: '🏆 It blinks! You coded the full loop!', cls: 'celebrate'
+  }
+};
+
+function setSimState(label) {
+  var cfg = SIM_STEPS[label];
+  if (!cfg) return;
+  clearInterval(_blinkInterval);
+
+  var statusEl = document.getElementById('demo-sim-status');
+  statusEl.textContent = cfg.text;
+  statusEl.className   = 'demo-sim-status' + (cfg.cls ? ' ' + cfg.cls : '');
+
+  if (cfg.ledOn === 'blink') {
+    var lit = true;
+    var iv = cfg.fast ? 260 : 500;
+    _applyLED('#ff3333', 0.55, 0.3, 0.12);
+    _blinkInterval = setInterval(function() {
+      lit = !lit;
+      if (lit) _applyLED('#ff3333', 0.55, 0.3, 0.12);
+      else     _applyLED('#7a1010', 0, 0, 0);
+    }, iv);
+  } else if (cfg.ledOn) {
+    _applyLED('#ff3333', 0.55, 0.3, 0.12);
+  } else if (cfg.hint) {
+    _applyLED('#961414', 0.07, 0.02, 0);
+  } else {
+    _applyLED('#7a1010', 0, 0, 0);
+  }
+}
+
+// ── Step nav events ──────────────────────────────────────────────────────────
+window.addEventListener('bb_step_update', function(e) {
+  var label    = (e.detail && e.detail.label)    || '';
+  var progress = (e.detail && e.detail.progress) || '';
+
+  var labelEl = document.getElementById('splash-step-label');
+  var progEl  = document.getElementById('splash-step-progress');
+  if (labelEl) labelEl.textContent = label;
+  if (progEl)  progEl.textContent  = progress;
+
+  // Show restart button only on Mission Complete
+  var restartBtn = document.getElementById('splash-restart-btn');
+  if (restartBtn) restartBtn.style.display = (label === 'Mission Complete') ? '' : 'none';
+
+  setSimState(label);
+});
+
+window.addEventListener('bb_next_state', function(e) {
+  var d = e.detail && e.detail.state;
+  if (!d) return;
+  var btn     = document.getElementById('splash-next-btn');
+  var prevBtn = document.getElementById('splash-prev-btn');
+  var fbEl    = document.getElementById('splash-bb-feedback');
+
+  if (btn) {
+    btn.textContent = d.text || 'Complete Step →';
+    btn.disabled    = !d.ready;
+    btn.style.display = d.hidden ? 'none' : '';
+  }
+  if (prevBtn) {
+    prevBtn.style.display = d.prevVisible ? '' : 'none';
+  }
+  if (fbEl) {
+    if (d.feedback) {
+      fbEl.textContent = d.feedback.text;
+      fbEl.className   = d.feedback.type;
+      fbEl.style.display = '';
+      // re-trigger animation
+      fbEl.style.animation = 'none';
+      fbEl.offsetHeight;
+      fbEl.style.animation = '';
+    } else if (Object.prototype.hasOwnProperty.call(d, 'feedback')) {
+      fbEl.style.display = 'none';
+      fbEl.textContent   = '';
+      fbEl.className     = '';
+    }
+  }
+});
+
+// ── Demo block builder loader ────────────────────────────────────────────────
+function restartDemo() {
+  if (window.BB && typeof window.BB.buildWorkspace === 'function') {
+    window.BB.CURRENT_STEP = 0;
+    window.BB.buildWorkspace(0);
+  }
+  document.getElementById('splash-restart-btn').style.display = 'none';
+}
+
+async function loadDemoBuilder() {
+  var view = document.getElementById('splash-builder-view');
+
+  // Suppress saveBlocks network errors silently in demo context
+  window.flash = window.flash || function(txt) {
+    var m = document.getElementById('msg');
+    if (m) { m.textContent = txt; m.classList.add('show'); setTimeout(function() { m.classList.remove('show'); }, 2500); }
+  };
+
+  try {
+    var res = await fetch('/demo/builder');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var html = await res.text();
+
+    var temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Extract and parse the JSON config block
+    var configEl = temp.querySelector('script[type="application/json"]#bb-config-json');
+    if (configEl) {
+      try { window.BB_CONFIG = JSON.parse(configEl.textContent); }
+      catch(e) { console.error('[DemoBuilder] config parse error:', e); }
+      configEl.remove();
+    }
+
+    // Strip <script> tags before injecting HTML (scripts must be loaded deliberately)
+    var scripts = Array.from(temp.querySelectorAll('script'));
+    scripts.forEach(function(s) { s.remove(); });
+
+    view.innerHTML = temp.innerHTML;
+
+    // Load external scripts sequentially to preserve dependency order
+    for (var i = 0; i < scripts.length; i++) {
+      var s = scripts[i];
+      var rawSrc = s.getAttribute('src');
+      if (!rawSrc) continue;
+      var src = new URL(rawSrc, window.location.href).href;
+
+      // Remove any previously injected copy so the browser re-executes it
+      var prev = document.head.querySelector('script[data-bb-src="' + src + '"]');
+      if (prev) prev.parentNode.removeChild(prev);
+
+      await new Promise(function(resolve, reject) {
+        var el = document.createElement('script');
+        el.setAttribute('data-bb-src', src);
+        el.src     = src;
+        el.onload  = resolve;
+        el.onerror = function() { reject(new Error('[DemoBuilder] failed to load: ' + src)); };
+        document.head.appendChild(el);
+      });
+    }
+
+  } catch(err) {
+    console.error('[DemoBuilder] load error:', err);
+    view.innerHTML =
+      '<div style="padding:48px;text-align:center;color:#57606a;font-size:14px;line-height:1.7;">' +
+      'Demo unavailable.<br>' +
+      '<a href="/register" style="color:#0969da;font-weight:700;">Sign up to try the full platform →</a>' +
+      '</div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadDemoBuilder);
+</script>
+
+</body>
+</html>

@@ -213,6 +213,28 @@
       inputs: [],
       genExpr: function (p) { return 'Serial.available()'; }
     },
+    servodeclare: {
+      allowed: ['global'], asStatement: true, asExpr: false,
+      inputs: [{ t: 'text', l: 'Name' }],
+      defaults: ['myServo'],
+      genStmt: function (p) { return 'Servo ' + (p[0] || 'myServo') + ';'; }
+    },
+    servoattach: {
+      allowed: ['setup'], asStatement: true, asExpr: false,
+      inputs: [{ t: 'vartext', l: 'Servo' }, { t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
+      genStmt: function (p) { return (p[0] || 'myServo') + '.attach(' + (p[1] || '9') + ');'; }
+    },
+    servowrite: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
+      inputs: [{ t: 'vartext', l: 'Servo' }, { t: 'expr', l: 'Angle', fallback: '90' }],
+      defaults: [null, { type: 'value', params: ['90'], children: [] }],
+      genStmt: function (p, ex) { return (p[0] || 'myServo') + '.write(' + genExpr(ex && ex[1], p[1], '90') + ');'; }
+    },
+    servoread: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
+      inputs: [{ t: 'vartext', l: 'Servo' }],
+      genExpr: function (p) { return (p[0] || 'myServo') + '.read()'; }
+    },
     codeblock: {
       allowed: ['global', 'setup', 'loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
       inputs: [{ t: 'text', l: 'Code' }],

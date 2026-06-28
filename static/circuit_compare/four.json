@@ -1,0 +1,164 @@
+{
+  "project": "four",
+  "llm_input": {
+    "topic": "Project 4: Space Station Launch Button",
+    "components": "BUTTON, BUZZER",
+    "pins": [
+      "D2",
+      "D8"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Space Station Launch Button",
+      "difficulty": "easy",
+      "description": "A button that triggers a buzzer when pressed, simulating a launch countdown.",
+      "learning_goal": "Understanding how to use a button to trigger an output device like a buzzer.",
+      "code_hint": "Use digitalRead on the button pin and tone() on the buzzer pin when the button is pressed."
+    },
+    "components": [
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "properties": {}
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "BTN1.TL"
+      },
+      {
+        "from": "BTN1.BR",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "BUZ1.positive"
+      },
+      {
+        "from": "BUZ1.negative",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Space Station Launch Button",
+      "difficulty": "easy",
+      "description": "A button that triggers a buzzer when pressed, simulating a launch countdown.",
+      "learning_goal": "Understanding how to use a button to trigger an output device like a buzzer.",
+      "code_hint": "Use digitalRead on the button pin and tone() on the buzzer pin when the button is pressed."
+    },
+    "components": [
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "pins": {
+          "TL": {
+            "col": "E",
+            "row": 12
+          },
+          "TR": {
+            "col": "F",
+            "row": 12
+          },
+          "BL": {
+            "col": "E",
+            "row": 14
+          },
+          "BR": {
+            "col": "F",
+            "row": 14
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "pins": {
+          "positive": {
+            "col": "E",
+            "row": 17
+          },
+          "negative": {
+            "col": "E",
+            "row": 20
+          }
+        },
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.G14",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "breadboard.A17",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.D20",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "BTN1",
+        "instruction": "Place the button onto the breadboard across the center gap. Top legs in row 12, columns E and F. Bottom legs in row 14, columns E and F.",
+        "tip": "The button bridges the two halves of the breadboard."
+      },
+      {
+        "type": "component",
+        "id": "BUZ1",
+        "instruction": "Place the buzzer with the long leg (+) in row 17, column E and the short leg (\u2212) in row 20, column E.",
+        "tip": "The long leg is positive \u2014 mark it with a tiny + on the buzzer."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "instruction": "Connect a green wire from Arduino pin D2 to the breadboard at row 12, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.G14",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 14, column G to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D8",
+        "to": "breadboard.A17",
+        "instruction": "Connect a green wire from Arduino pin D8 to the breadboard at row 17, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.D20",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 20, column D to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

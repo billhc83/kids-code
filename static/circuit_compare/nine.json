@@ -1,0 +1,128 @@
+{
+  "project": "nine",
+  "llm_input": {
+    "topic": "Project 9: The Universal Power Slot",
+    "components": "LED (color=red)",
+    "pins": [
+      "D8"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "The Universal Power Slot",
+      "difficulty": "easy",
+      "description": "Create a power slot that lights up when connected to a power source.",
+      "learning_goal": "Understanding basic circuit connections and using digital pins for output",
+      "code_hint": "Use digitalWrite() to turn the LED on when the power slot is activated"
+    },
+    "components": [
+      {
+        "id": "LED1",
+        "type": "LED",
+        "properties": {
+          "color": "red"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D8",
+        "to": "LED1.anode"
+      },
+      {
+        "from": "LED1.cathode",
+        "to": "R_LED1.pin1"
+      },
+      {
+        "from": "R_LED1.pin2",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "The Universal Power Slot",
+      "difficulty": "easy",
+      "description": "Create a power slot that lights up when connected to a power source.",
+      "learning_goal": "Understanding basic circuit connections and using digital pins for output",
+      "code_hint": "Use digitalWrite() to turn the LED on when the power slot is activated"
+    },
+    "components": [
+      {
+        "id": "LED1",
+        "type": "LED",
+        "pins": {
+          "anode": {
+            "col": "E",
+            "row": 12
+          },
+          "cathode": {
+            "col": "E",
+            "row": 11
+          }
+        },
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "R_LED1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 11
+          },
+          "pin2": {
+            "col": "D",
+            "row": 7
+          }
+        },
+        "properties": {
+          "ohms": 220
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D8",
+        "to": "breadboard.A12",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.E7",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "LED1",
+        "instruction": "Put the red LED on the breadboard with the long leg (anode) in row 12, column E and the short leg (cathode) in row 11, column E.",
+        "tip": "The long leg is positive \u2014 it's called the anode!"
+      },
+      {
+        "type": "component",
+        "id": "R_LED1",
+        "instruction": "Put the 220\u03a9 resistor on the breadboard with one leg in row 11, column D and the other leg in row 7, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D8",
+        "to": "breadboard.A12",
+        "instruction": "Connect a green wire from Arduino pin D8 to the breadboard at row 12, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E7",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 7, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

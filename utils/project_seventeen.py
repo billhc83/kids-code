@@ -445,10 +445,19 @@ void loop() {
 
 
 
+CHIPS = [
+    "My sonar sensor gives no readings",
+    "I can't hear any sound from buzzer",
+    "I might have placed wires in col H",
+    "My buzzer legs seem backward",
+    "Sensor wires aren't in row 24",
+]
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
     }

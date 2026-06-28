@@ -1,0 +1,197 @@
+{
+  "project": "seventeen",
+  "llm_input": {
+    "topic": "Project 17: Magical Harp",
+    "components": "HC_SR04, BUZZER",
+    "pins": [
+      "D9",
+      "D10",
+      "D3"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Magical Harp with Distance Sensor",
+      "difficulty": "easy",
+      "description": "Create a harp that plays a tone when an object is detected within range using an ultrasonic sensor and buzzer.",
+      "learning_goal": "Integrating sensor input with actuator output for interactive projects",
+      "code_hint": "Use HC_SR04 to measure distance, then trigger BUZZER tone when object is within threshold"
+    },
+    "components": [
+      {
+        "id": "SR1",
+        "type": "HC_SR04",
+        "properties": {}
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "SR1.vcc"
+      },
+      {
+        "from": "arduino.GND",
+        "to": "SR1.gnd"
+      },
+      {
+        "from": "arduino.D9",
+        "to": "SR1.trig"
+      },
+      {
+        "from": "SR1.echo",
+        "to": "arduino.D10"
+      },
+      {
+        "from": "arduino.D3",
+        "to": "BUZ1.positive"
+      },
+      {
+        "from": "BUZ1.negative",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Magical Harp with Distance Sensor",
+      "difficulty": "easy",
+      "description": "Create a harp that plays a tone when an object is detected within range using an ultrasonic sensor and buzzer.",
+      "learning_goal": "Integrating sensor input with actuator output for interactive projects",
+      "code_hint": "Use HC_SR04 to measure distance, then trigger BUZZER tone when object is within threshold"
+    },
+    "components": [
+      {
+        "id": "SR1",
+        "type": "HC_SR04",
+        "pins": {
+          "vcc": {
+            "col": "J",
+            "row": 12
+          },
+          "trig": {
+            "col": "J",
+            "row": 11
+          },
+          "echo": {
+            "col": "J",
+            "row": 10
+          },
+          "gnd": {
+            "col": "J",
+            "row": 9
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "BUZ1",
+        "type": "BUZZER",
+        "pins": {
+          "positive": {
+            "col": "E",
+            "row": 13
+          },
+          "negative": {
+            "col": "E",
+            "row": 16
+          }
+        },
+        "properties": {}
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.5V",
+        "to": "breadboard.I12",
+        "color": "#CC0000"
+      },
+      {
+        "from": "arduino.GND",
+        "to": "breadboard.I9",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D9",
+        "to": "breadboard.F11",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.F10",
+        "to": "arduino.D10",
+        "color": "#00AA00"
+      },
+      {
+        "from": "arduino.D3",
+        "to": "breadboard.A13",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.D16",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "SR1",
+        "instruction": "Plug the HC-SR04 sensor into the breadboard with all four pins in column J: VCC in row 12, TRIG in row 11, ECHO in row 10, GND in row 9.",
+        "tip": "The two silver circles are the ultrasonic 'eyes' \u2014 point them toward your target!"
+      },
+      {
+        "type": "component",
+        "id": "BUZ1",
+        "instruction": "Place the buzzer with the long leg (+) in row 13, column E and the short leg (\u2212) in row 16, column E.",
+        "tip": "The long leg is positive \u2014 mark it with a tiny + on the buzzer."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.5V",
+        "to": "breadboard.I12",
+        "instruction": "Connect a red wire from the Arduino's 5V pin to the breadboard at row 12, column I.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.GND",
+        "to": "breadboard.I9",
+        "instruction": "Connect a black wire from the Arduino's GND pin to the breadboard at row 9, column I.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D9",
+        "to": "breadboard.F11",
+        "instruction": "Connect a green wire from Arduino pin D9 to the breadboard at row 11, column F.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.F10",
+        "to": "arduino.D10",
+        "instruction": "Connect a green wire from the breadboard at row 10, column F to Arduino pin D10.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D3",
+        "to": "breadboard.A13",
+        "instruction": "Connect a green wire from Arduino pin D3 to the breadboard at row 13, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.D16",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 16, column D to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

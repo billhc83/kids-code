@@ -1,0 +1,195 @@
+{
+  "project": "three",
+  "llm_input": {
+    "topic": "Project 3: Mad Scientist Button Machine",
+    "components": "BUTTON, LED (color=red)",
+    "pins": [
+      "D2",
+      "D8"
+    ]
+  },
+  "llm_output": {
+    "meta": {
+      "title": "Mad Scientist Button Machine",
+      "difficulty": "easy",
+      "description": "Press a button to activate a glowing red LED for a mad scientist effect.",
+      "learning_goal": "Understanding digital input/output and basic circuit interaction",
+      "code_hint": "Read button state on D2 and control LED brightness on D8 with digitalWrite()"
+    },
+    "components": [
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "properties": {
+          "color": "red"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "BTN1.TL"
+      },
+      {
+        "from": "BTN1.BR",
+        "to": "arduino.GND"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "LED1.anode"
+      },
+      {
+        "from": "LED1.cathode",
+        "to": "R_LED1.pin1"
+      },
+      {
+        "from": "R_LED1.pin2",
+        "to": "arduino.GND"
+      }
+    ]
+  },
+  "original": null,
+  "generated": {
+    "meta": {
+      "title": "Mad Scientist Button Machine",
+      "difficulty": "easy",
+      "description": "Press a button to activate a glowing red LED for a mad scientist effect.",
+      "learning_goal": "Understanding digital input/output and basic circuit interaction",
+      "code_hint": "Read button state on D2 and control LED brightness on D8 with digitalWrite()"
+    },
+    "components": [
+      {
+        "id": "BTN1",
+        "type": "BUTTON",
+        "pins": {
+          "TL": {
+            "col": "E",
+            "row": 12
+          },
+          "TR": {
+            "col": "F",
+            "row": 12
+          },
+          "BL": {
+            "col": "E",
+            "row": 14
+          },
+          "BR": {
+            "col": "F",
+            "row": 14
+          }
+        },
+        "properties": {}
+      },
+      {
+        "id": "LED1",
+        "type": "LED",
+        "pins": {
+          "anode": {
+            "col": "E",
+            "row": 20
+          },
+          "cathode": {
+            "col": "E",
+            "row": 19
+          }
+        },
+        "properties": {
+          "color": "red"
+        }
+      },
+      {
+        "id": "R_LED1",
+        "type": "RESISTOR",
+        "pins": {
+          "pin1": {
+            "col": "D",
+            "row": 19
+          },
+          "pin2": {
+            "col": "D",
+            "row": 15
+          }
+        },
+        "properties": {
+          "ohms": 220
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.G14",
+        "to": "arduino.GND",
+        "color": "#111111"
+      },
+      {
+        "from": "arduino.D8",
+        "to": "breadboard.A20",
+        "color": "#00AA00"
+      },
+      {
+        "from": "breadboard.E15",
+        "to": "arduino.GND",
+        "color": "#111111"
+      }
+    ],
+    "walkthrough": [
+      {
+        "type": "component",
+        "id": "BTN1",
+        "instruction": "Place the button onto the breadboard across the center gap. Top legs in row 12, columns E and F. Bottom legs in row 14, columns E and F.",
+        "tip": "The button bridges the two halves of the breadboard."
+      },
+      {
+        "type": "component",
+        "id": "LED1",
+        "instruction": "Put the red LED on the breadboard with the long leg (anode) in row 20, column E and the short leg (cathode) in row 19, column E.",
+        "tip": "The long leg is positive \u2014 it's called the anode!"
+      },
+      {
+        "type": "component",
+        "id": "R_LED1",
+        "instruction": "Put the 220\u03a9 resistor on the breadboard with one leg in row 19, column D and the other leg in row 15, column D.",
+        "tip": "The resistor limits current so the component doesn't burn out."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D2",
+        "to": "breadboard.A12",
+        "instruction": "Connect a green wire from Arduino pin D2 to the breadboard at row 12, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.G14",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 14, column G to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      },
+      {
+        "type": "wire",
+        "from": "arduino.D8",
+        "to": "breadboard.A20",
+        "instruction": "Connect a green wire from Arduino pin D8 to the breadboard at row 20, column A.",
+        "tip": "This wire carries the signal between Arduino and your component."
+      },
+      {
+        "type": "wire",
+        "from": "breadboard.E15",
+        "to": "arduino.GND",
+        "instruction": "Connect a black wire from the breadboard at row 15, column E to the Arduino's GND pin.",
+        "tip": "Black wires carry ground \u2014 the return path for electricity."
+      }
+    ]
+  }
+}

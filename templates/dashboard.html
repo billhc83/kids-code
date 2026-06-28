@@ -229,5 +229,15 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
     </div>
     {% endif %}
 
+    <!-- Account actions -->
+    <div style="text-align:center;padding:24px 0 8px;border-top:1px solid #eaeef2;margin-top:8px;">
+        <a href="{{ url_for('account.request_deletion') }}"
+           style="font-size:12px;color:#cf222e;text-decoration:none;opacity:0.7;"
+           onmouseover="this.style.opacity='1'"
+           onmouseout="this.style.opacity='0.7'">
+            Delete my account
+        </a>
+    </div>
+
 </div>
 {% endblock %}

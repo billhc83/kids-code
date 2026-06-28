@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — KidsCode{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;margin:40px auto;padding:0 24px 60px;">
+
+<style>
+.policy-h1 { font-size:28px;font-weight:800;color:#1f2328;margin:0 0 6px; }
+.policy-meta { font-size:13px;color:#57606a;margin-bottom:36px; }
+.policy-h2 { font-size:18px;font-weight:700;color:#1f2328;margin:36px 0 10px;border-bottom:2px solid #eaeef2;padding-bottom:6px; }
+.policy-h3 { font-size:15px;font-weight:700;color:#1f2328;margin:20px 0 6px; }
+.policy-p  { font-size:14px;line-height:1.75;color:#24292f;margin:0 0 12px; }
+.policy-ul { font-size:14px;line-height:1.75;color:#24292f;margin:0 0 12px;padding-left:20px; }
+.policy-ul li { margin-bottom:4px; }
+.policy-table { width:100%;border-collapse:collapse;font-size:13px;margin:12px 0 20px; }
+.policy-table th { background:#f6f8fa;font-weight:700;padding:8px 12px;text-align:left;border:1px solid #d0d7de;color:#1f2328; }
+.policy-table td { padding:8px 12px;border:1px solid #d0d7de;color:#24292f;vertical-align:top; }
+.policy-table tr:nth-child(even) td { background:#f6f8fa; }
+.policy-box { background:#f0f6ff;border-left:4px solid #0969da;border-radius:6px;padding:14px 18px;margin:16px 0; }
+.policy-box p { margin:0;font-size:13px;color:#0550ae; }
+.policy-contact-link { display:inline-block;background:#2ea44f;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-weight:700;font-size:14px;margin-top:8px; }
+.policy-contact-link:hover { background:#2c974b; }
+</style>
+
+<h1 class="policy-h1">Privacy Policy</h1>
+<p class="policy-meta">
+    <strong>Operator:</strong> KidsCode (kidscode.ca) &nbsp;·&nbsp;
+    <strong>Jurisdiction:</strong> Ontario, Canada &nbsp;·&nbsp;
+    <strong>Last updated:</strong> June 26, 2026
+</p>
+
+<div class="policy-box">
+    <p>KidsCode is a children's educational platform. We take the privacy of children and their families seriously. This policy explains what we collect, why, and how we protect it — in plain language.</p>
+</div>
+
+<h2 class="policy-h2">1. Who We Are</h2>
+<p class="policy-p">
+    KidsCode (kidscode.ca) is an educational platform that teaches children aged 8–14 Arduino programming through guided, project-based lessons. The platform is operated in Ontario, Canada.
+</p>
+<p class="policy-p">
+    For privacy requests, use the contact form at
+    <a href="{{ url_for('main.privacy_contact') }}">kidscode.ca/privacy/contact</a>.
+    We respond within 30 days.
+</p>
+
+<h2 class="policy-h2">2. What We Collect</h2>
+
+<h3 class="policy-h3">Account information</h3>
+<ul class="policy-ul">
+    <li>Email address (parent and direct accounts only — not collected for student accounts)</li>
+    <li>Username</li>
+    <li>Password, stored as a one-way bcrypt hash — your actual password is never stored or readable</li>
+    <li>Account type (parent or student)</li>
+    <li>Date the account was created</li>
+    <li>Email verification status</li>
+</ul>
+
+<h3 class="policy-h3">Usage and progress data</h3>
+<ul class="policy-ul">
+    <li>Which lessons you have unlocked and completed</li>
+    <li>Time spent on each lesson (aggregated, used for platform analytics)</li>
+    <li>Arduino code you write and save in the block builder</li>
+    <li>Challenge submissions and associated admin feedback</li>
+    <li>Feedback messages and support conversation threads</li>
+    <li>Badges earned</li>
+</ul>
+
+<h3 class="policy-h3">Technical data</h3>
+<ul class="policy-ul">
+    <li>Session cookie — keeps you logged in for up to 8 hours</li>
+    <li><code>kclink_installed</code> — a browser localStorage flag that remembers whether the KidsCode Link companion app is installed on your computer</li>
+    <li><code>sidebar</code> — a browser localStorage preference (open or closed)</li>
+</ul>
+
+<h2 class="policy-h2">3. Why We Collect It</h2>
+<table class="policy-table">
+    <tr><th>Data</th><th>Purpose</th></tr>
+    <tr><td>Email address</td><td>Account verification, password recovery, service notifications</td></tr>
+    <tr><td>Username</td><td>Display within the platform; link your progress to your account</td></tr>
+    <tr><td>Password hash</td><td>Authenticate you when you log in</td></tr>
+    <tr><td>Lesson progress</td><td>Unlock the next project in sequence; show your dashboard</td></tr>
+    <tr><td>Activity time</td><td>Internal admin analytics — never shared externally</td></tr>
+    <tr><td>Saved code</td><td>Let you return to a lesson and continue where you left off</td></tr>
+    <tr><td>Challenge submissions</td><td>Admin review and written feedback</td></tr>
+    <tr><td>Feedback messages</td><td>Respond to your support requests</td></tr>
+    <tr><td>Session cookie</td><td>Keep you logged in during your active session</td></tr>
+</table>
+
+<h2 class="policy-h2">4. How Long We Keep Your Data</h2>
+<p class="policy-p">
+    We retain your data for as long as your account is active. If you request account deletion, all personal data associated with your account — including progress, saved code, submissions, and messages — is removed from our systems within <strong>30 days</strong> of your confirmed request.
+</p>
+<p class="policy-p">
+    Third-party services we use (see Section 5) operate their own retention timelines, which are described below.
+</p>
+
+<h2 class="policy-h2">5. Third-Party Services</h2>
+<p class="policy-p">We share data with the following providers only to the extent necessary to operate the platform.</p>
+
+<h3 class="policy-h3">Supabase (supabase.com) — Database Hosting</h3>
+<p class="policy-p">
+    All user account data, lesson progress, saved code, and messages are stored on Supabase-hosted infrastructure. Supabase is SOC 2 Type II certified.
+</p>
+
+<h3 class="policy-h3">Resend (resend.com) — Email Delivery</h3>
+<p class="policy-p">
+    We use Resend to send account verification emails and password reset links to parent and direct accounts. Your email address is transmitted to Resend only to deliver these messages.
+</p>
+
+<h3 class="policy-h3">OpenAI (openai.com) — AI Tutor</h3>
+<p class="policy-p">
+    When you use the <strong>Get a Hint</strong> feature in a lesson, the following information is sent to OpenAI's API to generate a hint response:
+</p>
+<ul class="policy-ul">
+    <li>The Arduino code you have written on the current lesson step</li>
+    <li>Your question or the symptom you selected</li>
+    <li>Lesson step context (title, instruction text, guidance notes)</li>
+</ul>
+<p class="policy-p">We have the following safeguards in place with OpenAI:</p>
+<ul class="policy-ul">
+    <li>OpenAI does not use our API submissions to train or fine-tune any model (training disabled on our account)</li>
+    <li>We do not log API calls in our OpenAI organisation dashboard</li>
+    <li>A Data Processing Addendum (DPA) is in place with OpenAI</li>
+    <li>OpenAI retains API data for up to 30 days for abuse-prevention monitoring under their standard API policy, after which it is deleted from their systems</li>
+</ul>
+
+<h3 class="policy-h3">Discord (discord.com) — Internal Notifications Only</h3>
+<p class="policy-p">
+    When a user submits a feedback message, an internal notification is sent to our private Discord server containing only the username, feedback category, and subject line. No message content is transmitted. Discord is not given any other user data and does not collect information about our users.
+</p>
+
+<h3 class="policy-h3">Google Fonts (fonts.googleapis.com)</h3>
+<p class="policy-p">
+    Our pages load the Poppins typeface from Google Fonts. This request is made by your browser and results in your IP address being visible to Google. We do not control this. You can block Google Fonts requests using a browser extension if preferred.
+</p>
+
+<h2 class="policy-h2">6. Student Accounts and Children's Privacy</h2>
+<div class="policy-box">
+    <p>KidsCode serves children aged 8–14. Student accounts are always created and managed by a parent or guardian — never by the child directly.</p>
+</div>
+
+<p class="policy-p">We take the following measures for student accounts:</p>
+<ul class="policy-ul">
+    <li>Student accounts are not assigned a real email address. An internal non-routable address is used (e.g. <code>username.id@kidscode.internal</code>) that cannot receive external email</li>
+    <li>Password resets for student accounts are handled only by the linked parent account</li>
+    <li>A parent or guardian controls account creation and deletion</li>
+    <li>When the Get a Hint feature is used, the student's code and question are sent to OpenAI as described in Section 5. By creating a student account, the parent consents to this processing</li>
+</ul>
+
+<h3 class="policy-h3">Parent and guardian rights</h3>
+<ul class="policy-ul">
+    <li>Request to review the data we hold for your child's account</li>
+    <li>Request correction of any inaccurate data</li>
+    <li>Request deletion of your child's account and all associated data</li>
+    <li>Withdraw consent for AI tutor use (the hint feature will not function if withdrawn)</li>
+</ul>
+<p class="policy-p">
+    Use the contact form at <a href="{{ url_for('main.privacy_contact') }}">kidscode.ca/privacy/contact</a> to exercise any of these rights.
+</p>
+
+<h2 class="policy-h2">7. Your Rights (PIPEDA)</h2>
+<p class="policy-p">
+    Under Canada's <em>Personal Information Protection and Electronic Documents Act</em> (PIPEDA), you have the right to:
+</p>
+<ul class="policy-ul">
+    <li><strong>Access</strong> the personal information we hold about you</li>
+    <li><strong>Correct</strong> inaccurate or incomplete information</li>
+    <li><strong>Withdraw consent</strong> to certain data processing — note that withdrawing consent may limit your ability to use parts of the platform</li>
+    <li><strong>Request deletion</strong> of your account and personal data</li>
+</ul>
+<p class="policy-p">
+    To exercise any of these rights, use the contact form below. We will respond within 30 days.
+</p>
+<a href="{{ url_for('main.privacy_contact') }}" class="policy-contact-link">Submit a Privacy Request →</a>
+
+<h2 class="policy-h2">8. Cookies and Local Storage</h2>
+<table class="policy-table">
+    <tr><th>Item</th><th>Type</th><th>Purpose</th><th>Expires</th></tr>
+    <tr>
+        <td>Session cookie</td><td>HTTP cookie</td>
+        <td>Keeps you logged in during your active session</td>
+        <td>8 hours from last activity</td>
+    </tr>
+    <tr>
+        <td><code>kclink_installed</code></td><td>localStorage</td>
+        <td>Remembers whether the KidsCode Link companion app is installed</td>
+        <td>Until browser storage is cleared</td>
+    </tr>
+    <tr>
+        <td><code>sidebar</code></td><td>localStorage</td>
+        <td>Remembers your sidebar preference (open or closed)</td>
+        <td>Until browser storage is cleared</td>
+    </tr>
+</table>
+<p class="policy-p">We do not use advertising cookies, tracking pixels, or third-party analytics services.</p>
+
+<h2 class="policy-h2">9. Security</h2>
+<p class="policy-p">We use the following measures to protect your data:</p>
+<ul class="policy-ul">
+    <li>Passwords are stored as bcrypt hashes — we cannot recover your password</li>
+    <li>All connections use HTTPS/TLS encryption in transit</li>
+    <li>CSRF protection on all forms</li>
+    <li>Session cookies expire after 8 hours of inactivity</li>
+    <li>Rate limiting on authentication and contact endpoints</li>
+</ul>
+
+<h2 class="policy-h2">10. Complaints</h2>
+<p class="policy-p">
+    If you have a complaint about our handling of your personal information and we have not resolved it to your satisfaction, you may contact the <strong>Office of the Privacy Commissioner of Canada</strong>:
+</p>
+<ul class="policy-ul">
+    <li>Website: <a href="https://www.priv.gc.ca" target="_blank" rel="noopener">www.priv.gc.ca</a></li>
+    <li>Toll-free: 1-800-282-1376</li>
+</ul>
+
+<h2 class="policy-h2">11. Changes to This Policy</h2>
+<p class="policy-p">
+    We may update this policy from time to time. The "last updated" date at the top of this page will reflect any changes. Continued use of the platform after a change constitutes acceptance of the updated policy.
+</p>
+
+</div>
+{% endblock %}

@@ -134,6 +134,7 @@
     </div>
 
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <span style="font-size:13px;font-weight:700;color:#57606a;">Your Sketch</span>
             <button type="button" onclick="grabCodeFromBuilder()"

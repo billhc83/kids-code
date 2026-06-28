@@ -414,6 +414,7 @@ window.SimEngine = (function () {
 
     /* ── Visual applier (does not re-evaluate behaviors) ─────────────────── */
     function applyState(id, newState, evaluate) {
+      var changed = state[id] !== newState;
       state[id] = newState;
       var comp = compById(id);
       if (!comp) return;
@@ -424,7 +425,7 @@ window.SimEngine = (function () {
         case 'button': applyButton(id, newState === 'pressed'); break;
         case 'sonar':  applySonar(id, newState, comp.labels); break;
       }
-      if (evaluate !== false) evalBehaviors();
+      if (evaluate !== false && changed) evalBehaviors();
     }
 
     /* ── Behavior evaluation ─────────────────────────────────────────────── */
