@@ -1,5 +1,3 @@
-from turtle import setup
-
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
 
 

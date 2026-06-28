@@ -9,7 +9,9 @@ import json
 import re
 
 help_bp = Blueprint("help", __name__)
-_client = OpenAI()
+
+from config import OPENAI_API_KEY
+_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 DAILY_CAP     = 20   # max help requests per session
 MAX_TOKENS    = 250  # max tokens per LLM response
@@ -23,6 +25,8 @@ def _user_key():
 @limiter.limit("5 per minute", key_func=_user_key)
 @limiter.limit("30 per hour",  key_func=_user_key)
 def help_chat():
+    if _client is None:
+        return jsonify(error="ai_unavailable"), 503
     used = session.get("help_requests", 0)
     if used >= DAILY_CAP:
         return jsonify(error="daily_cap"), 429
