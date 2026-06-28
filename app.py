@@ -61,7 +61,7 @@ def set_security_headers(response):
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "img-src 'self' data:; "
         "media-src 'self' https://github.com https://*.githubusercontent.com; "
-        "connect-src 'self' http://127.0.0.1:3210; "
+        "connect-src 'self' http://127.0.0.1:52010 ws://127.0.0.1:52011 https://cdnjs.cloudflare.com; "
         "worker-src blob:; "
         "frame-ancestors 'self';"
     )
