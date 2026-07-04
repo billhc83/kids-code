@@ -5,7 +5,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 12: Night Patrol Alarm',
     'circuit_image': 'static/graphics/project_thirteen_circuit.png',
-    'banner_image': "static/graphics/patrol_alarm.png",
+    'banner_image': 'patrol_alarm.png',
 }
 
 STEPS = [

@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 2: Blinking Beacon',
     'circuit_image': 'static/graphics/project_one_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_two_banner.png',
 }
 
 STEPS = [
@@ -168,7 +168,7 @@ void loop() {
   digitalWrite(8, LOW);
   delay(500);
 }""",
-    'default_view': 'builder',
+    'default_view': 'editor',
     'read_only': True,
     'lock_view': True,
     'fill_values': True,
@@ -192,6 +192,20 @@ CHIPS = [
     "My pin 8 wire might be loose",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Blinking Beacon",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+    ],
+    "connections": [
+        {"from": "arduino.D8",   "to": "LED.anode"},
+        {"from": "R_LED.pin2",   "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -201,5 +215,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

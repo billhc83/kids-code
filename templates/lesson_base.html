@@ -3,6 +3,11 @@
 {% block title %}{{ lesson.title }} — KidsCode{% endblock %}
 
 {% block content %}
+{% if banner_image %}
+<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
+     alt="{{ lesson.title }}"
+     style="width:100%;border-radius:12px;margin-bottom:24px;">
+{% endif %}
 {% block lesson_content %}{% endblock %}
 <script>
 (function() {

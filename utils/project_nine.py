@@ -5,7 +5,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 9: The Universal Power Slot',
     'circuit_image': 'static/graphics/project_one_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_nine_banner.png',
 }
 
 STEPS = [

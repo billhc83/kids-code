@@ -3,7 +3,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 7: The Automagic Night Light',
     'circuit_image': 'static/graphics/project_seven_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_seven_banner.png',
 }
 
 STEPS = [

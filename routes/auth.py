@@ -35,9 +35,21 @@ def login():
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]
         session["is_admin"] = user["is_admin"]
+        session["is_teacher"] = user.get("is_teacher", False)
         session["show_welcome"] = not user.get("first_login_completed", False)
+        # Flag for first-login ToS gate (class and beta accounts provisioned without agreed_at)
+        needs_tos = (
+            not user.get("agreed_at")
+            and user.get("user_type") in ("class", "beta")
+            and not user.get("is_test", False)
+        )
+        session["needs_tos_agreement"] = needs_tos
         session.permanent = True
         seed_first_lesson(user["id"])
+        if needs_tos:
+            return redirect(url_for("onboarding.agree_tos"))
+        if user.get("is_teacher"):
+            return redirect(url_for("teacher.teacher_dashboard"))
         if user["is_parent"]:
             return redirect(url_for("parent.parent_dashboard"))
         return redirect(url_for("main.dashboard"))

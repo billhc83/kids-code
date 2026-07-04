@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 10: The Spy Vault Security Console',
     'circuit_image': 'static/graphics/project_ten_circuit.png',
-    'banner_image': None,
+    'banner_image': 'spy_vault_banner.png',
 }
 
 STEPS = [

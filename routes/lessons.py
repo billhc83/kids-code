@@ -55,6 +55,7 @@ def lesson(lesson_key):
         img = meta.get("circuit_image") or project_data.get("image")
         steps = project_data.get("steps", [])
         title = meta.get("title") or project_data.get("title")
+        extra["banner_image"] = meta.get("banner_image")
         if img and steps and os.path.exists(img):
             extra["assembly_guide_html"] = render_assembly_guide(img, steps, title)
         circuit_def = project_data.get("circuit_definition")
@@ -118,10 +119,13 @@ def lesson(lesson_key):
             elif isinstance(drawer_content, dict):
                 extra["drawer_steps"] = normalize_drawer_steps(drawer_content.get("steps") or [drawer_content])
 
+    already_completed = lesson_key in get_completed_lessons(session["user_id"])
+
     return render_template(
         lesson_data["template"],
         lesson=lesson_data,
         lesson_key=lesson_key,
+        already_completed=already_completed,
         **extra
     )
 

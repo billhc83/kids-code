@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 13: The Reaction Timer',
     'circuit_image': 'static/graphics/reaction_timer_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_thirteen_banner.png',
 }
 
 STEPS = [

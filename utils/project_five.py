@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 4: Space Station Launch Button',
     'circuit_image': None,
-    'banner_image': None,
+    'banner_image': 'project_five_banner.png',
 }
 
 STEPS = None
@@ -148,6 +148,7 @@ void loop() {
 }""",
     'default_view': 'editor',
     'read_only': True,
+    'lock_view': True,
     'fill_values': True,
     'fill_conditions': True,
 

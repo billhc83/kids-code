@@ -581,6 +581,13 @@ document.getElementById('drawer-tab').onclick = () => {
   syncStepNavPadding();
 };
 
+// Forward step changes to the parent page
+window.addEventListener('bb_step_update', function(e) {
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'bb_step_update', label: e.detail && e.detail.label }, '*');
+  }
+});
+
 // Listen for FAB save requests
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'bb_save_request') {

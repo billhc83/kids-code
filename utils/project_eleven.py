@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 11: Engine System Start',
     'circuit_image': 'static/graphics/project_twelve_circuit.png',
-    'banner_image': None,
+    'banner_image': 'jet_engine_start.png',
 }
 
 STEPS = [

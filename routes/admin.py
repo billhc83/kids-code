@@ -1,7 +1,8 @@
+import io
 import os
 import re
 import requests
-from flask import Blueprint, request, session, render_template, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, request, session, render_template, redirect, url_for, flash, current_app, jsonify, make_response
 from utils.decorators import login_required, admin_required
 from utils.feedback import add_message, delete_thread, get_all_threads
 from utils.challenges import get_all_submissions, review_submission
@@ -9,6 +10,11 @@ from utils.activity import get_most_active_users, get_all_activity
 from utils.progression import get_completed_lessons
 from utils.deletion import run_purge, get_pending_deletions
 from utils.audit import log_admin_action, get_audit_log
+from utils.auth import (
+    create_cohort_teacher, create_test_user,
+    create_batch_students_for_teacher, get_teachers, get_all_cohorts,
+    delete_cohort, rows_to_csv_string
+)
 from config import SUPABASE_URL, SUPABASE_KEY
 
 admin_bp = Blueprint('admin', __name__)
@@ -153,6 +159,9 @@ def admin_dashboard():
         user["total_lessons"] = total_lessons
         user["progress_pct"] = int((len(completed) / total_lessons) * 100)
 
+    teachers = get_teachers()
+    cohorts = get_all_cohorts()
+
     return render_template(
         "admin/index.html",
         threads=threads,
@@ -161,8 +170,99 @@ def admin_dashboard():
         active_users=active_users,
         project_time=project_time,
         pending_deletions=pending_deletions,
-        audit_log=audit_log
+        audit_log=audit_log,
+        teachers=teachers,
+        cohorts=cohorts,
     )
+
+@admin_bp.route("/admin/provision", methods=["POST"])
+@login_required
+@admin_required
+def admin_provision():
+    action = request.form.get("action")
+
+    if action == "create_cohort":
+        cohort = request.form.get("cohort", "").strip()
+        username = request.form.get("username", "").strip()
+        if not cohort or not username:
+            flash("Cohort name and teacher username are both required.")
+            return redirect(url_for("admin.admin_dashboard"))
+        user, temp_pw, err = create_cohort_teacher(username, cohort)
+        if err:
+            flash(f"Error: {err}")
+        else:
+            log_admin_action(session["user_id"], session["username"],
+                             "provision_cohort", "user", user["id"],
+                             {"cohort": cohort})
+            flash(f"Cohort \"{cohort}\" created — teacher: {username}  password: {temp_pw}")
+
+    elif action == "create_test":
+        username = request.form.get("username", "").strip()
+        cohort = request.form.get("cohort", "").strip() or None
+        if not username:
+            flash("Username is required.")
+            return redirect(url_for("admin.admin_dashboard"))
+        user, temp_pw, err = create_test_user(username, cohort=cohort)
+        if err:
+            flash(f"Error: {err}")
+        else:
+            log_admin_action(session["user_id"], session["username"],
+                             "provision_test", "user", user["id"],
+                             {"cohort": cohort})
+            flash(f"Test account created — username: {username}  password: {temp_pw}")
+
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@admin_bp.route("/admin/provision/batch-members", methods=["POST"])
+@login_required
+@admin_required
+def admin_batch_members():
+    teacher_id = request.form.get("teacher_id", "").strip()
+    prefix = request.form.get("prefix", "").strip()
+    try:
+        count = int(request.form.get("count", "0"))
+    except ValueError:
+        count = 0
+
+    if not teacher_id or not prefix or count < 1 or count > 200:
+        flash("Invalid batch parameters. Count must be 1–200.")
+        return redirect(url_for("admin.admin_dashboard"))
+
+    rows, errors = create_batch_students_for_teacher(teacher_id, prefix, count)
+
+    if errors:
+        for e in errors:
+            flash(f"Warning: {e}")
+
+    log_admin_action(session["user_id"], session["username"],
+                     "provision_batch", "teacher", teacher_id,
+                     {"prefix": prefix, "requested": count,
+                      "created": len(rows), "errors": len(errors)})
+
+    csv_data = rows_to_csv_string(rows)
+    cohort_slug = prefix.rstrip("-_") or "cohort"
+    response = make_response(csv_data)
+    response.headers["Content-Disposition"] = f'attachment; filename="{cohort_slug}_members.csv"'
+    response.headers["Content-Type"] = "text/csv"
+    return response
+
+
+@admin_bp.route("/admin/provision/delete-cohort", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_cohort():
+    cohort = request.form.get("cohort", "").strip()
+    if not cohort:
+        flash("No cohort specified.")
+        return redirect(url_for("admin.admin_dashboard"))
+    count = delete_cohort(cohort)
+    log_admin_action(session["user_id"], session["username"],
+                     "cohort_delete", "cohort", cohort,
+                     {"members_deleted": count})
+    flash(f"Cohort \"{cohort}\" deleted — {count} account(s) removed.")
+    return redirect(url_for("admin.admin_dashboard"))
+
 
 @admin_bp.route("/admin/preset-builder")
 @login_required

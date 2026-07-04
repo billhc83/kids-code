@@ -1,14 +1,8 @@
 {% extends "lesson_base.html" %}
-{% set banner_image = "project_seventeen_banner.png" %}
 {% block title %}🎼 Magical Harp Part 2 — KidsCode{% endblock %}
 
 {% block lesson_content %}
 
-{%- if banner_image %}
-<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
-     alt="Banner"
-     style="width:100%;border-radius:12px;margin-bottom:24px;">
-{%- endif %}
 
 <div class="lesson-intro">
     <h2>🔧 Build: The Magical Harp</h2>

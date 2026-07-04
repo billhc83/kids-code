@@ -5,7 +5,7 @@ from utils.image_utils import img_to_b64
 META = {
     'title': 'Project 15: Backup Alarm',
     'circuit_image': "static/graphics/project_fifteen_circuit.png",
-    'banner_image': 'project_fifteen_banner.png',
+    'banner_image': 'backup_alarm_banner.png',
 }
 
 STEPS = [

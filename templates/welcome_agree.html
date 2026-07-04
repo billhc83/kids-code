@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Welcome — Please Review Our Policies{% endblock %}
+
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+<div style="background:#fff;border-radius:16px;max-width:560px;width:100%;
+            box-shadow:0 4px 24px rgba(0,0,0,0.10);overflow:hidden;">
+
+    <div style="background:linear-gradient(135deg,#0969da 0%,#0550ae 100%);
+                color:#fff;padding:36px 32px 28px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">📋</div>
+        <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;">Welcome to KidsCode!</h1>
+        <p style="margin:0;font-size:15px;opacity:0.9;">
+            Before you start, please review and accept our policies.
+        </p>
+    </div>
+
+    <div style="padding:28px 32px;">
+
+        {% if error %}
+        <div class="flash-msg" style="margin-bottom:16px;">{{ error }}</div>
+        {% endif %}
+
+        <p style="font-size:14px;color:#57606a;margin:0 0 20px;line-height:1.6;">
+            Your account has been set up for you. To use KidsCode you must read and
+            agree to our Privacy Policy and Terms of Use.
+        </p>
+
+        <div style="background:#f6f8fa;border:1px solid #d0d7de;border-radius:10px;
+                    padding:16px 20px;margin-bottom:20px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <a href="{{ url_for('main.privacy') }}" target="_blank"
+                   style="display:flex;align-items:center;gap:10px;color:#0969da;
+                          font-size:14px;font-weight:600;text-decoration:none;">
+                    <span style="font-size:20px;">🔒</span>
+                    Privacy Policy — how we collect and protect your data
+                    <span style="margin-left:auto;font-size:12px;color:#57606a;">Opens in new tab ↗</span>
+                </a>
+                <hr style="border:none;border-top:1px solid #d0d7de;margin:2px 0;">
+                <a href="{{ url_for('main.terms') }}" target="_blank"
+                   style="display:flex;align-items:center;gap:10px;color:#0969da;
+                          font-size:14px;font-weight:600;text-decoration:none;">
+                    <span style="font-size:20px;">📄</span>
+                    Terms of Use — rules for using the platform
+                    <span style="margin-left:auto;font-size:12px;color:#57606a;">Opens in new tab ↗</span>
+                </a>
+            </div>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;
+                          color:#24292f;line-height:1.6;cursor:pointer;margin-bottom:20px;">
+                <input type="checkbox" name="agree_tos" required
+                       style="margin-top:2px;flex-shrink:0;width:18px;height:18px;cursor:pointer;">
+                <span>
+                    I have read and agree to the
+                    <a href="{{ url_for('main.privacy') }}" target="_blank" style="color:#0969da;">Privacy Policy</a>
+                    and
+                    <a href="{{ url_for('main.terms') }}" target="_blank" style="color:#0969da;">Terms of Use</a>.
+                </span>
+            </label>
+
+            <button type="submit"
+                    style="width:100%;background:#0969da;color:#fff;border:none;border-radius:8px;
+                           padding:13px 32px;font-size:15px;font-weight:600;cursor:pointer;">
+                I Agree — Take Me to KidsCode →
+            </button>
+        </form>
+
+        <p style="font-size:12px;color:#57606a;margin:16px 0 0;text-align:center;">
+            By agreeing, you confirm you are using this account as intended and accept
+            our policies in full.
+        </p>
+    </div>
+</div>
+</div>
+{% endblock %}

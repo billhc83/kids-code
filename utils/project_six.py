@@ -3,7 +3,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 6: Deep Sea Explorer',
     'circuit_image': 'static/graphics/project_six_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_six_banner.png',
 }
 
 STEPS = [
@@ -216,7 +216,7 @@ void loop() {
 
   delay(600);
 }""",
-    'default_view': 'builder',
+    'default_view': 'editor',
     'read_only': True,
     'lock_view': True,
     'fill_values': True,
@@ -240,6 +240,21 @@ CHIPS = [
     "The A0 wire isn’t in row 15 J",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Deep Sea Explorer",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LDR", "type": "LDR", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.5V",  "to": "LDR.pin1"},
+        {"from": "LDR.pin2",    "to": "arduino.A0"},
+        {"from": "R_LDR.pin2",  "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -249,5 +264,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

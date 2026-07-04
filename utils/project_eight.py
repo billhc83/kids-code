@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 8: The Dragon\'s Crystal Alarm',
     'circuit_image': 'static/graphics/project_eight_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_eight_banner.png',
 }
 
 STEPS = [
@@ -311,7 +311,7 @@ void loop() {
     delay(100);
   }
 }""",
-    'default_view': 'builder',
+    'default_view': 'editor',
     'read_only': True,
     'lock_view': True,
     'fill_values': True,
