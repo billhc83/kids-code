@@ -368,3 +368,143 @@ When adding a new component type, always touch all three files together:
 `circuit_registry.py` (placement geometry) → `circuit_engine.py`
 (`get_component_footprint` branch + `_COMPONENT_INSTRUCTIONS` entry) →
 `circuit_renderer.js` (`SYMBOL_RENDERERS` entry + `.bbox`).
+
+---
+
+## Converting an existing project to the circuit engine
+
+Old projects define a static `circuit_image` (Fritzing PNG) and a hand-written
+`STEPS` list with pixel-coordinate `rect()`/`circle()` highlights. The goal is
+to replace those with a `CIRCUIT_SPEC` so the engine generates the circuit
+definition (placement + walkthrough) automatically at startup.
+
+### Step-by-step process
+
+**1. Read the project's `STEPS`** to identify:
+- Which components are placed (LED, button, buzzer, LDR, etc.)
+- Which Arduino pins are used
+- How many GND and power connections exist
+
+**2. Write the `CIRCUIT_SPEC`** — logical only, no coordinates:
+
+```python
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Short project title",
+        "difficulty": "beginner",   # or "intermediate" / "advanced"
+    },
+    "components": [
+        # List primary components only — resistors are auto-injected
+        {"id": "LED",  "type": "LED",    "properties": {"color": "red"}},
+        {"id": "BTN",  "type": "BUTTON", "properties": {}},
+    ],
+    "connections": [
+        # Use component.pin notation — see pin reference below
+        {"from": "arduino.D8",  "to": "LED.anode"},
+        {"from": "R_LED.pin2",  "to": "arduino.GND"},
+        {"from": "arduino.D2",  "to": "BTN.TL"},
+        {"from": "BTN.BR",      "to": "arduino.GND"},
+    ],
+}
+```
+
+**3. Add `circuit_spec` to the `PROJECT` dict:**
+
+```python
+PROJECT = {
+    "meta": META,
+    "steps": STEPS,           # old STEPS stay — they drive the legacy image tab
+    "drawer": DRAWER_CONTENT,
+    "chips": CHIPS,
+    "presets": { ... },
+    "circuit_spec": CIRCUIT_SPEC,   # ← add this
+}
+```
+
+**4. Verify the engine output** before committing:
+
+```bash
+python3 -c "
+from utils.circuit_engine import generate_circuit
+spec = <paste spec dict here>
+result = generate_circuit(spec['meta'], spec['components'], spec['connections'])
+print('components:', [c['id'] for c in result['components']])
+for w in result['connections']:
+    print(f\"  {w['from']} -> {w['to']}  ({w['color']})\")
+for s in result['walkthrough']:
+    print(f\"  [{s['type']}] {s['instruction']}\")
+"
+```
+
+Check: every component placed, correct wire count, GND jumpers to rail + one
+canonical `arduino.GND → breadboard.-1.30`, walkthrough steps match the physical circuit.
+
+**5. Test in the browser** at `/dev/circuit/<project_key>` (admin login required).
+
+---
+
+### Component pin reference
+
+These are the exact type strings and pin names the engine and renderer understand.
+**Do not list resistors in `components`** — `LED` and `LDR` auto-inject them.
+
+| Type | Props | Pins | Notes |
+|---|---|---|---|
+| `LED` | `color`: red/green/yellow/blue/white | `anode` (long leg +), `cathode` (short leg −) | Auto-injects `R_{id}` (220Ω resistor) |
+| `BUTTON` | — | `TL` (top-left, col E), `TR` (top-right, col F), `BL` (bottom-left, col E), `BR` (bottom-right, col F) | TL↔BR is one switch pair; wire signal to TL, GND to BR |
+| `SLIDE_SWITCH` | — | `com` (common/wiper → signal), `pin2` (active throw → GND) | `pin1` unused |
+| `BUZZER` | — | `positive` (+), `negative` (−) | No resistor needed |
+| `SERVO` | — | `signal`, `power`, `ground` | Signal must be a PWM pin (D3/D5/D6/D9/D10/D11) |
+| `LDR` | — | `pin1` (5V end), `pin2` (analog junction) | Auto-injects `R_{id}` (10kΩ pull-down) |
+| `HC_SR04` | — | `vcc`, `trig` (trigger OUT), `echo` (echo IN), `gnd` | Always placed on FJ side |
+
+**Arduino endpoints:**
+- Digital: `arduino.D2` … `arduino.D13` (never D0/D1 — USB reserved)
+- Analog: `arduino.A0` … `arduino.A5`
+- Power: `arduino.GND`, `arduino.5V`
+
+**Auto-injected resistor IDs** follow the pattern `R_{component_id}`:
+- `LED` with id `LED` → resistor id `R_LED` → pins `R_LED.pin1`, `R_LED.pin2`
+- `LDR` with id `LDR` → resistor id `R_LDR` → pins `R_LDR.pin1`, `R_LDR.pin2`
+- pin1 is always at the component's cathode/junction row; pin2 is toward GND
+
+---
+
+### Standard wiring patterns per component type
+
+```
+LED:
+  arduino.D{n}   → LED.anode
+  R_LED.pin2     → arduino.GND          # resistor auto-injected between cathode and GND
+
+BUTTON (momentary, INPUT_PULLUP):
+  arduino.D{n}   → BTN.TL              # signal on TL-BR diagonal
+  BTN.BR         → arduino.GND
+
+SLIDE_SWITCH (toggle, INPUT_PULLUP):
+  arduino.D{n}   → SW.com
+  SW.pin2        → arduino.GND
+
+BUZZER:
+  arduino.D{n}   → BUZZ.positive
+  BUZZ.negative  → arduino.GND
+
+SERVO:
+  arduino.D{pwm} → SRV.signal          # PWM pin required
+  arduino.5V     → SRV.power
+  arduino.GND    → SRV.ground
+
+LDR (voltage divider):
+  arduino.5V     → LDR.pin1
+  LDR.pin2       → arduino.A{n}        # read analog voltage at junction
+  R_LDR.pin2     → arduino.GND         # pull-down auto-injected
+
+HC_SR04:
+  arduino.5V     → SR.vcc
+  arduino.GND    → SR.gnd
+  arduino.D{n}   → SR.trig             # trigger OUTPUT
+  SR.echo        → arduino.D{m}        # echo INPUT, different pin from trig
+```
+
+GND and 5V may appear in multiple connections — the engine consolidates them
+to one canonical rail wire each. Digital/analog signal pins: one connection each.

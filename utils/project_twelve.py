@@ -286,6 +286,29 @@ CHIPS = [
     "My 220 ohm resistor feels hot",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Night Patrol Alarm",
+        "difficulty": "intermediate",
+    },
+    "components": [
+        {"id": "BTN", "type": "BUTTON", "properties": {}},
+        {"id": "RED_LED", "type": "LED", "properties": {"color": "red"}},
+        {"id": "BLUE_LED", "type": "LED", "properties": {"color": "blue"}},
+        {"id": "CLEAR_LED", "type": "LED", "properties": {"color": "white"}},
+    ],
+    "connections": [
+        {"from": "arduino.D12", "to": "BTN.TL"},
+        {"from": "BTN.BR", "to": "arduino.GND"},
+        {"from": "arduino.D8", "to": "RED_LED.anode"},
+        {"from": "R_RED_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D6", "to": "BLUE_LED.anode"},
+        {"from": "R_BLUE_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D4", "to": "CLEAR_LED.anode"},
+        {"from": "R_CLEAR_LED.pin2", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -295,5 +318,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

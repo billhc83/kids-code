@@ -89,7 +89,7 @@ const SYMBOL_RENDERERS = {
 
     // Soft ambient glow (behind everything)
     renderer.svgEl.appendChild(renderer._el('circle', {
-      cx: x, cy: cy, r: 0.55,
+      cx: x, cy: cy, r: 0.6,
       fill: pal.glow,
       filter: 'url(#' + glowFiltId + ')'
     }));
@@ -124,7 +124,7 @@ const SYMBOL_RENDERERS = {
  
     // Anode lead — longer, left of centre
     renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x, y1: cy - 0.35, x2: x, y2: y,
+      x1: x, y1: cy - 0.4, x2: x, y2: y,
       stroke: '#BBBBBB', 'stroke-width': 0.1, 'stroke-linecap': 'round'
     }));
  
@@ -136,21 +136,21 @@ const SYMBOL_RENDERERS = {
  
     // Dome (drawn on top of body)
     renderer.svgEl.appendChild(renderer._el('circle', {
-      cx: x, cy: cy, r: 0.35,
+      cx: x, cy: cy, r: 0.4,
       fill: 'url(#' + domeGradId + ')',
       stroke: '#333', 'stroke-width': 0.05
     }));
- 
+
     // Primary specular highlight
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.11, cy: cy - 0.11, rx: 0.11, ry: 0.075,
+      cx: x - 0.125, cy: cy - 0.125, rx: 0.125, ry: 0.085,
       fill: '#FFFFFF', 'fill-opacity': 0.78,
-      transform: 'rotate(-30,' + (x - 0.11) + ',' + (cy - 0.11) + ')'
+      transform: 'rotate(-30,' + (x - 0.125) + ',' + (cy - 0.125) + ')'
     }));
- 
+
     // Secondary soft highlight
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.03, cy: cy + 0.08, rx: 0.05, ry: 0.035,
+      cx: x - 0.035, cy: cy + 0.09, rx: 0.057, ry: 0.04,
       fill: '#FFFFFF', 'fill-opacity': 0.25
     }));
 
@@ -913,9 +913,9 @@ const SYMBOL_RENDERERS = {
 };
 SYMBOL_RENDERERS.LED.bbox = function(pins, props) {
   const domeCY = pins.anode.y + 0.45;
-  const xMin = Math.min(pins.anode.x, pins.cathode.x) - 0.45;
-  const xMax = Math.max(pins.anode.x, pins.cathode.x) + 0.45;
-  const yMin = domeCY - 0.55;
+  const xMin = Math.min(pins.anode.x, pins.cathode.x) - 0.5;
+  const xMax = Math.max(pins.anode.x, pins.cathode.x) + 0.5;
+  const yMin = domeCY - 0.6;
   const yMax = Math.max(pins.cathode.y, pins.anode.y) + 0.1;
   return { x0: xMin - 0.5, y0: yMin - 0.5, x1: xMax + 0.5, y1: yMax + 0.5 };
 };

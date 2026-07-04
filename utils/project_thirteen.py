@@ -331,6 +331,20 @@ CHIPS = [
     "I think my wire in column G is misplaced",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Reaction Timer",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "BTN", "type": "BUTTON", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D2", "to": "BTN.TL"},
+        {"from": "BTN.BR", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -340,5 +354,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }
