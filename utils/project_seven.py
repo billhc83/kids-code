@@ -3,7 +3,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 7: The Automagic Night Light',
     'circuit_image': 'static/graphics/project_seven_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_seven_banner.png',
 }
 
 STEPS = [
@@ -299,6 +299,24 @@ CHIPS = [
     "My A0 wire isn't plugged into row15 J",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Automagic Night Light",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+        {"id": "LDR", "type": "LDR", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D13", "to": "LED.anode"},
+        {"from": "R_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.5V",  "to": "LDR.pin1"},
+        {"from": "LDR.pin2",    "to": "arduino.A0"},
+        {"from": "R_LDR.pin2",  "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -308,5 +326,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

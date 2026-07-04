@@ -453,6 +453,25 @@ CHIPS = [
     "Sensor wires aren't in row 24",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Magical Harp",
+        "difficulty": "intermediate",
+    },
+    "components": [
+        {"id": "SONAR", "type": "HC_SR04", "properties": {}},
+        {"id": "BUZZ", "type": "BUZZER", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.5V", "to": "SONAR.vcc"},
+        {"from": "arduino.GND", "to": "SONAR.gnd"},
+        {"from": "arduino.D9", "to": "SONAR.trig"},
+        {"from": "SONAR.echo", "to": "arduino.D10"},
+        {"from": "arduino.D3", "to": "BUZZ.positive"},
+        {"from": "BUZZ.negative", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -460,5 +479,6 @@ PROJECT = {
     "chips": CHIPS,
     "presets": {
         "default": SKETCH_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

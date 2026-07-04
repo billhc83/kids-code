@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 14: Codebreaker',
     'circuit_image': None,
-    'banner_image': 'project_fourteen_banner.png',
+    'banner_image': 'code_cracker.png',
 }
 
 STEPS = None

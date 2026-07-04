@@ -5,7 +5,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 9: The Universal Power Slot',
     'circuit_image': 'static/graphics/project_one_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_nine_banner.png',
 }
 
 STEPS = [
@@ -276,6 +276,20 @@ CHIPS = [
     "I can't plug the wire into Pin 8",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Universal Power Slot",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+    ],
+    "connections": [
+        {"from": "arduino.D8", "to": "LED.anode"},
+        {"from": "R_LED.pin2", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -285,5 +299,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

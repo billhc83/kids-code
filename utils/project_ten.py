@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 10: The Spy Vault Security Console',
     'circuit_image': 'static/graphics/project_ten_circuit.png',
-    'banner_image': None,
+    'banner_image': 'spy_vault_banner.png',
 }
 
 STEPS = [
@@ -287,6 +287,26 @@ CHIPS = [
     "Wire on Pin 8 feels loose",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Spy Vault Security Console",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+        {"id": "SW1", "type": "SLIDE_SWITCH", "properties": {}},
+        {"id": "SW2", "type": "SLIDE_SWITCH", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D8", "to": "LED.anode"},
+        {"from": "R_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D2", "to": "SW1.com"},
+        {"from": "SW1.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D3", "to": "SW2.com"},
+        {"from": "SW2.pin2", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -296,5 +316,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

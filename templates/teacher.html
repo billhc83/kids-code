@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Class Dashboard — KidsCode{% endblock %}
+
+{% block content %}
+
+{% if show_welcome %}
+<div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-modal">
+        <div class="welcome-hero" style="background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);">
+            <div class="welcome-icon">🏫</div>
+            <h1>Welcome to KidsCode!</h1>
+            <p class="welcome-tagline">Your class is ready to code.</p>
+        </div>
+        <div class="welcome-sections">
+            <div class="welcome-section">
+                <div class="welcome-section-icon">👨‍💻</div>
+                <div>
+                    <h3>Student Accounts</h3>
+                    <p>Your students' accounts are listed below. You can add more, reset passwords, or remove accounts at any time.</p>
+                </div>
+            </div>
+            <div class="welcome-section">
+                <div class="welcome-section-icon">📊</div>
+                <div>
+                    <h3>Track Progress</h3>
+                    <p>Each student card shows how far they've progressed through the 14 guided projects.</p>
+                </div>
+            </div>
+            <div class="welcome-section">
+                <div class="welcome-section-icon">🔑</div>
+                <div>
+                    <h3>Password Resets</h3>
+                    <p>If a student forgets their password, use the Reset Password option on their card — no email needed.</p>
+                </div>
+            </div>
+        </div>
+        <div class="welcome-cta">
+            <button class="welcome-btn" style="background:#7c3aed;" id="welcomeDismiss">
+                Got It — Let's Go! →
+            </button>
+        </div>
+    </div>
+</div>
+<style>
+.welcome-overlay{position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    backdrop-filter:blur(4px);animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.welcome-modal{background:#fff;border-radius:16px;max-width:560px;width:100%;
+    max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.4);
+    animation:slideUp 0.35s ease}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.welcome-hero{color:#fff;text-align:center;padding:36px 32px 28px;border-radius:16px 16px 0 0}
+.welcome-icon{font-size:48px;margin-bottom:12px}
+.welcome-hero h1{margin:0 0 8px;font-size:26px;font-weight:700}
+.welcome-tagline{margin:0;font-size:15px;opacity:0.9}
+.welcome-sections{padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+.welcome-section{display:flex;gap:16px;align-items:flex-start}
+.welcome-section-icon{font-size:28px;flex-shrink:0;width:44px;height:44px;background:#f6f8fa;
+    border-radius:10px;display:flex;align-items:center;justify-content:center}
+.welcome-section h3{margin:0 0 4px;font-size:14px;font-weight:600;color:#1f2328}
+.welcome-section p{margin:0;font-size:13px;color:#57606a;line-height:1.5}
+.welcome-cta{padding:4px 28px 28px;text-align:center}
+.welcome-btn{color:#fff;border:none;border-radius:8px;padding:13px 32px;font-size:15px;
+    font-weight:600;cursor:pointer;width:100%}
+</style>
+<script>
+document.getElementById('welcomeDismiss').addEventListener('click', function() {
+    fetch('/api/welcome-complete', { method: 'POST' })
+        .finally(function() {
+            var el = document.getElementById('welcomeOverlay');
+            el.style.opacity = '0';
+            el.style.transition = 'opacity 0.25s';
+            setTimeout(function() { el.remove(); }, 250);
+        });
+});
+</script>
+{% endif %}
+
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <h1>🏫 Class Dashboard</h1>
+        <p class="dash-sub">Manage your students' KidsCode accounts.</p>
+    </div>
+
+    {% if error %}
+    <div class="flash-msg error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="flash-msg success">{{ success }}</div>
+    {% endif %}
+
+    <!-- Student cards -->
+    <div class="dash-card">
+        <div class="dash-card-label">
+            👨‍💻 Students ({{ student_count }})
+        </div>
+
+        {% if students %}
+        <div class="student-grid">
+            {% for student in students %}
+            <div class="student-card">
+                <div class="student-header">
+                    <div class="student-avatar">{{ student.username[0].upper() }}</div>
+                    <div>
+                        <div class="student-name">{{ student.username }}</div>
+                    </div>
+                </div>
+
+                <div class="student-progress">
+                    <div class="progress-label">
+                        Progress: {{ student.completed_count }} / {{ student.total }} projects
+                    </div>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" style="width:{{ student.progress_pct }}%"></div>
+                    </div>
+                </div>
+
+                <details class="reset-wrap">
+                    <summary>🔑 Reset Password</summary>
+                    <form method="POST" class="reset-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="reset_password">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="password" name="new_password" placeholder="New password" required>
+                        <button type="submit" class="reset-btn">Reset</button>
+                    </form>
+                </details>
+
+                {% if not student.deletion_requested_at %}
+                <details class="reset-wrap" style="margin-top:8px;">
+                    <summary style="color:#cf222e;">🗑 Remove Student</summary>
+                    <p style="font-size:12px;color:#57606a;margin:8px 0;">
+                        All progress and data will be permanently removed within 30 days.
+                    </p>
+                    <form method="POST" class="reset-form"
+                          onsubmit="return confirm('Remove {{ student.username }}? This cannot be undone within 30 days.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="request_student_deletion">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <button type="submit" class="reset-btn"
+                                style="background:#cf222e;color:#fff;border-color:#cf222e;">
+                            Schedule Removal
+                        </button>
+                    </form>
+                </details>
+                {% else %}
+                <div style="font-size:12px;color:#cf222e;margin-top:8px;padding:8px 12px;
+                            background:#fff5f5;border-radius:6px;border:1px solid #fca5a5;">
+                    ⏳ Removal scheduled — data will be cleared within 30 days.
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">No students yet. Add one below.</p>
+        {% endif %}
+    </div>
+
+    <!-- Add student -->
+    <div class="dash-card">
+        <div class="dash-card-label">➕ Add a Student</div>
+        <form method="POST" class="create-student-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="create">
+            <div class="create-fields">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password"
+                       placeholder="Password (leave blank to auto-generate)">
+                <button type="submit" class="next-btn">Add Student</button>
+            </div>
+        </form>
+        <p style="font-size:12px;color:#57606a;margin-top:12px;">
+            If you leave the password blank, a random password will be generated.
+            You can reset it at any time from the student card.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

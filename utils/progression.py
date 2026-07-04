@@ -1,4 +1,4 @@
-from utils.lessons import LESSON_SEQUENCE, get_next_lesson
+import datetime
 from utils.lessons import LESSON_SEQUENCE, get_next_lesson
 from utils.db_client import supabase
 
@@ -28,10 +28,20 @@ def unlock_lesson(user_id, lesson_key):
         }).execute()
 
 def complete_lesson(user_id, lesson_key):
-    resp = supabase.table("progression").update({
-        "completed": True,
-        "completed_at": "now()"
-    }).eq("user_id", user_id).eq("lesson_key", lesson_key).execute()
+    check = supabase.table("progression").select("*").eq("user_id", user_id).eq("lesson_key", lesson_key).execute()
+    if check.data:
+        supabase.table("progression").update({
+            "completed": True,
+            "completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }).eq("user_id", user_id).eq("lesson_key", lesson_key).execute()
+    else:
+        supabase.table("progression").insert({
+            "user_id": user_id,
+            "lesson_key": lesson_key,
+            "unlocked": True,
+            "completed": True,
+            "completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }).execute()
     next_key = get_next_lesson(lesson_key)
     if next_key:
         unlock_lesson(user_id, next_key)

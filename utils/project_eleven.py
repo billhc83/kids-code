@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 11: Engine System Start',
     'circuit_image': 'static/graphics/project_twelve_circuit.png',
-    'banner_image': None,
+    'banner_image': 'jet_engine_start.png',
 }
 
 STEPS = [
@@ -304,6 +304,29 @@ CHIPS = [
     "Wire from Pin 9 to row 5I is loose",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Engine System Start",
+        "difficulty": "intermediate",
+    },
+    "components": [
+        {"id": "SW", "type": "SLIDE_SWITCH", "properties": {}},
+        {"id": "BTN", "type": "BUTTON", "properties": {}},
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+        {"id": "BUZZ", "type": "BUZZER", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D9", "to": "SW.com"},
+        {"from": "SW.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D7", "to": "BTN.TL"},
+        {"from": "BTN.BR", "to": "arduino.GND"},
+        {"from": "arduino.D2", "to": "LED.anode"},
+        {"from": "R_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D5", "to": "BUZZ.positive"},
+        {"from": "BUZZ.negative", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -313,5 +336,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

@@ -12,6 +12,8 @@ from routes.auth import auth_bp
 from routes.lessons import lessons_bp
 from routes.admin import admin_bp
 from routes.parent import parent_bp
+from routes.teacher import teacher_bp
+from routes.onboarding import onboarding_bp
 from routes.builder import builder_bp
 from routes.main import main_bp
 from routes.help import help_bp
@@ -43,11 +45,28 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(lessons_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(parent_bp)
+app.register_blueprint(teacher_bp)
+app.register_blueprint(onboarding_bp)
 app.register_blueprint(builder_bp)
 app.register_blueprint(main_bp)
 app.register_blueprint(help_bp)
 app.register_blueprint(dev_bp)
 app.register_blueprint(account_bp)
+
+_TOS_EXEMPT_PREFIXES = ("/static/", "/welcome/agree", "/logout",
+                        "/privacy", "/terms", "/favicon")
+
+@app.before_request
+def require_tos_agreement():
+    if not session.get("needs_tos_agreement"):
+        return
+    path = request.path
+    for prefix in _TOS_EXEMPT_PREFIXES:
+        if path.startswith(prefix):
+            return
+    if request.endpoint in ("auth.logout", "onboarding.agree_tos", "static"):
+        return
+    return redirect(url_for("onboarding.agree_tos"))
 
 @app.after_request
 def set_security_headers(response):

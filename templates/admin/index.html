@@ -43,6 +43,9 @@
         <button class="lesson-tab-btn" onclick="showAdminTab('auditlog', this)">
             🔐 Audit Log
         </button>
+        <button class="lesson-tab-btn" onclick="showAdminTab('provisioning', this)">
+            🏫 Provisioning
+        </button>
     </div>
 
     <!-- ── FEEDBACK TAB ── -->
@@ -200,7 +203,7 @@
                             <th style="padding:10px 14px;text-align:left;font-weight:700;">Username</th>
                             <th style="padding:10px 14px;text-align:left;font-weight:700;">Email</th>
                             <th style="padding:10px 14px;text-align:center;font-weight:700;">Verified</th>
-                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Parent</th>
+                            <th style="padding:10px 14px;text-align:center;font-weight:700;">Type</th>
                             <th style="padding:10px 14px;text-align:center;font-weight:700;">Admin</th>
                             <th style="padding:10px 14px;text-align:center;font-weight:700;">Progress</th>
                             <th style="padding:10px 14px;text-align:center;font-weight:700;">Joined</th>
@@ -222,8 +225,20 @@
                             <td style="padding:10px 14px;text-align:center;">
                                 {% if user.is_verified %}✅{% else %}❌{% endif %}
                             </td>
-                            <td style="padding:10px 14px;text-align:center;">
-                                {% if user.is_parent %}👪{% else %}—{% endif %}
+                            <td style="padding:10px 14px;text-align:center;font-size:12px;">
+                                {% if user.get('is_teacher') %}
+                                    <span style="background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:10px;font-weight:700;">🏫 Teacher</span>
+                                {% elif user.is_parent %}
+                                    <span style="background:#dbeafe;color:#1d4ed8;padding:2px 7px;border-radius:10px;font-weight:700;">👪 Parent</span>
+                                {% elif user.get('user_type') == 'beta' %}
+                                    <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;font-weight:700;">🔬 Beta</span>
+                                {% elif user.get('user_type') == 'test' %}
+                                    <span style="background:#f3f4f6;color:#374151;padding:2px 7px;border-radius:10px;font-weight:700;">🧪 Test</span>
+                                {% elif user.get('user_type') == 'class' %}
+                                    <span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:10px;font-weight:700;">🎒 Class</span>
+                                {% else %}
+                                    <span style="color:#57606a;">Student</span>
+                                {% endif %}
                             </td>
                             <td style="padding:10px 14px;text-align:center;">
                                 <form method="POST" style="margin:0;display:inline;">
@@ -449,6 +464,179 @@ function filterUsers() {
             <p style="color:#57606a;font-size:14px;">No admin actions logged yet.</p>
             {% endif %}
         </div>
+    </div>
+
+    <!-- ── PROVISIONING TAB ── -->
+    <div class="admin-tab-panel" id="tab-provisioning">
+
+        <!-- Active Cohorts -->
+        <div class="dash-card" style="margin-bottom:16px;">
+            <div class="dash-card-label">📋 Active Cohorts ({{ cohorts|length }})</div>
+            {% if cohorts %}
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f6f8fa;">
+                        <th style="padding:9px 12px;text-align:left;border:1px solid #d0d7de;font-weight:700;">Cohort</th>
+                        <th style="padding:9px 12px;text-align:left;border:1px solid #d0d7de;font-weight:700;">Teacher</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Members</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Created</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cohorts %}
+                    <tr style="border-bottom:1px solid #dbeafe;">
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;font-weight:700;">
+                            {{ c.cohort }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;color:#57606a;">
+                            {{ c.teacher or '—' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;">
+                            {{ c.member_count }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;
+                                   font-size:12px;color:#57606a;">
+                            {{ c.created_at[:10] if c.created_at else '—' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;">
+                            <form method="POST" action="{{ url_for('admin.admin_delete_cohort') }}"
+                                  onsubmit="return confirm('Delete cohort \'{{ c.cohort }}\'? This permanently removes all {{ c.member_count }} member(s). Cannot be undone.')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="cohort" value="{{ c.cohort }}">
+                                <button type="submit" class="admin-btn delete-btn"
+                                        style="padding:5px 14px;white-space:nowrap;">
+                                    🗑 Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#57606a;font-size:14px;margin:0;">No cohorts yet. Create one below.</p>
+            {% endif %}
+        </div>
+
+        <!-- Create Cohort -->
+        <div class="dash-card" style="margin-bottom:16px;">
+            <div class="dash-card-label">➕ Create Cohort</div>
+            <p style="font-size:13px;color:#57606a;margin:0 0 14px;">
+                Every cohort gets an anchor teacher account. Use the same flow for classes,
+                beta groups, or any other named group — the cohort label is the distinction.
+                Credentials are shown once in the flash message — copy them before navigating away.
+            </p>
+            <form method="POST" action="{{ url_for('admin.admin_provision') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="create_cohort">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">
+                            Cohort Name
+                        </label>
+                        <input type="text" name="cohort" required
+                               placeholder="e.g. grade5-july-2026 or beta-round-1"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:240px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">
+                            Teacher Username
+                        </label>
+                        <input type="text" name="username" required
+                               placeholder="e.g. teacher-smith"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:200px;">
+                    </div>
+                    <button type="submit" class="next-btn" style="margin-bottom:0;white-space:nowrap;">
+                        Create Cohort
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add Members -->
+        <div class="dash-card" style="margin-bottom:16px;">
+            <div class="dash-card-label">👥 Add Members to Cohort</div>
+            <p style="font-size:13px;color:#57606a;margin:0 0 14px;">
+                Batch-creates members under the cohort's teacher and downloads a CSV of
+                username + password pairs. Members inherit the teacher's cohort automatically.
+                All members are prompted to agree to the Privacy Policy on first login.
+            </p>
+            {% if teachers %}
+            <form method="POST" action="{{ url_for('admin.admin_batch_members') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Cohort</label>
+                        <select name="teacher_id" required
+                                style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                       font-size:14px;min-width:200px;">
+                            {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.cohort or t.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Username Prefix</label>
+                        <input type="text" name="prefix" placeholder="e.g. smith-" required
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:150px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Count</label>
+                        <input type="number" name="count" value="20" min="1" max="200" required
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:80px;">
+                    </div>
+                    <button type="submit" class="next-btn" style="margin-bottom:0;white-space:nowrap;">
+                        Create &amp; Download CSV
+                    </button>
+                </div>
+                <p style="font-size:12px;color:#57606a;margin:10px 0 0;">
+                    Usernames: <code>prefix1</code>, <code>prefix2</code>, … Max 200 per batch.
+                </p>
+            </form>
+            {% else %}
+            <p style="font-size:13px;color:#9a6700;background:#fff8c5;border:1px solid #d4a72c;
+                      border-radius:8px;padding:10px 14px;margin:0;">
+                No cohorts yet — create one above first.
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Test Accounts -->
+        <div class="dash-card">
+            <div class="dash-card-label">🧪 Create Test Account</div>
+            <p style="font-size:13px;color:#57606a;margin:0 0 14px;">
+                Test accounts skip the first-login ToS gate. Optionally assign to a cohort
+                for lifecycle management. Use for internal dev/QA only.
+            </p>
+            <form method="POST" action="{{ url_for('admin.admin_provision') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="create_test">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Username</label>
+                        <input type="text" name="username" placeholder="e.g. test-001" required
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:180px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Cohort <span style="font-weight:400;">(optional)</span></label>
+                        <input type="text" name="cohort" placeholder="e.g. internal-qa"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:180px;">
+                    </div>
+                    <button type="submit" class="next-btn"
+                            style="margin-bottom:0;background:#6e7681;white-space:nowrap;">
+                        Create Test Account
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div>
 
 <style>

@@ -5,7 +5,7 @@ from utils.image_utils import img_to_b64
 META = {
     'title': 'Project 15: Backup Alarm',
     'circuit_image': "static/graphics/project_fifteen_circuit.png",
-    'banner_image': 'project_fifteen_banner.png',
+    'banner_image': 'backup_alarm_banner.png',
 }
 
 STEPS = [
@@ -846,6 +846,37 @@ CHIPS = [
     "My trig and echo pins aren’t working",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Backup Alarm",
+        "difficulty": "intermediate",
+    },
+    "components": [
+        # Order matters here: HC_SR04 and BUZZER both claim extra-wide
+        # footprints (full-width / cross-gap), so they must be placed
+        # before the LEDs or the LEDs box them out and placement fails.
+        {"id": "SONAR", "type": "HC_SR04", "properties": {}},
+        {"id": "BUZZ", "type": "BUZZER", "properties": {}},
+        {"id": "GREEN_LED", "type": "LED", "properties": {"color": "green"}},
+        {"id": "YELLOW_LED", "type": "LED", "properties": {"color": "yellow"}},
+        {"id": "RED_LED", "type": "LED", "properties": {"color": "red"}},
+    ],
+    "connections": [
+        {"from": "arduino.D4", "to": "GREEN_LED.anode"},
+        {"from": "R_GREEN_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D5", "to": "YELLOW_LED.anode"},
+        {"from": "R_YELLOW_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D6", "to": "RED_LED.anode"},
+        {"from": "R_RED_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.D3", "to": "BUZZ.positive"},
+        {"from": "BUZZ.negative", "to": "arduino.GND"},
+        {"from": "arduino.5V", "to": "SONAR.vcc"},
+        {"from": "arduino.GND", "to": "SONAR.gnd"},
+        {"from": "arduino.D9", "to": "SONAR.trig"},
+        {"from": "SONAR.echo", "to": "arduino.D10"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -855,5 +886,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

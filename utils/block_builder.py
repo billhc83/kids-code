@@ -314,7 +314,7 @@ def get_builder_html(preset, username=None, page=None,
 </div>
 
 <div id="bb-overlay">
-  <iframe id="bb-iframe" src="{builder_url}"></iframe>
+  <iframe id="bb-iframe" data-src="{builder_url}"></iframe>
 </div>
 
 <script>
@@ -322,6 +322,7 @@ def get_builder_html(preset, username=None, page=None,
   var overlay = document.getElementById('bb-overlay');
   var menuOpen = false;
   var bbOpen = false;
+  var bbLoaded = false;
 
   function openMenu() {{
     menuOpen = true;
@@ -339,6 +340,12 @@ def get_builder_html(preset, username=None, page=None,
 
   function openBuilder() {{
     bbOpen = true;
+    // Lazy-load the iframe src on first open — avoids hidden-iframe JS throttling
+    if (!bbLoaded) {{
+      bbLoaded = true;
+      var iframe = document.getElementById('bb-iframe');
+      if (iframe) iframe.src = iframe.getAttribute('data-src');
+    }}
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden';
     void overlay.offsetWidth;

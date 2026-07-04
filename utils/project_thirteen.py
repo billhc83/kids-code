@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line
 META = {
     'title': 'Project 13: The Reaction Timer',
     'circuit_image': 'static/graphics/reaction_timer_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_thirteen_banner.png',
 }
 
 STEPS = [
@@ -331,6 +331,20 @@ CHIPS = [
     "I think my wire in column G is misplaced",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Reaction Timer",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "BTN", "type": "BUTTON", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D2", "to": "BTN.TL"},
+        {"from": "BTN.BR", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -340,5 +354,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

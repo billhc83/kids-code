@@ -2,13 +2,6 @@
 
 {% block lesson_content %}
 
-{% if banner_image %}
-<img src="{{ url_for('static', filename='graphics/' + banner_image) }}"
-     alt="{{ lesson.title }}"
-     style="width:100%;border-radius:12px;margin-bottom:24px;">
-{% endif %}
-
-<h1>{{ project_title }}</h1>
 <hr>
 
 <div class="lesson-intro">

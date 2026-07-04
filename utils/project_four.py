@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 4: Space Station Launch Button',
     'circuit_image': 'static/graphics/project_four_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_four_banner.png',
 }
 
 STEPS = [
@@ -203,7 +203,7 @@ void loop() {
     digitalWrite(8, LOW);
   }
 }""",
-    'default_view': 'builder',
+    'default_view': 'editor',
     'read_only': True,
     'lock_view': True,
     'fill_values': True,
@@ -228,6 +228,23 @@ CHIPS = [
     "Ground wire not in the - rail",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Space Station Launch Button",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "BUZZ", "type": "BUZZER", "properties": {}},
+        {"id": "BTN",  "type": "BUTTON", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D8",    "to": "BUZZ.positive"},
+        {"from": "BUZZ.negative", "to": "arduino.GND"},
+        {"from": "arduino.D2",    "to": "BTN.TL"},
+        {"from": "BTN.BR",        "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -237,5 +254,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

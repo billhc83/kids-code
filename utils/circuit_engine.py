@@ -150,9 +150,33 @@ def footprint_overflows(footprint):
 
 
 WIRE_COLORS = {
-    "gnd":    "#111111",
-    "power":  "#CC0000",
-    "signal": "#00AA00",
+    "gnd":   "#111111",
+    "power": "#CC0000",
+}
+
+# Signal wires cycle through this palette (one color per wire, in generation
+# order) so multiple Arduino <-> component wires stay visually distinguishable.
+# Mirrors the palette in static/js/circuit_renderer.js (_assignWireColors).
+SIGNAL_COLORS = [
+    "#3498DB",  # blue
+    "#9B59B6",  # purple
+    "#E67E22",  # orange
+    "#1ABC9C",  # teal
+    "#F1C40F",  # yellow
+    "#E91E63",  # pink
+    "#00BCD4",  # cyan
+    "#8BC34A",  # lime green
+]
+
+SIGNAL_COLOR_NAMES = {
+    "#3498DB": "blue",
+    "#9B59B6": "purple",
+    "#E67E22": "orange",
+    "#1ABC9C": "teal",
+    "#F1C40F": "yellow",
+    "#E91E63": "pink",
+    "#00BCD4": "cyan",
+    "#8BC34A": "lime green",
 }
 
 
@@ -262,23 +286,27 @@ def place_components(expanded, injected, start_row=START_ROW):
 
         # Primary component: respect forced placement side, otherwise use active side.
         forced_side = spec.get("placement_side")
-        side   = forced_side if forced_side else active_side
-        cursor = cursors[side]
+        side     = forced_side if forced_side else active_side
+        cursor   = cursors[side]
+        switched = False
 
         while True:
             footprint = get_full_candidate_footprint(ctype, spec, cursor, side)
             if footprint_overflows(footprint):
-                if forced_side:
+                # Only one side-switch is allowed per component. Cursors are not
+                # updated until a component is successfully placed (see below), so
+                # flipping back to an already-tried side would re-check the exact
+                # same cursor/occupied_cells state and overflow again — ping-ponging
+                # between AE/FJ forever instead of terminating.
+                if forced_side or switched:
                     raise ValueError(
-                        f"Board space exceeded when placing '{cid}' ({ctype}) "
-                        f"on forced side {forced_side}"
+                        f"Board space exceeded when placing component '{cid}' ({ctype})"
                     )
                 side = "FJ" if active_side == "AE" else "AE"
                 active_side = side
                 cursor = cursors[side]
-                footprint = get_full_candidate_footprint(ctype, spec, cursor, side)
-                if footprint_overflows(footprint):
-                    raise ValueError(f"Board space exceeded when placing component '{cid}' ({ctype})")
+                switched = True
+                continue
 
             if occupied_cells.intersection(footprint):
                 cursor += 1
@@ -351,8 +379,9 @@ def _wire_col_for_endpoint(endpoint, placed, spec_key="wire_col", default="A"):
     return default
 
 
-def _wire_color(from_ep, to_ep):
-    """Determine wire color from endpoint types."""
+def _wire_color(from_ep, to_ep, signal_idx):
+    """Determine wire color from endpoint types. `signal_idx` selects the
+    palette entry for signal wires so successive signal wires differ."""
     combined = " ".join(
         (e[1] if e[0] == "arduino" else "") for e in [from_ep, to_ep]
     )
@@ -360,7 +389,7 @@ def _wire_color(from_ep, to_ep):
         return WIRE_COLORS["gnd"]
     if any(p in combined for p in ("5V", "VIN", "3V3", "power")):
         return WIRE_COLORS["power"]
-    return WIRE_COLORS["signal"]
+    return SIGNAL_COLORS[signal_idx % len(SIGNAL_COLORS)]
 
 
 _POWER_PINS = {"GND", "5V", "VIN", "3V3"}
@@ -454,6 +483,7 @@ def resolve_connections(logical_connections, placed):
     v5_rail_added    = False
     used_gnd_rows    = set()   # rail rows already claimed by a GND jumper
     used_v5_rows     = set()   # rail rows already claimed by a 5V jumper
+    signal_wire_idx  = 0       # advances only for true signal wires
 
     def _free_rail_row(preferred, used_set):
         """
@@ -528,17 +558,20 @@ def resolve_connections(logical_connections, placed):
         # Signal wires and other (non-GND/5V) power connections.
         from_str = _fmt_ep(from_ep)
         to_str   = _fmt_ep(to_ep)
+        is_signal_wire = False
 
         if _is_signal(from_ep) and to_ep[0] == "breadboard":
             # Signal wire: arduino → component. Shift landing col to wire_col.
             col = _wire_col_for_endpoint(to_ep, placed, "wire_col")
             to_str = f"breadboard.{col}{to_ep[2]}"
+            is_signal_wire = True
 
         elif _is_signal(to_ep) and from_ep[0] == "breadboard":
             # Signal wire: component → arduino. Shift departure col to wire_col
             # so the wire exits from the far side of the component body.
             col = _wire_col_for_endpoint(from_ep, placed, "wire_col")
             from_str = f"breadboard.{col}{from_ep[2]}"
+            is_signal_wire = True
 
         elif _is_power(from_ep) and to_ep[0] == "breadboard":
             # Other power rail (VIN, 3V3) → component.
@@ -554,8 +587,10 @@ def resolve_connections(logical_connections, placed):
         wires.append({
             "from":  from_str,
             "to":    to_str,
-            "color": _wire_color(from_ep, to_ep),
+            "color": _wire_color(from_ep, to_ep, signal_wire_idx),
         })
+        if is_signal_wire:
+            signal_wire_idx += 1
 
     # Canonical rail entries appended last so walkthrough teaches components
     # before establishing the power rails.
@@ -615,9 +650,9 @@ _COMPONENT_INSTRUCTIONS = {
 def _wire_instruction(wire):
     """Generate human-readable wire step from a resolved wire dict."""
     color_names = {
-        WIRE_COLORS["gnd"]:    "black",
-        WIRE_COLORS["power"]:  "red",
-        WIRE_COLORS["signal"]: "green",
+        WIRE_COLORS["gnd"]:   "black",
+        WIRE_COLORS["power"]: "red",
+        **SIGNAL_COLOR_NAMES,
     }
     color_name = color_names.get(wire["color"], "")
 
@@ -642,7 +677,8 @@ def _wire_instruction(wire):
         row = addr[1:]
         return f"the breadboard at row {row}, column {col}"
 
-    instruction = f"Connect a {color_name} wire from {label(frm)} to {label(to)}."
+    article = "an" if color_name[:1] in "aeiou" else "a"
+    instruction = f"Connect {article} {color_name} wire from {label(frm)} to {label(to)}."
     tip = {
         WIRE_COLORS["gnd"]:   "Black wires carry ground — the return path for electricity.",
         WIRE_COLORS["power"]: "Red wires carry power — the positive 5V supply rail.",

@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 8: The Dragon\'s Crystal Alarm',
     'circuit_image': 'static/graphics/project_eight_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_eight_banner.png',
 }
 
 STEPS = [
@@ -311,7 +311,7 @@ void loop() {
     delay(100);
   }
 }""",
-    'default_view': 'builder',
+    'default_view': 'editor',
     'read_only': True,
     'lock_view': True,
     'fill_values': True,
@@ -335,6 +335,27 @@ CHIPS = [
     "My 220Ω resistor leg seems loose",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "The Dragon's Crystal Alarm",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
+        {"id": "LDR", "type": "LDR", "properties": {}},
+        {"id": "BUZZ", "type": "BUZZER", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D13", "to": "LED.anode"},
+        {"from": "R_LED.pin2", "to": "arduino.GND"},
+        {"from": "arduino.5V",  "to": "LDR.pin1"},
+        {"from": "LDR.pin2",    "to": "arduino.A0"},
+        {"from": "R_LDR.pin2",  "to": "arduino.GND"},
+        {"from": "arduino.D8",  "to": "BUZZ.positive"},
+        {"from": "BUZZ.negative", "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -344,5 +365,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

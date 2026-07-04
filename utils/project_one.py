@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 1: Lights ON!!',
     'circuit_image': 'static/graphics/project_one_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_one_banner.png',
 }
 
 STEPS = [
@@ -190,57 +190,18 @@ CHIPS = [
     "My LED legs in 12E/11E might be swapped",
 ]
 
-CIRCUIT_DEFINITION = {
+CIRCUIT_SPEC = {
     "meta": {
         "title": "LED Blink",
-        "difficulty": "beginner"
+        "difficulty": "beginner",
     },
     "components": [
-        {
-            "id": "LED",
-            "type": "LED",
-            "pins": {"anode": {"col": "E", "row": 12}, "cathode": {"col": "E", "row": 11}},
-            "properties": {"color": "red"}
-        },
-        {
-            "id": "R1",
-            "type": "RESISTOR",
-            "pins": {"pin1": {"col": "D", "row": 11}, "pin2": {"col": "D", "row": 7}},
-            "properties": {"ohms": 220}
-        }
+        {"id": "LED", "type": "LED", "properties": {"color": "red"}},
     ],
     "connections": [
-        {"from": "arduino.D8",  "to": "breadboard.A12", "color": "#00AA00"},
-        {"from": "breadboard.E7", "to": "arduino.GND",  "color": "#111111"}
+        {"from": "arduino.D8",   "to": "LED.anode"},
+        {"from": "R_LED.pin2",   "to": "arduino.GND"},
     ],
-    "walkthrough": [
-        {
-            "type": "component",
-            "id": "LED",
-            "instruction": "Put the LED on the breadboard with the long leg in row 12, column E and the short leg in row 11, column E.",
-            "tip": "The long leg is positive — it's called the anode!"
-        },
-        {
-            "type": "component",
-            "id": "R1",
-            "instruction": "Put the resistor on the breadboard with one leg in row 11, column D and the other leg in row 7, column D.",
-            "tip": "The resistor limits current so the LED doesn't burn out."
-        },
-        {
-            "type": "wire",
-            "from": "breadboard.E7",
-            "to": "arduino.GND",
-            "instruction": "Connect a black wire from the Arduino's GND pin to the breadboard at row 7, column E.",
-            "tip": "Black wires carry ground — the return path for electricity."
-        },
-        {
-            "type": "wire",
-            "from": "arduino.D8",
-            "to": "breadboard.A12",
-            "instruction": "Connect a green wire from Arduino Pin 8 to the breadboard at row 12, column A.",
-            "tip": "This wire carries the signal that turns the LED on and off."
-        }
-    ]
 }
 
 PROJECT = {
@@ -253,5 +214,5 @@ PROJECT = {
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
     },
-    "circuit_definition": CIRCUIT_DEFINITION,
+    "circuit_spec": CIRCUIT_SPEC,
 }

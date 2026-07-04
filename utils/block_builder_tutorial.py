@@ -330,7 +330,7 @@ DRAWER_CONTENT = {
                       "content": """
                           <ol>
                           <li>Plug your Arduino into your computer 🔌</li>
-                          <li>Start the <b>Arduino Agent</b> software</li>
+                          <li>Start the <b>Kids-Code-Link</b> software</li>
                           <li>Click <b>Refresh</b> in the top left</li>
                           <li>Select your board from the dropdown</li>
                           <li>Click <b>Upload</b> 🚀</li>

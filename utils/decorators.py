@@ -28,3 +28,13 @@ def parent_required(f):
             return redirect(url_for("main.index"))
         return f(*args, **kwargs)
     return decorated
+
+def teacher_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("auth.login"))
+        if not session.get("is_teacher"):
+            return redirect(url_for("main.index"))
+        return f(*args, **kwargs)
+    return decorated

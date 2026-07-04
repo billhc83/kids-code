@@ -1,4 +1,6 @@
 import os
+import csv
+import string
 import datetime
 import requests
 from config import SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY
@@ -240,6 +242,186 @@ def reset_password_with_token(token, new_password):
         "reset_token_expires": None
     }).eq("id", user["id"]).execute()
     return True, None
+
+# ── Provisioning helpers ──────────────────────────────────────────────────────
+
+def _gen_temp_password(length=12):
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+def _internal_email(username):
+    import uuid
+    return f"{username}.{str(uuid.uuid4())[:8]}@kidscode.internal"
+
+def create_cohort_teacher(username, cohort):
+    """Create the anchor teacher account for a cohort. Returns (user, temp_password, error)."""
+    if not cohort:
+        return None, None, "Cohort name is required"
+    if get_user_by_username(username):
+        return None, None, "Username already taken"
+    temp_password = _gen_temp_password()
+    password_hash = hash_password(temp_password)
+    resp = supabase.table("users").insert({
+        "email": _internal_email(username),
+        "username": username,
+        "password_hash": password_hash,
+        "is_parent": False,
+        "is_teacher": True,
+        "is_verified": True,
+        "is_admin": False,
+        "is_test": False,
+        "user_type": "class",
+        "cohort": cohort,
+        "verification_token": None,
+        "first_login_completed": False,
+        "agreed_at": None,
+    }).execute()
+    if not resp.data:
+        return None, None, "Failed to create teacher account"
+    user = resp.data[0]
+    from utils.progression import unlock_lesson, LESSON_SEQUENCE
+    unlock_lesson(user["id"], LESSON_SEQUENCE[0])
+    return user, temp_password, None
+
+def create_student_for_teacher(teacher_id, username, password=None):
+    """Create a student linked to a teacher, inheriting the teacher's cohort. No cap enforced."""
+    if get_user_by_username(username):
+        return None, None, "Username already taken"
+    temp_password = password or _gen_temp_password()
+    if len(temp_password) < 8:
+        return None, None, "Password must be at least 8 characters"
+
+    t_resp = supabase.table("users").select("cohort").eq("id", teacher_id).execute()
+    cohort = t_resp.data[0]["cohort"] if t_resp.data else None
+
+    password_hash = hash_password(temp_password)
+    resp = supabase.table("users").insert({
+        "email": _internal_email(username),
+        "username": username,
+        "password_hash": password_hash,
+        "is_parent": False,
+        "is_teacher": False,
+        "is_verified": True,
+        "is_admin": False,
+        "is_test": False,
+        "user_type": "class",
+        "cohort": cohort,
+        "verification_token": None,
+        "first_login_completed": False,
+        "agreed_at": None,
+    }).execute()
+    if not resp.data:
+        return None, None, "Failed to create student account"
+    student = resp.data[0]
+    supabase.table("parent_student_links").insert({
+        "parent_id": teacher_id,
+        "student_id": student["id"],
+        "consent_given_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }).execute()
+    from utils.progression import unlock_lesson, LESSON_SEQUENCE
+    unlock_lesson(student["id"], LESSON_SEQUENCE[0])
+    return student, temp_password, None
+
+def create_batch_students_for_teacher(teacher_id, prefix, count):
+    """Create `count` students with usernames `prefix1`, `prefix2`, …
+    Returns (rows, errors) where rows = list of {username, password}."""
+    rows = []
+    errors = []
+    for i in range(1, count + 1):
+        username = f"{prefix}{i}"
+        student, temp_pw, err = create_student_for_teacher(teacher_id, username)
+        if err:
+            errors.append(f"{username}: {err}")
+        else:
+            rows.append({"username": username, "password": temp_pw})
+    return rows, errors
+
+def create_test_user(username, cohort=None):
+    """Admin-provision an internal test account (skips ToS gate). Returns (user, temp_password, error)."""
+    if get_user_by_username(username):
+        return None, None, "Username already taken"
+    temp_password = _gen_temp_password()
+    password_hash = hash_password(temp_password)
+    resp = supabase.table("users").insert({
+        "email": _internal_email(username),
+        "username": username,
+        "password_hash": password_hash,
+        "is_parent": False,
+        "is_teacher": False,
+        "is_verified": True,
+        "is_admin": False,
+        "is_test": True,
+        "user_type": "test",
+        "cohort": cohort,
+        "verification_token": None,
+        "first_login_completed": False,
+        "agreed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }).execute()
+    if not resp.data:
+        return None, None, "Failed to create test account"
+    user = resp.data[0]
+    from utils.progression import unlock_lesson, LESSON_SEQUENCE
+    unlock_lesson(user["id"], LESSON_SEQUENCE[0])
+    return user, temp_password, None
+
+def get_teachers():
+    """Return all teacher accounts with their cohort, ordered by cohort then username."""
+    resp = (supabase.table("users")
+            .select("id,username,cohort,created_at")
+            .eq("is_teacher", True)
+            .order("cohort")
+            .execute())
+    return resp.data or []
+
+def get_all_cohorts():
+    """Return a list of cohort summary dicts for the provisioning panel."""
+    resp = (supabase.table("users")
+            .select("id,username,cohort,is_teacher,created_at")
+            .not_.is_("cohort", "null")
+            .order("cohort")
+            .execute())
+    users = resp.data or []
+
+    cohorts = {}
+    for u in users:
+        c = u["cohort"]
+        if c not in cohorts:
+            cohorts[c] = {
+                "cohort": c,
+                "teacher": None,
+                "member_count": 0,
+                "created_at": u["created_at"],
+            }
+        cohorts[c]["member_count"] += 1
+        if u.get("is_teacher"):
+            cohorts[c]["teacher"] = u["username"]
+        if u["created_at"] and u["created_at"] < cohorts[c]["created_at"]:
+            cohorts[c]["created_at"] = u["created_at"]
+
+    return list(cohorts.values())
+
+def delete_cohort(cohort_name):
+    """Hard-delete all users and their links belonging to a cohort. Returns count deleted."""
+    resp = supabase.table("users").select("id").eq("cohort", cohort_name).execute()
+    user_ids = [u["id"] for u in (resp.data or [])]
+    for uid in user_ids:
+        supabase.table("parent_student_links").delete().or_(
+            f"parent_id.eq.{uid},student_id.eq.{uid}"
+        ).execute()
+        supabase.table("users").delete().eq("id", uid).execute()
+    return len(user_ids)
+
+def rows_to_csv_string(rows):
+    """Convert a list of dicts to a CSV string."""
+    import io
+    buf = io.StringIO()
+    if not rows:
+        return ""
+    writer = csv.DictWriter(buf, fieldnames=rows[0].keys())
+    writer.writeheader()
+    writer.writerows(rows)
+    return buf.getvalue()
+
 
 def send_reset_email(to_email, token):
     """Send password reset email via Resend."""

@@ -3,6 +3,7 @@ import datetime
 from flask import Blueprint, request, session, render_template, abort, jsonify
 from utils.decorators import login_required
 from utils.db_client import supabase
+from extensions import csrf
 
 builder_bp = Blueprint('builder', __name__)
 
@@ -70,6 +71,7 @@ def normalize_drawer_steps(steps):
     return result
 
 @builder_bp.route("/parse", methods=["POST"])
+@csrf.exempt
 def parse():
     from utils.block_parser import parse_sketch
     data = request.get_json()
@@ -242,6 +244,7 @@ def standalone_ide(preset):
 
 
 @builder_bp.route("/api/blocks/save", methods=["POST"])
+@csrf.exempt
 @login_required
 def blocks_save():
     data = request.get_json(silent=True) or {}

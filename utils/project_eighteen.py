@@ -613,11 +613,139 @@ DRAWER_CONTENT = {
 }
 
 
+# Two independent HC-SR04 sensors, one per physical breadboard (a speed trap
+# needs two separated sensors, not two sensors crammed onto one board).
+# circuit_engine.py's generate_circuit() has no dual-board placement support
+# (it only ever emits single "breadboard.X" endpoints), so this is hand-authored
+# per CIRCUIT_ENGINE.md's Option B — using "layout": "dual_board" and
+# "breadboard2.X" endpoints, which circuit_renderer.js does support.
+CIRCUIT_JSON = {
+    "meta": {
+        "title": "Drag Race Speed Tracker",
+        "difficulty": "advanced",
+        "description": "Measure speed using two ultrasonic sensors to track distance changes over time.",
+    },
+    "layout": "dual_board",
+    "components": [
+        {
+            "id": "SR1",
+            "type": "HC_SR04",
+            "board": 1,
+            "pins": {
+                "vcc":  {"col": "J", "row": 12},
+                "trig": {"col": "J", "row": 11},
+                "echo": {"col": "J", "row": 10},
+                "gnd":  {"col": "J", "row": 9},
+            },
+            "properties": {},
+        },
+        {
+            "id": "SR2",
+            "type": "HC_SR04",
+            "board": 2,
+            "pins": {
+                "vcc":  {"col": "J", "row": 12},
+                "trig": {"col": "J", "row": 11},
+                "echo": {"col": "J", "row": 10},
+                "gnd":  {"col": "J", "row": 9},
+            },
+            "properties": {},
+        },
+    ],
+    "connections": [
+        {"from": "breadboard1.I12", "to": "breadboard1.+1.12", "color": "#CC0000"},
+        {"from": "arduino.5V", "to": "breadboard1.+1.30", "color": "#CC0000"},
+        {"from": "arduino.D2", "to": "breadboard1.F11", "color": "#3498DB"},
+        {"from": "breadboard1.F10", "to": "arduino.D3", "color": "#9B59B6"},
+        {"from": "breadboard1.I9", "to": "breadboard1.-1.9", "color": "#111111"},
+        {"from": "arduino.GND", "to": "breadboard1.-1.30", "color": "#111111"},
+        {"from": "breadboard2.I12", "to": "breadboard2.+1.12", "color": "#CC0000"},
+        {"from": "breadboard2.+1.1", "to": "breadboard1.+1.1", "color": "#CC0000"},
+        {"from": "arduino.D4", "to": "breadboard2.F11", "color": "#E67E22"},
+        {"from": "breadboard2.F10", "to": "arduino.D5", "color": "#1ABC9C"},
+        {"from": "breadboard2.I9", "to": "breadboard2.-1.9", "color": "#111111"},
+        {"from": "breadboard2.-1.1", "to": "breadboard1.-1.1", "color": "#111111"},
+    ],
+    "walkthrough": [
+        {
+            "type": "component", "id": "SR1",
+            "instruction": "Plug the first HC-SR04 sensor into breadboard 1 with all four pins in column J: VCC in row 12, TRIG in row 11, ECHO in row 10, GND in row 9.",
+            "tip": "The two silver circles are the ultrasonic 'eyes' — point them toward your target!",
+        },
+        {
+            "type": "component", "id": "SR2",
+            "instruction": "Plug the second HC-SR04 sensor into breadboard 2 with all four pins in column J: VCC in row 12, TRIG in row 11, ECHO in row 10, GND in row 9.",
+            "tip": "The two silver circles are the ultrasonic 'eyes' — point them toward your target!",
+        },
+        {
+            "type": "wire", "from": "breadboard1.I12", "to": "breadboard1.+1.12",
+            "instruction": "Connect a short red wire from breadboard 1 column I row 12 to the positive (+) rail at row 12.",
+            "tip": "This jumper connects the first sensor's VCC pin to the shared power rail.",
+        },
+        {
+            "type": "wire", "from": "arduino.5V", "to": "breadboard1.+1.30",
+            "instruction": "Connect a red wire from the Arduino 5V pin to breadboard 1's positive (+) rail at row 30.",
+            "tip": "This powers the positive rail — both sensors get their 5V through here.",
+        },
+        {
+            "type": "wire", "from": "arduino.D2", "to": "breadboard1.F11",
+            "instruction": "Connect a blue wire from Arduino pin D2 to breadboard 1 at row 11, column F.",
+            "tip": "This wire carries the signal between Arduino and your component.",
+        },
+        {
+            "type": "wire", "from": "breadboard1.F10", "to": "arduino.D3",
+            "instruction": "Connect a purple wire from breadboard 1 at row 10, column F to Arduino pin D3.",
+            "tip": "This wire carries the signal between Arduino and your component.",
+        },
+        {
+            "type": "wire", "from": "breadboard1.I9", "to": "breadboard1.-1.9",
+            "instruction": "Connect a short black wire from breadboard 1 column I row 9 to the negative (−) rail at row 9.",
+            "tip": "This jumper connects the first sensor's GND pin to the shared ground rail.",
+        },
+        {
+            "type": "wire", "from": "arduino.GND", "to": "breadboard1.-1.30",
+            "instruction": "Connect a black wire from the Arduino GND pin to breadboard 1's negative (−) rail at row 30.",
+            "tip": "This powers the ground rail — all sensor GNDs flow back through here.",
+        },
+        {
+            "type": "wire", "from": "breadboard2.I12", "to": "breadboard2.+1.12",
+            "instruction": "Connect a short red wire from breadboard 2 column I row 12 to breadboard 2's positive (+) rail at row 12.",
+            "tip": "This jumper connects the second sensor's VCC pin to board 2's power rail.",
+        },
+        {
+            "type": "wire", "from": "arduino.D4", "to": "breadboard2.F11",
+            "instruction": "Connect an orange wire from Arduino pin D4 to breadboard 2 at row 11, column F.",
+            "tip": "This wire carries the signal between Arduino and your component.",
+        },
+        {
+            "type": "wire", "from": "breadboard2.F10", "to": "arduino.D5",
+            "instruction": "Connect a teal wire from breadboard 2 at row 10, column F to Arduino pin D5.",
+            "tip": "This wire carries the signal between Arduino and your component.",
+        },
+        {
+            "type": "wire", "from": "breadboard2.I9", "to": "breadboard2.-1.9",
+            "instruction": "Connect a short black wire from breadboard 2 column I row 9 to breadboard 2's negative (−) rail at row 9.",
+            "tip": "This jumper connects the second sensor's GND pin to board 2's ground rail.",
+        },
+        {
+            "type": "wire", "from": "breadboard2.+1.1", "to": "breadboard1.+1.1",
+            "instruction": "Connect a red jumper wire from breadboard 2's positive (+) rail at row 1 to breadboard 1's positive (+) rail at row 1.",
+            "tip": "This bridge wire links both boards' 5V rails so both sensors share the Arduino's power.",
+        },
+        {
+            "type": "wire", "from": "breadboard2.-1.1", "to": "breadboard1.-1.1",
+            "instruction": "Connect a black jumper wire from breadboard 2's negative (−) rail at row 1 to breadboard 1's negative (−) rail at row 1.",
+            "tip": "This bridge wire links both boards' rails together so both sensors share the Arduino's GND.",
+        },
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
     "drawer": DRAWER_CONTENT,
     "presets": {
         "default": SKETCH_PRESET,
-    }
+    },
+    "circuit_definition": CIRCUIT_JSON,
 }

@@ -3,7 +3,7 @@ from utils.step_builder import build_step, intro_step, rect, circle
 META = {
     'title': 'Project 3: Mad Scientist Button Machine',
     'circuit_image': 'static/graphics/project_three_circuit.png',
-    'banner_image': None,
+    'banner_image': 'project_three_banner.png',
 }
 
 STEPS = [
@@ -228,7 +228,7 @@ void loop() {
 
 CHALLENGE_PRESET = {
     'sketch': '...',
-    'default_view': 'builder',
+    'default_view': 'editor',
 }
 
 # Optional — progression sketch for guided block builder projects
@@ -243,6 +243,23 @@ CHIPS = [
     "My pin 8 wire isn't at row 12A",
 ]
 
+CIRCUIT_SPEC = {
+    "meta": {
+        "title": "Mad Scientist Button Machine",
+        "difficulty": "beginner",
+    },
+    "components": [
+        {"id": "LED", "type": "LED",    "properties": {"color": "red"}},
+        {"id": "BTN", "type": "BUTTON", "properties": {}},
+    ],
+    "connections": [
+        {"from": "arduino.D8",  "to": "LED.anode"},
+        {"from": "R_LED.pin2",  "to": "arduino.GND"},
+        {"from": "arduino.D2",  "to": "BTN.TL"},
+        {"from": "BTN.BR",      "to": "arduino.GND"},
+    ],
+}
+
 PROJECT = {
     "meta": META,
     "steps": STEPS,
@@ -252,5 +269,6 @@ PROJECT = {
         "default": SKETCH_PRESET,
         "challenge": CHALLENGE_PRESET,
         "progression": PROGRESSION_PRESET,
-    }
+    },
+    "circuit_spec": CIRCUIT_SPEC,
 }

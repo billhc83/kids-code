@@ -4,7 +4,7 @@ from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
 META = {
     'title': 'Project 19: The Robot Gatekeeper',
     'circuit_image': 'static/graphics/project_nineteen_circuit.png',
-    'banner_image': 'project_nineteen_banner.png',
+    'banner_image': 'robot_gatekeeper_banner.png',
     'lesson_type': 'progression',
 }
 
