@@ -82,11 +82,13 @@ def parse():
 @login_required
 def sim_run():
     from utils.sim_engine import run as engine_run
+    from utils.badges import award_simulator_badge
     data = request.get_json(silent=True) or {}
     sketch = data.get('sketch', '')
     sim_config = data.get('sim_config', {})
     try:
         result = engine_run(sketch, sim_config)
+        award_simulator_badge(session["user_id"])
         return result
     except Exception as e:
         return {'error': str(e)}, 400
