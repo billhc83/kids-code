@@ -200,16 +200,20 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
 
     <!-- Badges -->
     <div class="dash-card">
-        <div class="dash-card-label">🏅 Badges</div>
+        <div class="dash-card-label">🏅 Badges{% if badges %} ({{ badges|length }}){% endif %}</div>
+        {% if badges %}
         <div class="badge-grid">
             {% for badge in badges %}
-            <div class="badge-item {% if not badge.earned %}badge-locked{% endif %}">
+            <div class="badge-item">
                 <div class="badge-icon">{{ badge.icon }}</div>
                 <div class="badge-title">{{ badge.title }}</div>
                 <div class="badge-desc">{{ badge.description }}</div>
             </div>
             {% endfor %}
         </div>
+        {% else %}
+        <p class="badge-empty">No badges yet — complete a project to earn your first one! 🚀</p>
+        {% endif %}
     </div>
 
     <!-- Completed projects -->

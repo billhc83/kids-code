@@ -223,6 +223,24 @@ LESSONS = [
 LESSON_BY_KEY = {l["key"]: l for l in LESSONS}
 LESSON_SEQUENCE = [l["key"] for l in LESSONS]
 
+def count_unique_projects(lesson_keys):
+    """Collapse multi-part lesson groups (e.g. 'Code Breaker' parts 1-3) into one project each."""
+    seen_parts = set()
+    count = 0
+    for key in lesson_keys:
+        lesson = LESSON_BY_KEY.get(key)
+        if not lesson:
+            continue
+        if lesson["part"]:
+            if lesson["part"] not in seen_parts:
+                seen_parts.add(lesson["part"])
+                count += 1
+        else:
+            count += 1
+    return count
+
+TOTAL_PROJECTS = count_unique_projects(LESSON_SEQUENCE)
+
 def get_lesson(key):
     return LESSON_BY_KEY.get(key)
 

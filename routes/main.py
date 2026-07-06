@@ -4,7 +4,7 @@ from utils.progression import get_user_progression, get_completed_lessons
 from utils.badges import get_user_badges, BADGE_DEFINITIONS
 from utils.feedback import get_threads_for_user, CATEGORIES, create_thread, add_message, notify_discord_feedback
 from utils.activity import log_activity
-from utils.lessons import LESSONS, LESSON_BY_KEY
+from utils.lessons import LESSONS, LESSON_BY_KEY, count_unique_projects, TOTAL_PROJECTS
 from utils.auth import mark_first_login_complete
 from extensions import limiter
 import requests as http_requests
@@ -34,19 +34,7 @@ def dashboard():
     user_badges = get_user_badges(session["user_id"])
     unlocked = get_user_progression(session["user_id"])
 
-    # Deduplicate multi-part lessons: all parts of the same group count as one project
-    seen_parts = set()
-    completed_count = 0
-    for key in completed:
-        lesson = LESSON_BY_KEY.get(key)
-        if not lesson:
-            continue
-        if lesson["part"]:
-            if lesson["part"] not in seen_parts:
-                seen_parts.add(lesson["part"])
-                completed_count += 1
-        else:
-            completed_count += 1
+    completed_count = count_unique_projects(completed)
 
     current_lesson = None
     for lesson in LESSONS:
@@ -56,23 +44,7 @@ def dashboard():
             current_lesson = lesson
             break
 
-    badges = []
-    for key, defn in BADGE_DEFINITIONS.items():
-        badges.append({
-            **defn,
-            "earned": key in user_badges
-        })
-
-    # Total unique projects (collapse multi-part groups into one)
-    seen_parts = set()
-    total_projects = 0
-    for lesson in LESSONS:
-        if lesson["part"]:
-            if lesson["part"] not in seen_parts:
-                seen_parts.add(lesson["part"])
-                total_projects += 1
-        else:
-            total_projects += 1
+    badges = [defn for key, defn in BADGE_DEFINITIONS.items() if key in user_badges]
 
     return render_template(
         "dashboard.html",
@@ -80,7 +52,7 @@ def dashboard():
         completed_count=completed_count,
         current_lesson=current_lesson,
         badges=badges,
-        total_lessons=total_projects,
+        total_lessons=TOTAL_PROJECTS,
         show_welcome=session.get("show_welcome", False)
     )
 
