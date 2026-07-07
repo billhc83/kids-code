@@ -640,8 +640,12 @@ async function setMode(mode) {
   if(bbUI){
     var palette = bbUI.querySelector('#palette');
     var workspace = bbUI.querySelector('#workspace');
+    var codepanel = bbUI.querySelector('#codepanel');
+    var statusbar = bbUI.querySelector('#statusbar');
     if(palette) palette.style.display = mode === 'editor' ? 'none' : '';
     if(workspace) workspace.style.display = mode === 'editor' ? 'none' : '';
+    if(codepanel) codepanel.style.display = mode === 'editor' ? 'none' : '';
+    if(statusbar) statusbar.style.display = mode === 'editor' ? 'none' : '';
   }
   editorEl.style.display = mode === 'editor' ? 'flex' : 'none';
 

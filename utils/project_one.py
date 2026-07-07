@@ -150,6 +150,55 @@ Think of it like this:
 Start → Prepare → Work → Repeat 🔁
 </p>
 """
+        },
+        "upload": {
+            "label": "🚀 Let's Go!",
+            "content": """
+<h3>This Is Your First Project — Here's Exactly What To Do! 🚀</h3>
+
+<p>
+No worries if this is all brand new. Just follow these steps in order.
+</p>
+
+<h4>1️⃣ Build the circuit</h4>
+<p>
+Use the <b>Build</b> tab to place your LED, resistor, and wires.<br>
+Follow each step — you don't need your Arduino plugged in yet.
+</p>
+
+<h4>2️⃣ Check out your Sketch 📖</h4>
+<p>
+The code you see is your <b>Sketch</b> — the rule book we just talked about.<br>
+It's already written for you! Right now, your job is just to send it to your Arduino.
+</p>
+
+<h4>3️⃣ Plug in your Arduino 🔌</h4>
+<p>
+Once the circuit is built, plug your Arduino into the computer with its USB cable.
+</p>
+
+<h4>4️⃣ Look for KidsCode Link 🔗</h4>
+<p>
+Check for <b>● KidsCode Link</b> near your Sketch.<br>
+If it says <b>Offline</b>, open the KidsCode Link app on your computer, then look again.
+</p>
+
+<h4>5️⃣ Pick your board 🎯</h4>
+<p>
+Open the dropdown menu and make sure your Arduino is selected.<br>
+Don't see it? Click <b>Refresh</b> and check again.
+</p>
+
+<h4>6️⃣ Click Upload ⬆️</h4>
+<p>
+Press the <b>Upload</b> button and watch the messages — they'll let you know when your code has made it onto the Arduino.
+</p>
+
+<h4>7️⃣ Watch for the light! 💡</h4>
+<p>
+If everything worked, your LED should turn on! If it doesn't, that's okay — check the <b>Tips</b> or ask for help. Every builder hits a snag sometimes!
+</p>
+"""
         }
     }
 }
