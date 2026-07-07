@@ -1291,7 +1291,11 @@ const resetBtn = document.getElementById('reset-btn');
 if (resetBtn) {
   resetBtn.onclick = function() {
     if (window.resetBlocks) {
-      window.resetBlocks();
+      const didReset = window.resetBlocks();
+      if (!didReset) return;
+      if (currentMode === 'editor' && window.getGeneratedCode && editor) {
+        editor.setValue(window.getGeneratedCode());
+      }
       if (typeof drawerOpen !== 'undefined' && !drawerOpen) {
          if (window.openDrawer) window.openDrawer();
       }

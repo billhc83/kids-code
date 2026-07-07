@@ -248,7 +248,7 @@
   };
 
   window.resetBlocks = function () {
-    if (!confirm('Reset this step? Your progress on this step will be cleared.')) return;
+    if (!confirm('Reset this step? Your progress on this step will be cleared.')) return false;
     if (BB.PROGRESSION_MODE) {
       delete BB.STUDENT_SAVES[BB.CURRENT_STEP];
       BB.buildWorkspace(BB.CURRENT_STEP);
@@ -260,6 +260,7 @@
     BB.saveBlocks();
     BB.clearSelection(); BB.render(); BB.genCode();
     BB.flash('Reset!');
+    return true;
   };
 
   // ── Auto-save ──────────────────────────────────────────────────────────────
