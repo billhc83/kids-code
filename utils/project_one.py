@@ -164,7 +164,7 @@ void loop() {
   digitalWrite(8, HIGH);
 }""",
     'default_view': 'editor',
-    'read_only': True,
+    'read_only': False,
     'lock_view': True,
     'fill_values': True,
     'fill_conditions': True,
