@@ -14,3 +14,4 @@ respx
 lark
 openai
 google-genai
+numpy

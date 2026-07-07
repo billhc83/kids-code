@@ -509,7 +509,18 @@ def get_builder_html(preset, username=None, page=None,
             if (!line.startsWith('data: ')) return;
             var payload = line.slice(6);
             if (payload === '[DONE]') return;
-            try {{ text += JSON.parse(payload); aiBubble.textContent = text; chat.scrollTop = chat.scrollHeight; }} catch(e) {{}}
+            try {{
+              var parsed = JSON.parse(payload);
+              if (parsed && typeof parsed === 'object' && parsed.html) {{
+                // Terminal error/fallback messages carry a real contact-page
+                // link — render as HTML instead of accumulating as plain text.
+                aiBubble.innerHTML = parsed.html;
+              }} else {{
+                text += parsed;
+                aiBubble.textContent = text;
+              }}
+              chat.scrollTop = chat.scrollHeight;
+            }} catch(e) {{}}
           }});
           read();
         }});
