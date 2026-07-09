@@ -52,13 +52,13 @@ def complete_lesson(user_id, lesson_key):
     return next_key
 
 def get_completion_dates(user_id):
-    """Calendar date (UTC) of each lesson completion, for streak/pace badges."""
-    resp = supabase.table("progression").select("completed_at").eq("user_id", user_id).eq("completed", True).execute()
+    """(lesson_key, calendar date UTC) of each lesson completion, for streak/pace badges."""
+    resp = supabase.table("progression").select("lesson_key, completed_at").eq("user_id", user_id).eq("completed", True).execute()
     dates = []
     for row in resp.data:
         ts = row.get("completed_at")
         if ts:
-            dates.append(datetime.datetime.fromisoformat(ts).date())
+            dates.append((row["lesson_key"], datetime.datetime.fromisoformat(ts).date()))
     return dates
 
 def is_unlocked(user_id, lesson_key):
