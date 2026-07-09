@@ -5,6 +5,8 @@
  * simConfig shape:
  *   components: [{type, id, color?, pin?, label}]
  *   behaviors:  [{when: {id: state, ...}, then: {id: state, ...}}]
+ *   endpoint    (code-driven only) — sim-run URL to POST to. Defaults to
+ *               '/sim/run' when absent.
  *
  * Special then-keys:
  *   _sequence: ["id1","id2",...]  — starts a cyclic LED flash loop
@@ -671,7 +673,7 @@ window.SimEngine = (function () {
     activeRequestId++;
     var thisRequestId = activeRequestId;
 
-    fetch('/sim/run', {
+    fetch(simConfig.endpoint || '/sim/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sketch: sketch, sim_config: simConfig }),
