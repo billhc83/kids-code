@@ -272,7 +272,7 @@ var TYPE_HERE_STEP_INDEX = 1;
 var TYPE_HERE_PLACEHOLDER = '  // type here: digitalWrite(ledPin, HIGH);';
 window.addEventListener('stepchange', function (e) {
   if (!e.detail || e.detail.view !== 'editor') return;
-  if (!(window.BB && BB.CURRENT_STEP === TYPE_HERE_STEP_INDEX)) return;
+  if (!(window._BB && window._BB.CURRENT_STEP === TYPE_HERE_STEP_INDEX)) return;
   if (!editor) return;
   var text = editor.getValue();
   if (text.indexOf('void loop() {\n}') === -1) return; // already has real content — don't clobber it
@@ -731,8 +731,8 @@ syncStepNavPadding();
     clearInterval(installPoll);
     var originalBbNext = window.bbNext;
     window.bbNext = function () {
-      var atGateStep = window.BB && BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
-      var isAdvanceClick = window.BB && BB.nextBtnState && BB.nextBtnState.mode === 'next-mode';
+      var atGateStep = window._BB && window._BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
+      var isAdvanceClick = window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'next-mode';
       if (!emailCaptured && atGateStep && isAdvanceClick) {
         showGate(originalBbNext);
         return;
