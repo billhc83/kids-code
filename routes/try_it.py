@@ -36,9 +36,19 @@ def _project_try_it():
 
 @try_it_bp.route("/try")
 def try_page():
+    from routes.builder import normalize_drawer_steps
+    proj = _project_try_it()
+    drawer_content = proj.get("drawer", {}).get("project_try_it")
+    drawer_steps = []
+    if drawer_content:
+        if isinstance(drawer_content, list):
+            drawer_steps = normalize_drawer_steps(drawer_content)
+        elif isinstance(drawer_content, dict):
+            drawer_steps = normalize_drawer_steps(drawer_content.get("steps") or [drawer_content])
     return render_template(
         "try_it_builder.html",
         email_captured=bool(session.get("try_email_captured")),
+        drawer_steps=drawer_steps,
     )
 
 

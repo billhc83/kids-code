@@ -17,6 +17,12 @@ def test_try_page_loads_without_login(client):
     assert resp.status_code == 200
 
 
+def test_try_page_populates_drawer_steps(client):
+    resp = client.get("/try")
+    assert resp.status_code == 200
+    assert b"DRAWER_STEPS = null" not in resp.data
+
+
 def test_try_builder_fragment_has_no_login_gate(client):
     resp = client.get("/try/builder")
     assert resp.status_code == 200
