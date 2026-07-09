@@ -38,12 +38,18 @@ STEPS = []
 
 SKETCH = """//>> Ready! | open | blocks
 //## int ledPin = 13;
-//>> Turn it ON | guided | editor | readonly:false
+//>> Turn it ON | verify | editor | readonly:false
 void setup() {
   //## pinMode(ledPin, OUTPUT);
 }
 void loop() {
-  //?? Turn the LED on
+}
+//==
+//## int ledPin = 13;
+void setup() {
+  //## pinMode(ledPin, OUTPUT);
+}
+void loop() {
   digitalWrite(ledPin, HIGH);
 }
 //>> Make it blink! | guided | blocks
