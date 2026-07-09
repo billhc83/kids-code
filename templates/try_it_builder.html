@@ -283,8 +283,18 @@ window.addEventListener('stepchange', function (e) {
   var commentLine = newText.substr(0, newText.indexOf(TYPE_HERE_COMMENT)).split('\n').length;
   var blankLine = commentLine + 1;
   editor.setPosition({ lineNumber: blankLine, column: 1 });
-  editor.revealLineInCenter(blankLine);
   editor.focus();
+  // setMode() (triggered by this same stepchange event, just above this
+  // listener) schedules editor.layout() at 10/50/150/300ms to catch the
+  // editor container's final size after the blocks<->editor flexbox
+  // transition settles. A reveal call made synchronously here runs against
+  // a still-reflowing container and scrolls to the wrong position once
+  // layout catches up — so re-issue it on the same schedule, same reason.
+  [0, 10, 50, 150, 300].forEach(function (delay) {
+    setTimeout(function () {
+      if (editor) editor.revealLineInCenter(blankLine);
+    }, delay);
+  });
 });
 
 function syncStepNavPadding() {
