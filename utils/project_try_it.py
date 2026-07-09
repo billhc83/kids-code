@@ -102,8 +102,10 @@ DRAWER_CONTENT = {
                         "label": "✨ Why this matters",
                         "content": (
                             "<p>You're looking at the <b>code editor</b> — the same place "
-                            "professional programmers write Arduino code. Type this exact "
-                            "line where the cursor is:</p>"
+                            "professional programmers write Arduino code. Inside "
+                            "<code>loop()</code> you'll see a highlighted comment, already "
+                            "selected for you. Just start typing — it'll replace the "
+                            "comment:</p>"
                             "<p><code>digitalWrite(ledPin, HIGH);</code></p>"
                             "<p>That single line means \"send power to the LED pin.\" Once "
                             "you've typed it, tap <b>Switch to Blocks</b> in the top bar — "
@@ -116,8 +118,8 @@ DRAWER_CONTENT = {
                         "label": "🔧 How To",
                         "content": (
                             "<ol>"
-                            "<li>Click inside the code editor where the highlighted line goes.</li>"
-                            "<li>Type: <code>digitalWrite(ledPin, HIGH);</code></li>"
+                            "<li>Look inside <code>loop()</code> — a highlighted comment marks the spot, already selected.</li>"
+                            "<li>Just start typing: <code>digitalWrite(ledPin, HIGH);</code> (it replaces the comment automatically).</li>"
                             "<li>Tap <b>Switch to Blocks</b> in the top bar.</li>"
                             "<li>Tap <b>Complete Step</b> once your block appears.</li>"
                             "</ol>"

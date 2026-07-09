@@ -260,6 +260,31 @@ window.addEventListener('stepchange', function(e) {
   }
 });
 
+// On the "Turn it ON" step (BB.STEPS index 1 — same numbering the email
+// gate below relies on), the editor step opens with an empty loop() and no
+// visual cue for where to type. Comments in the sketch source aren't
+// rendered by the block builder at all (they're stripped during parsing,
+// same as the header "// Arduino Sketch" lines already are), so a
+// placeholder can't be baked into utils/project_try_it.py's SKETCH — it has
+// to be inserted into the live editor content instead, pre-selected so the
+// student's first keystroke replaces it.
+var TYPE_HERE_STEP_INDEX = 1;
+var TYPE_HERE_PLACEHOLDER = '  // type here: digitalWrite(ledPin, HIGH);';
+window.addEventListener('stepchange', function (e) {
+  if (!e.detail || e.detail.view !== 'editor') return;
+  if (!(window.BB && BB.CURRENT_STEP === TYPE_HERE_STEP_INDEX)) return;
+  if (!editor) return;
+  var text = editor.getValue();
+  if (text.indexOf('void loop() {\n}') === -1) return; // already has real content — don't clobber it
+  var newText = text.replace('void loop() {\n}', 'void loop() {\n' + TYPE_HERE_PLACEHOLDER + '\n}');
+  editor.setValue(newText);
+  var lineNumber = newText.substr(0, newText.indexOf(TYPE_HERE_PLACEHOLDER)).split('\n').length;
+  var col = newText.split('\n')[lineNumber - 1].length + 1;
+  editor.setSelection(new monaco.Selection(lineNumber, 1, lineNumber, col));
+  editor.revealLineInCenter(lineNumber);
+  editor.focus();
+});
+
 function syncStepNavPadding() {
   const stepNav = document.getElementById('step-nav');
   if (!stepNav) return;
