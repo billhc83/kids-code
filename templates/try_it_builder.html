@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Arduino Web IDE</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* TOP BAR */
+  #top-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  select, button {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  #top-bar select {
+  min-width: 200px;
+}
+
+  button {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  /* WORKSPACE — fills all space between top-bar and serial monitor */
+  #workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* BLOCKS VIEW — fills workspace */
+  #blocks-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    background: #f8fafc;
+  }
+
+  /* Stretch whatever the block builder injects (iframe, div, etc.) */
+  #blocks-view > * {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* EDITOR VIEW — fills workspace */
+  #editor-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* EDITOR — fills editor-view */
+  #editor {
+    flex: 1;
+    min-height: 0;
+  }
+
+  #mode-toggle-btn.has-error {
+    border: 2px solid #ef4444;
+    position: relative;
+  }
+  #mode-toggle-btn.has-error::after {
+    content: '!';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #020617;
+  }
+
+  /* STATUS / ERROR */
+  .error {
+    color: #f97316;
+  }
+
+  /* GLOBAL DRAWER */
+  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:32px;
+    background:#ef4444; border-left:1px solid #1e293b;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:100; user-select:none; transition:all 0.2s; }
+  #drawer-tab:hover { background: #dc2626; width: 36px; }
+  #drawer-tab span { writing-mode:vertical-rl; text-orientation:mixed;
+    font-size:13px; font-weight: 600; letter-spacing:.1em; color:#ffffff;
+    text-transform:uppercase; transform:rotate(180deg); }
+  #drawer-panel { position:absolute; right:32px; top:48px; bottom:0; width:0;
+    background:#ffffff; border-left:1px solid #e2e8f0;
+    overflow:hidden; z-index:99; transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    display:flex; flex-direction:column; box-shadow: -4px 0 15px rgba(0,0,0,0.2); }
+  #drawer-panel.open { width:600px; }
+  #drawer-inner { width:600px; height:100%; display:flex; flex-direction:column; flex-shrink:0; }
+  .drawer-title { font-size:14px; font-weight:700; color:#1e293b;
+    text-transform:uppercase; letter-spacing:.05em; flex-shrink:0;
+    border-bottom:1px solid #f1f5f9; padding:16px 20px; background: #f8fafc; }
+  .drawer-tip { background:#eff6ff; border-bottom:1px solid #dbeafe;
+    padding:12px 20px; font-size:12px; color:#2563eb; line-height:1.6; flex-shrink:0; }
+  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #f1f5f9; padding: 0 10px; background: #fff; }
+  .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
+    background:none; border:none; border-bottom:2px solid transparent;
+    color:#64748b; cursor:pointer; text-align:center; transition:all 0.2s; font-weight: 600; }
+  .drawer-tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+  .drawer-tab-panels { flex:1; overflow-y:auto; }
+  .drawer-tab-panel { display:none; padding:20px; color:#1e293b; }
+  .drawer-tab-panel.active { display:block; }
+  .drawer-tab-panel p { font-size:15px; line-height:1.7; white-space:pre-wrap; margin-bottom:12px; }
+  .drawer-tab-panel img { width:100%; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  #step-nav {
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes bb-feedback-pop {
+    0%   { transform: scale(0.7); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #bb-feedback.success {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 3px #bbf7d0, 0 2px 12px rgba(34,197,94,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  #bb-feedback.error {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 3px #fecaca, 0 2px 12px rgba(239,68,68,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+</style>
+
+<!-- Monaco -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+<!-- Sim Engine -->
+<script src="/static/js/sim-engine.js"></script>
+</head>
+
+<body>
+
+<div id="top-bar">
+  {% if preset != 'open_coding' %}
+  <button id="save-btn">Save</button>
+  {% endif %}
+  <button id="copy-btn">Copy</button>
+  {% if preset != 'open_coding' %}
+  <button id="reset-btn">Reset</button>
+  {% endif %}
+  <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
+</div>
+
+<div id="main-content-wrapper" style="flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="step-nav" style="display:none; align-items:center; gap:10px; padding:6px 15px; background:#0969da; color:white; flex-shrink:0;">
+    <span id="step-label" style="flex:1; font-weight:700; font-size:12px;"></span>
+    <span id="step-progress" style="font-size:11px; opacity:0.8;"></span>
+    <span id="bb-feedback" style="display:none; font-size:16px; font-weight:900; padding:5px 18px; border-radius:8px; letter-spacing:0.5px; animation:bb-feedback-pop 0.3s ease;"></span>
+    <button id="prev-step-btn" style="display:none">← Prev</button>
+    <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
+  </div>
+
+  <div id="workspace">
+    <div id="blocks-view"></div>
+    <div id="editor-view" style="display: none;">
+      <div id="editor"></div>
+    </div>
+  </div>
+
+  <!-- GLOBAL DRAWER -->
+  <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
+    <div id="drawer-inner">
+      <div class="drawer-title">Info</div>
+      <div class="drawer-tabs"></div>
+      <div class="drawer-tab-panels"></div>
+    </div>
+  </div>
+  <div id="drawer-tab"><span>📖 Info</span></div>
+</div>
+
+<script>
+let editor;
+let currentMode = 'blocks';
+const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
+let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
+
+function switchTab(btn, panelId) {
+  const inner = document.getElementById('drawer-inner');
+  inner.querySelectorAll('.drawer-tab-btn').forEach(b => b.classList.remove('active'));
+  inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+window.flash = function(txt) {
+  const mEl = document.getElementById('msg');
+  if (mEl) {
+     mEl.textContent = txt; mEl.classList.add('show');
+     setTimeout(() => mEl.classList.remove('show'), 2500);
+  }
+  logToSerial(txt);
+};
+
+// Handle view changes from the block builder (e.g. on step change)
+window.addEventListener('stepchange', function(e) {
+  if (e.detail && e.detail.view) {
+    setMode(e.detail.view);
+  }
+  if (e.detail && e.detail.readOnly !== undefined && editor) {
+    editor.updateOptions({ readOnly: e.detail.readOnly });
+  }
+});
+
+function syncStepNavPadding() {
+  const stepNav = document.getElementById('step-nav');
+  if (!stepNav) return;
+  // Panel width (600) + Tab width (32) + original padding (15) = 647px
+  stepNav.style.paddingRight = drawerOpen ? '647px' : '47px';
+}
+
+window.openDrawer = function() {
+  drawerOpen = true;
+  document.getElementById('drawer-panel').classList.add('open');
+  syncStepNavPadding();
+};
+
+window.updateDrawer = function(stepIdx) {
+  if (!DRAWER_STEPS || !DRAWER_STEPS[stepIdx]) return;
+  const c = DRAWER_STEPS[stepIdx];
+  const inner = document.getElementById('drawer-inner');
+  
+  inner.querySelector('.drawer-title').textContent = c.title || 'Info';
+  
+  let tipEl = inner.querySelector('.drawer-tip');
+  if (c.tip) {
+    if (!tipEl) {
+      tipEl = document.createElement('div'); tipEl.className = 'drawer-tip';
+      inner.querySelector('.drawer-title').after(tipEl);
+    }
+    tipEl.innerHTML = c.tip;
+  } else if (tipEl) tipEl.remove();
+
+  const tabsC = inner.querySelector('.drawer-tabs');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  
+  // Cleanup old simulations before clearing the UI.
+  // _simCleanup is stored on the inner simDiv, not the panel element,
+  // so traverse into each panel's direct children to find it.
+  Array.from(pansC.children).forEach(child => {
+    [child, ...Array.from(child.children || [])].forEach(el => {
+      if (el._simCleanup) {
+        try { el._simCleanup(); } catch(e) { console.error('Sim cleanup error:', e); }
+      }
+    });
+  });
+
+  tabsC.innerHTML = ''; pansC.innerHTML = '';
+
+  const tabsRaw = c.tabs || [];
+  const tabs = Array.isArray(tabsRaw)
+    ? tabsRaw
+    : Object.entries(tabsRaw).map(([id, v]) => ({ id, ...v }));
+  tabs.forEach((tab, i) => {
+    const k = tab.id || tab.label || i;
+    const btn = document.createElement('button');
+    btn.className = 'drawer-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = tab.label || k;
+    btn.onclick = () => switchTab(btn, `dtab-${k}`);
+    tabsC.appendChild(btn);
+
+    const p = document.createElement('div');
+    p.className = 'drawer-tab-panel' + (i === 0 ? ' active' : '');
+    p.id = `dtab-${k}`;
+
+    if (tab.type === 'sim' && tab.sim_config) {
+      const simDiv = document.createElement('div');
+      simDiv.style.padding = '8px 0';
+      p.appendChild(simDiv);
+      pansC.appendChild(p);
+      const cfg = tab.sim_config;
+      setTimeout(() => {
+        if (!window.SimEngine) return;
+        if (cfg.mode === 'code_driven') {
+          SimEngine.initCodeDriven(simDiv, cfg);
+        } else {
+          SimEngine.init(simDiv, cfg);
+        }
+      }, 0);
+    } else {
+      p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
+      pansC.appendChild(p);
+    }
+  });
+};
+
+document.getElementById('drawer-tab').onclick = () => {
+  drawerOpen = !drawerOpen;
+  document.getElementById('drawer-panel').classList.toggle('open', drawerOpen);
+  syncStepNavPadding();
+};
+
+// Forward step changes to the parent page
+window.addEventListener('bb_step_update', function(e) {
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'bb_step_update', label: e.detail && e.detail.label }, '*');
+  }
+});
+
+// Listen for FAB save requests
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'bb_save_request') {
+    if (window.saveBlocks) window.saveBlocks();
+    // Give it a moment to complete the fetch then tell parent to close
+    setTimeout(() => window.parent.postMessage({type: 'bb_close'}, '*'), 500);
+  }
+});
+
+// Monaco
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: "",
+    language: 'cpp',
+    theme: 'vs',
+    fontSize: 14,
+    minimap: { enabled: false },
+    automaticLayout: true
+  });
+
+  // If the editor finishes loading after the block builder, 
+  // and we are in editor mode, sync the code now.
+  if (currentMode === 'editor' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  // Clear markers whenever the user types in the editor
+  editor.onDidChangeModelContent(() => {
+    if (typeof monaco !== 'undefined') monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+  });
+});
+
+async function toggleMode() {
+  setMode(currentMode === 'blocks' ? 'editor' : 'blocks');
+};
+
+async function setMode(mode) {
+  if (mode === currentMode) return;
+  
+  const blocksEl = document.getElementById('blocks-view');
+  const editorEl = document.getElementById('editor-view');
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+  const workspaceWrapper = document.getElementById('workspace');
+
+  // Update UI and state immediately for responsiveness
+  currentMode = mode;
+
+  var bbUI = document.getElementById('block-builder-ui');
+  if(bbUI){
+    var palette = bbUI.querySelector('#palette');
+    var workspace = bbUI.querySelector('#workspace');
+    var codepanel = bbUI.querySelector('#codepanel');
+    var statusbar = bbUI.querySelector('#statusbar');
+    if(palette) palette.style.display = mode === 'editor' ? 'none' : '';
+    if(workspace) workspace.style.display = mode === 'editor' ? 'none' : '';
+    if(codepanel) codepanel.style.display = mode === 'editor' ? 'none' : '';
+    if(statusbar) statusbar.style.display = mode === 'editor' ? 'none' : '';
+  }
+  editorEl.style.display = mode === 'editor' ? 'flex' : 'none';
+
+  if (mode === 'editor') {
+    workspaceWrapper.style.flexDirection = 'row-reverse';
+    blocksEl.style.flex = '0 0 252px';
+    editorEl.style.flex = '1';
+  } else {
+    workspaceWrapper.style.flexDirection = 'column';
+    blocksEl.style.flex = '1';
+    editorEl.style.flex = '1';
+  }
+
+  if (mode === 'blocks') {
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Switch to Editor';
+      toggleBtn.classList.remove('has-error');
+    }
+  } else {
+    if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
+    if (editor) {
+      const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+      editor.updateOptions({ readOnly: !!meta.readOnly });
+      // Trigger layout multiple times to ensure we catch the final container size 
+      // after the browser finishes the flexbox reflow.
+      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
+    }
+  }
+
+  if (mode === 'blocks') {
+    // Sync Editor -> Blocks
+    const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+    if (!meta.readOnly && editor) {
+      const code = editor.getValue();
+      try {
+        const res = await fetch('/try/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (window.setBlockData) window.setBlockData(data);
+      } catch (e) {
+        console.error("Failed to parse code into blocks:", e);
+      }
+    }
+  } else {
+    // Sync Blocks -> Editor
+    if (window.getGeneratedCode && editor) {
+      const code = window.getGeneratedCode();
+      editor.setValue(code);
+    }
+  }
+}
+
+// UI helpers
+function logToSerial(msg, isError = false) {
+  if (isError) console.error(msg); else console.log(msg);
+}
+
+async function loadBlockBuilder() {
+  const blocksView = document.getElementById('blocks-view');
+
+  // Cancel any previous init poll that may still be running
+  if (window._bbCheckInterval) {
+    clearInterval(window._bbCheckInterval);
+    window._bbCheckInterval = null;
+  }
+
+  // Wipe stale globals so nothing downstream uses leftover state
+  window.BB_CONFIG = null;
+  window.getGeneratedCode = null;
+
+  try {
+    const response = await fetch('/try/builder');
+    if (!response.ok) throw new Error('Failed to fetch block builder');
+    const html = await response.text();
+
+    // Parse into a temp element using innerHTML — this does NOT execute scripts,
+    // which is exactly what we want so we can control the load order ourselves.
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Read the config from the JSON data script tag (no eval needed).
+    const configEl = temp.querySelector('script[type="application/json"]#bb-config-json');
+    if (configEl) {
+      try { window.BB_CONFIG = JSON.parse(configEl.textContent); }
+      catch (e) { console.error('[BB] config parse error:', e); }
+      configEl.remove();
+    }
+
+    // Pull remaining script elements out before injecting (external src scripts only).
+    const scripts = [...temp.querySelectorAll('script')];
+    scripts.forEach(s => s.remove());
+
+    // Inject the script-free HTML (link stylesheet + block builder markup)
+    blocksView.innerHTML = temp.innerHTML;
+
+    // Load each external script sequentially, awaiting onload before the next.
+    // This guarantees bb-blocks → bb-render → bb-validation → block_builder
+    // always executes in the correct dependency order.
+    for (const s of scripts) {
+      const rawSrc = s.getAttribute('src');
+      if (!rawSrc) continue;
+      const src = new URL(rawSrc, window.location.href).href;
+
+      // Remove any previously injected copy so the browser re-executes the
+      // script rather than silently skipping it as a duplicate URL.
+      const prev = document.head.querySelector(`script[data-bb-src="${src}"]`);
+      if (prev) prev.parentNode.removeChild(prev);
+
+      await new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.setAttribute('data-bb-src', src);
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('[BB] failed to load: ' + src));
+        document.head.appendChild(el);
+      });
+    }
+
+    // All scripts have now run in the correct order — configure the UI
+    const cfg = window.BB_CONFIG;
+    if (!cfg) throw new Error('[BB] BB_CONFIG missing after script load');
+
+    setMode(cfg.default_view || 'blocks');
+    const isProg = window.isProgressionMode && window.isProgressionMode();
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (toggleBtn) toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
+    const stepNav = document.getElementById('step-nav');
+    if (stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+    if (cfg.readonly_mode && editor) editor.updateOptions({ readOnly: true });
+
+  } catch (err) {
+    console.error('Block Builder Load Error:', err);
+    blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';
+  }
+}
+
+// Events
+const saveBtn = document.getElementById('save-btn');
+if (saveBtn) {
+  saveBtn.onclick = function() {
+    if (window.saveBlocks) window.saveBlocks();
+  };
+}
+document.getElementById('copy-btn').onclick = function() {
+  if (window.copyCode) window.copyCode();
+  else {
+    const code = window.getGeneratedCode ? window.getGeneratedCode() : editor.getValue();
+    navigator.clipboard.writeText(code).then(() => logToSerial('Copied!'));
+  }
+};
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+  resetBtn.onclick = function() {
+    if (window.resetBlocks) {
+      window.resetBlocks();
+      if (typeof drawerOpen !== 'undefined' && !drawerOpen) {
+         if (window.openDrawer) window.openDrawer();
+      }
+    }
+  };
+}
+// Init
+loadBlockBuilder();
+if (DRAWER_STEPS) updateDrawer(0);
+
+document.getElementById('next-step-btn').onclick = function(){
+  if(window.bbNext) window.bbNext();
+};
+document.getElementById('prev-step-btn').onclick = function(){
+  if(window.bbPrev) window.bbPrev();
+};
+
+window.addEventListener('bb_next_state', function(e){
+  var btn = document.getElementById('next-step-btn');
+  var prevBtn = document.getElementById('prev-step-btn');
+  var nav = document.getElementById('step-nav');
+  var fbEl = document.getElementById('bb-feedback');
+  var d = e.detail.state; // Accessing the state object from the detail
+
+  // Ensure the navigation bar is visible if we are receiving state updates
+  nav.style.display = 'flex';
+
+  btn.textContent = d.text || 'Complete Step';
+  btn.style.opacity = d.ready ? '1' : '0.5';
+  btn.style.pointerEvents = d.ready ? 'auto' : 'none';
+
+  if(d.hidden) btn.style.display = 'none';
+  else btn.style.display = '';
+
+  if(d.prevVisible) prevBtn.style.display = '';
+  else prevBtn.style.display = 'none';
+
+  // Show feedback message to the left of the nav buttons
+  if (d.feedback) {
+    fbEl.textContent = d.feedback.text;
+    fbEl.className = d.feedback.type; // 'success' or 'error'
+    fbEl.style.display = '';
+    // Re-trigger animation by forcing reflow
+    fbEl.style.animation = 'none';
+    fbEl.offsetHeight;
+    fbEl.style.animation = '';
+  } else if (d.hasOwnProperty('feedback')) {
+    // feedback: null means clear it
+    fbEl.style.display = 'none';
+    fbEl.textContent = '';
+    fbEl.className = '';
+  }
+});
+
+window.addEventListener('bb_step_update', function(e){
+  document.getElementById('step-nav').style.display = 'flex';
+  document.getElementById('step-label').textContent = e.detail.label || '';
+  document.getElementById('step-progress').textContent = e.detail.progress || '';
+});
+
+// Initial sync for step nav padding based on default drawer state
+syncStepNavPadding();
+</script>
+
+<div id="try-email-gate-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div id="try-email-gate-modal" style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);">
+    <h2 style="margin:0 0 8px;font-size:18px;">Thanks for trying it out!</h2>
+    <p style="margin:0 0 16px;font-size:13px;color:#475569;">Want a reminder about KidsCode? Leave your email and we'll send you one note — that's it.</p>
+    <form id="try-email-gate-form">
+      <input type="text" name="website" id="try-gate-honeypot" style="position:absolute;left:-9999px;" tabindex="-1" autocomplete="off">
+      <input type="email" id="try-gate-email" placeholder="parent@example.com" required style="width:100%;padding:8px;margin-bottom:10px;border:1px solid #e2e8f0;border-radius:6px;">
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#475569;margin-bottom:16px;">
+        <input type="checkbox" id="try-gate-consent" required style="margin-top:2px;">
+        I'd like to receive one follow-up email about KidsCode.
+      </label>
+      <div id="try-gate-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:10px;"></div>
+      <button type="submit" style="width:100%;padding:10px;background:#22c55e;color:#020617;font-weight:600;border:none;border-radius:6px;">Continue</button>
+    </form>
+    <div id="try-email-gate-thanks" style="display:none;text-align:center;">
+      <p style="font-size:16px;">Thanks for your interest! 🎉</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // BB.STEPS index whose completion should trigger the gate — index 1 is
+  // "Turn it ON" in utils/project_try_it.py's SKETCH (index 0 "Ready!" is a
+  // non-interactive global-only step). Verified via the parse_steps check
+  // in Task 2 Step 3 of the implementation plan.
+  var GATE_AFTER_STEP_INDEX = 1;
+  var emailCaptured = {{ 'true' if email_captured else 'false' }};
+  var overlay = document.getElementById('try-email-gate-overlay');
+  var form = document.getElementById('try-email-gate-form');
+  var thanks = document.getElementById('try-email-gate-thanks');
+  var errorEl = document.getElementById('try-gate-error');
+
+  function showGate(proceedFn) {
+    form.style.display = '';
+    thanks.style.display = 'none';
+    errorEl.style.display = 'none';
+    overlay.style.display = 'flex';
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      var email = document.getElementById('try-gate-email').value.trim();
+      var consent = document.getElementById('try-gate-consent').checked;
+      var honeypot = document.getElementById('try-gate-honeypot').value;
+      fetch('/try/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, consent: consent, website: honeypot }),
+      })
+        .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+        .then(function () {
+          emailCaptured = true;
+          form.style.display = 'none';
+          thanks.style.display = '';
+          setTimeout(function () {
+            overlay.style.display = 'none';
+            proceedFn();
+          }, 1200);
+        })
+        .catch(function () {
+          errorEl.textContent = 'Something went wrong — please try again.';
+          errorEl.style.display = '';
+        });
+    };
+  }
+
+  // window.bbNext (static/js/bb-validation.js) is the actual step-advance
+  // handler wired to the Next-step button's onclick — bb_next_state is only
+  // an informational event for the button's label/enabled state, it cannot
+  // be used to intercept or cancel an advance. bbNext is defined inside the
+  // block-builder scripts that loadBlockBuilder() injects asynchronously
+  // (see /try/builder), so poll until it exists before wrapping it — same
+  // defensive pattern the copied template already uses for window._bbCheckInterval.
+  var installPoll = setInterval(function () {
+    if (typeof window.bbNext !== 'function') return;
+    clearInterval(installPoll);
+    var originalBbNext = window.bbNext;
+    window.bbNext = function () {
+      var atGateStep = window.BB && BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
+      var isAdvanceClick = window.BB && BB.nextBtnState && BB.nextBtnState.mode === 'next-mode';
+      if (!emailCaptured && atGateStep && isAdvanceClick) {
+        showGate(originalBbNext);
+        return;
+      }
+      originalBbNext();
+    };
+  }, 100);
+})();
+</script>
+
+</body>
+</html>
