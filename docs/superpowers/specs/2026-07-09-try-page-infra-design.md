@@ -58,10 +58,30 @@ Routes:
 
 | Route | Method | Purpose |
 |---|---|---|
-| `/try` | GET | Renders the curated try-it project via the block builder fragment, same rendering approach as `demo_builder()`, sourced from `utils/project_try_it.py` instead of a hardcoded sketch string. No circuit tab — SimEngine is the only visual, per the decision below. |
+| `/try` | GET | Renders the curated try-it project via a new template, `templates/try_it_builder.html` (see "Template: stripped-down IDE" below), sourced from `utils/project_try_it.py` instead of a hardcoded sketch string. No circuit tab — SimEngine is the only visual, per the decision below. |
 | `/try/parse` | POST | Anonymous equivalent of `/parse` (routes/builder.py:73) — turns edited sketch text into block JSON. Input-capped (see Abuse boundary). |
 | `/try/sim` | POST | Anonymous equivalent of `/sim/run` (routes/builder.py:81) — runs `utils.sim_engine.run()` against the client's current sketch and returns the animation timeline. Input-capped (see Abuse boundary). No `award_simulator_badge` call (that's tied to a logged-in `session["user_id"]`, doesn't apply here). |
 | `/try/lead` | POST | Captures the email-gate submission (see Email gate below). CSRF-exempt (anonymous, same treatment as other public POST endpoints in this app), honeypot-protected, rate-limited. |
+
+### Template: stripped-down IDE (correction from initial draft)
+
+Investigated during planning: neither existing template fits.
+
+- `templates/block_builder_fragment.html` (used by the existing `/demo/builder` splash
+  widget) is blocks-only — it has **no Monaco editor**, so it can't deliver the blocks↔Monaco
+  toggle this page needs.
+- `templates/components/arduino_interface.html` (used by the login-gated `standalone_ide`
+  route, where Monaco and `/parse` actually live) **is the full hardware IDE** — compile/upload
+  buttons, a USB port picker, and live calls to `http://127.0.0.1:52010/...` (the local
+  KidsCode Link companion app that talks to a physical Arduino). Unusable as-is for an
+  anonymous browser visitor with no hardware.
+
+Resolution (matches the earlier framing decision to "strip all of the Arduino interface off
+the block builder"): a new template, `templates/try_it_builder.html`, is a trimmed copy of
+`arduino_interface.html` with the compile/upload/port-picker/serial-agent chrome removed,
+keeping only the blocks↔Monaco toggle, the drawer panel, and the sim tab. Its `/parse` calls
+point at `/try/parse` instead of `/parse` (see Abuse boundary — same reasoning, different
+route). `/try` renders this template instead of `block_builder_fragment.html`.
 
 ### Why the sim endpoints can safely accept client-submitted code
 
@@ -78,6 +98,14 @@ already handles correctly — no match, no timeline event).
 
 So `/try/parse` and `/try/sim` accept real client-submitted sketch text, same as the
 authenticated versions. The abuse surface is volume/size, not code injection.
+
+**Frontend wiring note**: `SimEngine.initCodeDriven()` (static/js/sim-engine.js:656) currently
+hardcodes `fetch('/sim/run', ...)`. This needs a small additive change — accept an optional
+endpoint override on `simConfig` (e.g. `simConfig.endpoint`), defaulting to `/sim/run` when
+absent so all 19 existing lesson drawer sim tabs are unaffected. `utils/project_try_it.py`'s
+`sim_config` sets `endpoint: "/try/sim"`. Same treatment needed wherever `/try_it_builder.html`
+wires up its copy of `arduino_interface.html`'s `/parse` calls (routes/builder.py:73) — point
+them at `/try/parse` instead.
 
 ### Abuse boundary (anonymous endpoints only)
 
