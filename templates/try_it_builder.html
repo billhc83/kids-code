@@ -269,19 +269,21 @@ window.addEventListener('stepchange', function(e) {
 // to be inserted into the live editor content instead, pre-selected so the
 // student's first keystroke replaces it.
 var TYPE_HERE_STEP_INDEX = 1;
-var TYPE_HERE_PLACEHOLDER = '  // type here: digitalWrite(ledPin, HIGH);';
+var TYPE_HERE_COMMENT = '  // Type your code below this line:';
 window.addEventListener('stepchange', function (e) {
   if (!e.detail || e.detail.view !== 'editor') return;
   if (!(window._BB && window._BB.CURRENT_STEP === TYPE_HERE_STEP_INDEX)) return;
   if (!editor) return;
   var text = editor.getValue();
   if (text.indexOf('void loop() {\n}') === -1) return; // already has real content — don't clobber it
-  var newText = text.replace('void loop() {\n}', 'void loop() {\n' + TYPE_HERE_PLACEHOLDER + '\n}');
+  // Comment marks the spot; a blank line below it is where the student
+  // actually types, so the cursor lands on empty space, not selected text.
+  var newText = text.replace('void loop() {\n}', 'void loop() {\n' + TYPE_HERE_COMMENT + '\n\n}');
   editor.setValue(newText);
-  var lineNumber = newText.substr(0, newText.indexOf(TYPE_HERE_PLACEHOLDER)).split('\n').length;
-  var col = newText.split('\n')[lineNumber - 1].length + 1;
-  editor.setSelection(new monaco.Selection(lineNumber, 1, lineNumber, col));
-  editor.revealLineInCenter(lineNumber);
+  var commentLine = newText.substr(0, newText.indexOf(TYPE_HERE_COMMENT)).split('\n').length;
+  var blankLine = commentLine + 1;
+  editor.setPosition({ lineNumber: blankLine, column: 1 });
+  editor.revealLineInCenter(blankLine);
   editor.focus();
 });
 
