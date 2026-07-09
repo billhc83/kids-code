@@ -193,9 +193,6 @@
 <body>
 
 <div id="top-bar">
-  {% if preset != 'open_coding' %}
-  <button id="save-btn">Save</button>
-  {% endif %}
   <button id="copy-btn">Copy</button>
   {% if preset != 'open_coding' %}
   <button id="reset-btn">Reset</button>
@@ -556,12 +553,6 @@ async function loadBlockBuilder() {
 }
 
 // Events
-const saveBtn = document.getElementById('save-btn');
-if (saveBtn) {
-  saveBtn.onclick = function() {
-    if (window.saveBlocks) window.saveBlocks();
-  };
-}
 document.getElementById('copy-btn').onclick = function() {
   if (window.copyCode) window.copyCode();
   else {
