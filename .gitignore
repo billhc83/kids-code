@@ -37,3 +37,6 @@ my_output.json
 # Marketing/walkthrough video scratch work — not part of the app
 marketing-video/
 movie2-capture/
+
+# Subagent-driven-development scratch (progress ledger, task briefs/reports)
+.superpowers/
