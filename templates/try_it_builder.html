@@ -417,6 +417,28 @@ async function toggleMode() {
   setMode(currentMode === 'blocks' ? 'editor' : 'blocks');
 };
 
+// Parses the current editor text into blocks and applies it to BB.SECTIONS.
+// Used both by setMode('blocks') (switching views) and by the bbNext
+// wrapper below (clicking Check Code/Complete Step while still in editor
+// view — without this, that click validated whatever was last synced,
+// which on a step that opens in editor view is nothing).
+window.syncEditorToBlocks = async function () {
+  const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+  if (meta.readOnly || !editor) return;
+  const code = editor.getValue();
+  try {
+    const res = await fetch('/try/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (window.setBlockData) window.setBlockData(data);
+  } catch (e) {
+    console.error("Failed to parse code into blocks:", e);
+  }
+};
+
 async function setMode(mode) {
   if (mode === currentMode) return;
   
@@ -469,21 +491,7 @@ async function setMode(mode) {
 
   if (mode === 'blocks') {
     // Sync Editor -> Blocks
-    const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
-    if (!meta.readOnly && editor) {
-      const code = editor.getValue();
-      try {
-        const res = await fetch('/try/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
-        });
-        const data = await res.json();
-        if (window.setBlockData) window.setBlockData(data);
-      } catch (e) {
-        console.error("Failed to parse code into blocks:", e);
-      }
-    }
+    await window.syncEditorToBlocks();
   } else {
     // Sync Blocks -> Editor
     if (window.getGeneratedCode && editor) {
@@ -731,13 +739,29 @@ syncStepNavPadding();
     clearInterval(installPoll);
     var originalBbNext = window.bbNext;
     window.bbNext = function () {
-      var atGateStep = window._BB && window._BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
-      var isAdvanceClick = window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'next-mode';
-      if (!emailCaptured && atGateStep && isAdvanceClick) {
-        showGate(originalBbNext);
-        return;
+      var proceed = function () {
+        var atGateStep = window._BB && window._BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
+        var isAdvanceClick = window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'next-mode';
+        if (!emailCaptured && atGateStep && isAdvanceClick) {
+          showGate(originalBbNext);
+          return;
+        }
+        originalBbNext();
+      };
+      // Clicking "Check Code" while still in editor view (never having
+      // tapped "Switch to Blocks") would otherwise validate whatever was
+      // last synced into BB.SECTIONS — nothing, on a step that opens in
+      // editor view. Sync first, same as switching modes does, but only
+      // when we're about to actually check (not on the second "Next Step"
+      // click, which doesn't re-validate). syncEditorToBlocks() itself
+      // no-ops on a readonly editor, so this is safe on any step.
+      var aboutToCheck = typeof currentMode !== 'undefined' && currentMode === 'editor'
+        && window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'check-mode';
+      if (aboutToCheck) {
+        window.syncEditorToBlocks().then(proceed);
+      } else {
+        proceed();
       }
-      originalBbNext();
     };
   }, 100);
 })();
