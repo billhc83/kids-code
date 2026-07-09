@@ -167,6 +167,15 @@
     BB.SECTIONS.setup  = data.setup  || [];
     BB.SECTIONS.loop   = data.loop   || [];
     BB.clearSelection();
+    // Without these, an editor->blocks sync (see setMode() in the IDE
+    // templates) silently updates BB.SECTIONS but never re-renders the
+    // workspace, never re-runs step validation (the Next/Check button's
+    // ready state goes stale), and never refreshes #codeout — which is
+    // also what the sim tab's code-driven mode reads via
+    // getGeneratedCode(). Same render+genCode pairing resetBlocks() already
+    // uses elsewhere in this file after any other BB.SECTIONS mutation.
+    BB.render();
+    BB.genCode();
     if (BB.MASTER_SKETCH) BB.validateSketch();
   };
 
