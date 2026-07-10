@@ -193,3 +193,81 @@ def test_login_allows_provisioned_user_regardless_of_subscription_status(client,
     response = client.post("/login", data={"username": "classuser", "password": "password123"})
     assert response.status_code == 302
     assert "/subscribe" not in response.location
+
+
+def test_login_blocks_linked_student_when_parent_subscription_inactive(client, mock_supabase, monkeypatch):
+    # Parent-created student sub-accounts (utils.auth.create_student_for_parent) default
+    # to subscription_status='none' on their own row — access should ride on the linking
+    # parent's live status, checked via routes.auth.get_linking_parent.
+    hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()
+    mock_student = {
+        "id": "student-1",
+        "username": "kiduser",
+        "password_hash": hashed,
+        "is_parent": False,
+        "is_admin": False,
+        "is_verified": True,
+        "user_type": "standard",
+        "subscription_status": "none",
+    }
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/users?username=eq.kiduser&limit=1",
+        json=[mock_student],
+        status=200
+    )
+    monkeypatch.setattr(
+        "routes.auth.get_linking_parent",
+        lambda student_id: {"id": "parent-1", "subscription_status": "canceled"},
+    )
+
+    response = client.post("/login", data={"username": "kiduser", "password": "password123"})
+    assert response.status_code == 302
+    assert "/subscribe/pending" in response.location
+    with client.session_transaction() as sess:
+        # Resuming Checkout from this page must act on the PARENT's account, not the
+        # student's (the student has no real email/payment method of its own).
+        assert sess["pending_subscription_user_id"] == "parent-1"
+
+
+def test_login_allows_linked_student_when_parent_subscription_active(client, mock_supabase, monkeypatch):
+    hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()
+    mock_student = {
+        "id": "student-2",
+        "username": "kiduser2",
+        "password_hash": hashed,
+        "is_parent": False,
+        "is_admin": False,
+        "is_verified": True,
+        "user_type": "standard",
+        "subscription_status": "none",
+        "is_teacher": False,
+        "first_login_completed": True,
+        "agreed_at": "2026-01-01T00:00:00+00:00",
+    }
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/users?username=eq.kiduser2&limit=1",
+        json=[mock_student],
+        status=200
+    )
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/progression?user_id=eq.student-2&lesson_key=eq.getting_started",
+        json=[],
+        status=200
+    )
+    mock_supabase.add(
+        responses.POST,
+        "https://mock-project.supabase.co/rest/v1/progression",
+        json=[],
+        status=201
+    )
+    monkeypatch.setattr(
+        "routes.auth.get_linking_parent",
+        lambda student_id: {"id": "parent-2", "subscription_status": "active"},
+    )
+
+    response = client.post("/login", data={"username": "kiduser2", "password": "password123"})
+    assert response.status_code == 302
+    assert "/subscribe" not in response.location

@@ -6,7 +6,7 @@ from utils.auth import (
     hash_password, verify_token,
     resend_verification_email, create_reset_token, send_reset_email,
     verify_reset_token, reset_password_with_token, mark_first_login_complete,
-    is_legacy_hash, upgrade_password_hash
+    is_legacy_hash, upgrade_password_hash, get_linking_parent
 )
 from utils.progression import seed_first_lesson
 
@@ -32,8 +32,19 @@ def login():
             flash("Please verify your email before logging in.")
             return redirect(url_for("auth.check_email"))
         if user["user_type"] == "standard" and user.get("subscription_status") not in ("active", "past_due"):
-            flash("Your subscription isn't active yet.")
-            return redirect(url_for("billing.subscribe_pending", user_id=user["id"]))
+            # Parent-created student sub-accounts (utils.auth.create_student_for_parent)
+            # never have their own Stripe subscription — their access rides on the
+            # linking parent's live status instead of their own (frozen) row.
+            linking_parent = get_linking_parent(user["id"])
+            if linking_parent:
+                if linking_parent.get("subscription_status") not in ("active", "past_due"):
+                    session["pending_subscription_user_id"] = linking_parent["id"]
+                    flash("Your parent's subscription isn't active. Ask them to renew it.")
+                    return redirect(url_for("billing.subscribe_pending"))
+            else:
+                session["pending_subscription_user_id"] = user["id"]
+                flash("Your subscription isn't active yet.")
+                return redirect(url_for("billing.subscribe_pending"))
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]

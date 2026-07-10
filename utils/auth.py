@@ -50,6 +50,16 @@ def get_user_by_stripe_subscription_id(subscription_id):
     resp = supabase.table("users").select("*").eq("stripe_subscription_id", subscription_id).execute()
     return resp.data[0] if resp.data else None
 
+def get_linking_parent(student_id):
+    """If student_id is a parent-created student sub-account (utils.auth.create_student_for_parent),
+    return the linking parent's user row. Returns None for a standalone self-registered account —
+    used by the login gate (routes/auth.py) to check the parent's live subscription_status instead
+    of the student row's own (which is never independently paid for)."""
+    link_resp = supabase.table("parent_student_links").select("parent_id").eq("student_id", student_id).execute()
+    if not link_resp.data:
+        return None
+    return get_user_by_id(link_resp.data[0]["parent_id"])
+
 def create_user(email, username, password_hash, is_parent=False, agreed_at=None, subscription_status="none"):
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
