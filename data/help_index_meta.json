@@ -1,8 +1,8 @@
 {
   "embedding_model": "text-embedding-3-small",
   "dimension": 1536,
-  "built_at": "2026-07-06T21:54:35.612029+00:00",
-  "corpus_hash_auto": "eac8a3bc2d56717f3dee21689a98b1a51ca1a1df466ac6d7dc1ac91a08c0e27d",
+  "built_at": "2026-07-07T11:42:19.734460+00:00",
+  "corpus_hash_auto": "c669ea917116a7a4a8d3a32956c9ffaa5f02c0452a901581f5d78213f93a0428",
   "corpus_hash_authored": "7eecd73401fdd48e37b3b4756131b6355e2fd4d8f5a591e6a83f9c72a3537001",
   "chunks": [
     {
@@ -1743,6 +1743,16 @@
       "tab_key": "pins",
       "title": "Project 1: Lights ON!! (🤖 Pins)",
       "text": "Meet the Pins — Your Arduino's Body! Imagine your Arduino is a tiny robot brain 🤖 The pins are how it interacts with the world — like arms, ears, and a mouth! Without pins, the brain would just sit there thinking. Pins let it sense and act . 👂 The \"Ear\" Pins (Inputs) These pins listen to the world: ❓ Is someone pressing my button? ❓ Is it dark in this room? ❓ Is there something moving nearby? 🗣️ The \"Mouth\" Pins (Outputs) These pins talk to your components: 💡 Turn on the light! ⚙️ Spin the motor! 🎵 Beep-beep! Two Ways to Talk 1️⃣ On or Off (Digital) Like a light switch — YES or NO 💡 2️⃣ A Little Bit (PWM) Like a volume knob — dim lights or slow motors 🔉",
+      "tags": []
+    },
+    {
+      "id": "project_one:upload",
+      "source": "auto",
+      "project_key": "project_one",
+      "step_index": null,
+      "tab_key": "upload",
+      "title": "Project 1: Lights ON!! (🚀 Let's Go!)",
+      "text": "This Is Your First Project — Here's Exactly What To Do! 🚀 No worries if this is all brand new. Just follow these steps in order. 1️⃣ Build the circuit Use the Build tab to place your LED, resistor, and wires. Follow each step — you don't need your Arduino plugged in yet. 2️⃣ Check out your Sketch 📖 The code you see is your Sketch — the rule book we just talked about. It's already written for you! Right now, your job is just to send it to your Arduino. 3️⃣ Plug in your Arduino 🔌 Once the circuit is built, plug your Arduino into the computer with its USB cable. 4️⃣ Look for KidsCode Link 🔗 Check for ● KidsCode Link near your Sketch. If it says Offline , open the KidsCode Link app on your computer, then look again. 5️⃣ Pick your board 🎯 Open the dropdown menu and make sure your Arduino is selected. Don't see it? Click Refresh and check again. 6️⃣ Click Upload ⬆️ Press the Upload button and watch the messages — they'll let you know when your code has made it onto the Arduino. 7️⃣ Watch for the light! 💡 If everything worked, your LED should turn on! If it doesn't, that's okay — check the Tips or ask for help. Every builder hits a snag sometimes!",
       "tags": []
     },
     {

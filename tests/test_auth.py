@@ -102,7 +102,8 @@ def test_register_success(client, mock_supabase):
         "email": "test@example.com",
         "username": "newuser",
         "password": "password123",
-        "is_parent": "false"
+        "is_parent": "false",
+        "agree_tos": "true"
     })
 
     assert response.status_code == 302
