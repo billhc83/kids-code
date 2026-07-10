@@ -147,6 +147,70 @@ def send_verification_email(to_email, token):
     if not resp.ok:
         print(f"[send_verification_email] Resend error {resp.status_code}: {resp.text}")
 
+def create_registration_invite(email, referral_code=None):
+    """Issue a one-time registration-invite token for /register/invite. See
+    docs/superpowers/specs/2026-07-10-stripe-registration-gate-design.md
+    ('Registration-access gate') for why /register requires one of these."""
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60)).isoformat()
+    supabase.table("registration_invites").insert({
+        "token": token,
+        "email": email,
+        "referral_code": referral_code,
+        "expires_at": expires,
+    }).execute()
+    return token
+
+def get_valid_registration_invite(token):
+    """Return the invite row if token exists, isn't expired, and hasn't been used yet.
+    None otherwise (covers missing/unknown/expired/already-used) — callers redirect back
+    to /register/invite in every None case, no need to distinguish why."""
+    if not token:
+        return None
+    resp = supabase.table("registration_invites").select("*").eq("token", token).execute()
+    if not resp.data:
+        return None
+    invite = resp.data[0]
+    if invite.get("used_at"):
+        return None
+    expires_at = invite.get("expires_at")
+    if expires_at:
+        expires_dt = datetime.datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if expires_dt.tzinfo is None:
+            expires_dt = expires_dt.replace(tzinfo=datetime.timezone.utc)
+        if datetime.datetime.now(datetime.timezone.utc) > expires_dt:
+            return None
+    return invite
+
+def mark_registration_invite_used(token):
+    supabase.table("registration_invites").update({
+        "used_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }).eq("token", token).execute()
+
+def send_registration_invite_email(to_email, token):
+    base_url = os.getenv("BASE_URL", "https://app.kidscode.ca")
+    register_url = f"{base_url}/register?token={token}"
+    resp = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "from": "KidsCode <no-reply@kidscode.ca>",
+            "to": to_email,
+            "subject": "Your KidsCode registration link",
+            "html": f"""
+                <h2>Ready to start building?</h2>
+                <p>Click the link below to create your KidsCode account:</p>
+                <a href="{register_url}">{register_url}</a>
+                <p>This link expires in 60 minutes.</p>
+            """
+        }
+    )
+    if not resp.ok:
+        print(f"[send_registration_invite_email] Resend error {resp.status_code}: {resp.text}")
+
 def count_students_for_parent(parent_id):
     resp = supabase.table("parent_student_links").select("id", count="exact").eq("parent_id", parent_id).execute()
     return resp.count if resp.count is not None else 0

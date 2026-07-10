@@ -17,5 +17,20 @@
       explicitly held back per "we will not push until we have implemented
       this full feature."
 
-- [ ] Stripe Checkout / registration / webhook flow — separate future spec,
-      not started.
+- [ ] Stripe Checkout / registration / webhook flow — implemented (see
+      `docs/superpowers/specs/2026-07-10-stripe-registration-gate-design.md`).
+      Remaining before launch, all on Bill's side ("Config / dependencies" +
+      handoff section of that doc):
+      - Run `migrations/add_subscription_columns.sql` and
+        `migrations/add_registration_invites_table.sql` against Supabase.
+      - Set up the Stripe product/price + dashboard, and the
+        `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` / `STRIPE_WEBHOOK_SECRET`
+        / `STRIPE_PRICE_ID` env vars.
+
+- [ ] Two non-blocking follow-ups flagged in that same spec, not yet built:
+      - Cleanup cron for abandoned `pending` users rows and expired
+        `registration_invites` rows (see "Abandoned `pending` rows" /
+        "Abandoned-row cleanup now covers two tables" in the spec).
+      - Referral-code attribution logic — `referral_code` is already captured
+        on `registration_invites` but nothing acts on it yet (see "Referral
+        code — captured, not yet acted on" in the spec).

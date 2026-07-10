@@ -6,7 +6,9 @@ from utils.auth import (
     hash_password, verify_token,
     resend_verification_email, create_reset_token, send_reset_email,
     verify_reset_token, reset_password_with_token, mark_first_login_complete,
-    is_legacy_hash, upgrade_password_hash, get_linking_parent
+    is_legacy_hash, upgrade_password_hash, get_linking_parent,
+    create_registration_invite, get_valid_registration_invite,
+    mark_registration_invite_used, send_registration_invite_email
 )
 from utils.progression import seed_first_lesson
 
@@ -27,10 +29,11 @@ def login():
             return render_template("login.html")
         if is_legacy_hash(user["password_hash"]):
             upgrade_password_hash(user["id"], password)
-        if not user["is_verified"]:
-            session["pending_email"] = user["email"]
-            flash("Please verify your email before logging in.")
-            return redirect(url_for("auth.check_email"))
+        # Checked before is_verified: a standard signup's verification email isn't sent
+        # until the Stripe webhook fires (see routes/billing.py's handle_checkout_completed),
+        # so an unpaid account is always both unverified AND subscription-pending. Checking
+        # subscription first avoids telling someone "check your email for a link" when no
+        # link was ever sent — the real blocker is the missing subscription, not email.
         if user["user_type"] == "standard" and user.get("subscription_status") not in ("active", "past_due"):
             # Parent-created student sub-accounts (utils.auth.create_student_for_parent)
             # never have their own Stripe subscription — their access rides on the
@@ -45,6 +48,10 @@ def login():
                 session["pending_subscription_user_id"] = user["id"]
                 flash("Your subscription isn't active yet.")
                 return redirect(url_for("billing.subscribe_pending"))
+        if not user["is_verified"]:
+            session["pending_email"] = user["email"]
+            flash("Please verify your email before logging in.")
+            return redirect(url_for("auth.check_email"))
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]
@@ -69,43 +76,77 @@ def login():
         return redirect(url_for("main.dashboard"))
     return render_template("login.html")
 
+@auth_bp.route("/register/invite", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def register_invite():
+    # Front door for /register: proves control of an inbox before anyone can reach
+    # the registration form. See "Registration-access gate" in
+    # docs/superpowers/specs/2026-07-10-stripe-registration-gate-design.md.
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        referral_code = request.form.get("referral_code", "").strip() or None
+        if email:
+            token = create_registration_invite(email, referral_code)
+            send_registration_invite_email(email, token)
+        # Always the same response whether or not the address is real/already in the
+        # system — same enumeration-prevention pattern as forgot-password-style flows.
+        return render_template("register_invite_sent.html")
+    return render_template("register_invite.html")
+
 @auth_bp.route("/register", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def register():
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        token = request.form.get("token", "")
+        invite = get_valid_registration_invite(token)
+        if not invite:
+            flash("Your registration link has expired or already been used. Please request a new one.")
+            return redirect(url_for("auth.register_invite"))
+
+        # Email comes from the invite row, not the (read-only) form field — the token
+        # was issued for this specific address, don't trust a client-editable copy of it.
+        email = invite["email"]
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         is_parent_val = request.form.get("is_parent", "")
-        
+
         if is_parent_val not in ("true", "false"):
             flash("Please select an account type")
-            return render_template("register.html")
+            return render_template("register.html", token=token, invite_email=email)
 
         is_parent = is_parent_val == "true"
 
         if not request.form.get("agree_tos"):
             flash("You must agree to the Privacy Policy and Terms of Use to create an account.")
-            return render_template("register.html")
+            return render_template("register.html", token=token, invite_email=email)
 
         if len(password) < 8:
             flash("Password must be at least 8 characters")
-            return render_template("register.html")
+            return render_template("register.html", token=token, invite_email=email)
 
         if get_user_by_username(username):
             flash("Username already taken")
-            return render_template("register.html")
+            return render_template("register.html", token=token, invite_email=email)
 
         agreed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         password_hash = hash_password(password)
         user = create_user(email, username, password_hash, is_parent, agreed_at=agreed_at, subscription_status="pending")
         if not user:
             flash("Registration failed, please try again")
-            return render_template("register.html")
+            return render_template("register.html", token=token, invite_email=email)
+
+        # Single-use: stops a still-fresh link being replayed to spin up multiple
+        # pending rows from one proof of email ownership.
+        mark_registration_invite_used(token)
 
         session["pending_subscription_user_id"] = user["id"]
         return redirect(url_for("billing.subscribe_checkout"))
-    return render_template("register.html")
+
+    token = request.args.get("token", "")
+    invite = get_valid_registration_invite(token)
+    if not invite:
+        return redirect(url_for("auth.register_invite"))
+    return render_template("register.html", token=token, invite_email=invite["email"])
 
 @auth_bp.route("/verify/<token>")
 def verify(token):

@@ -163,6 +163,7 @@
         <form method="POST" id="register-form"
       data-type="{{ request.form.get('is_parent', '') == 'true' and 'parent' or (request.form.get('is_parent', '') == 'false' and 'student' or '') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="token" value="{{ token }}">
             <!-- Hidden input that gets set when a card is selected -->
             <input type="hidden" name="is_parent" id="is_parent_input" value="">
 
@@ -186,7 +187,8 @@
             </p>
 
             <div class="form-fields" id="form-fields">
-                <input type="email" name="email" placeholder="Email address" required>
+                <input type="email" name="email" value="{{ invite_email }}" readonly required
+                       style="background:#f6f8fa;color:#57606a;">
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="password" name="password" placeholder="Password" required>
                 <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;

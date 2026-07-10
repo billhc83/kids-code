@@ -17,6 +17,13 @@ from utils.auth import get_user_by_id, get_user_by_stripe_subscription_id, send_
 stripe.api_key = STRIPE_SECRET_KEY
 
 
+def _sget(obj, key, default=None):
+    """dict/StripeObject-agnostic .get(). stripe-python's StripeObject supports
+    `obj[key]` and `key in obj` but has no `.get()` (no Mapping inheritance) —
+    calling `.get()` directly on one raises AttributeError."""
+    return obj[key] if key in obj else default
+
+
 def create_checkout_session(user, success_url, cancel_url):
     session = stripe.checkout.Session.create(
         mode="subscription",
@@ -34,7 +41,7 @@ def verify_webhook_signature(payload, sig_header):
 
 
 def _period_end_iso(subscription_obj):
-    ts = subscription_obj.get("current_period_end")
+    ts = _sget(subscription_obj, "current_period_end")
     if not ts:
         return None
     return datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc).isoformat()
@@ -42,18 +49,18 @@ def _period_end_iso(subscription_obj):
 
 def handle_checkout_completed(event):
     session_obj = event["data"]["object"]
-    user_id = session_obj.get("client_reference_id")
+    user_id = _sget(session_obj, "client_reference_id")
     if not user_id:
         return
     user = get_user_by_id(user_id)
     if not user:
         return
 
-    subscription_id = session_obj.get("subscription")
+    subscription_id = _sget(session_obj, "subscription")
     subscription_obj = stripe.Subscription.retrieve(subscription_id) if subscription_id else {}
 
     supabase.table("users").update({
-        "stripe_customer_id": session_obj.get("customer"),
+        "stripe_customer_id": _sget(session_obj, "customer"),
         "stripe_subscription_id": subscription_id,
         "subscription_status": "active",
         "subscription_period_end": _period_end_iso(subscription_obj),
@@ -77,7 +84,7 @@ def handle_subscription_updated(event):
     user = get_user_by_stripe_subscription_id(subscription_obj["id"])
     if not user:
         return
-    mapped_status = _STRIPE_STATUS_MAP.get(subscription_obj.get("status"), "canceled")
+    mapped_status = _STRIPE_STATUS_MAP.get(_sget(subscription_obj, "status"), "canceled")
     supabase.table("users").update({
         "subscription_status": mapped_status,
         "subscription_period_end": _period_end_iso(subscription_obj),
