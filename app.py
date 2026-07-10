@@ -20,6 +20,7 @@ from routes.help import help_bp
 from routes.dev import dev_bp
 from routes.account import account_bp
 from routes.try_it import try_it_bp
+from routes.billing import billing_bp
 
 from utils.progression import get_user_progression
 from utils.lessons import get_sidebar_groups, LESSON_BY_KEY
@@ -54,6 +55,7 @@ app.register_blueprint(help_bp)
 app.register_blueprint(dev_bp)
 app.register_blueprint(account_bp)
 app.register_blueprint(try_it_bp)
+app.register_blueprint(billing_bp)
 
 _TOS_EXEMPT_PREFIXES = ("/static/", "/welcome/agree", "/logout",
                         "/privacy", "/terms", "/favicon")
