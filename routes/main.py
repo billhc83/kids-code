@@ -13,7 +13,7 @@ from config import RESEND_API_KEY
 main_bp = Blueprint('main', __name__)
 
 _PRIVACY_EMAIL = "no-reply@kidscode.ca"
-_PRIVACY_TO    = "billhc83@gmail.com"
+_PRIVACY_TO    = "kidscodecanada@gmail.com"
 
 @main_bp.route("/ping")
 def ping():

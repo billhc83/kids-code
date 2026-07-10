@@ -17,6 +17,8 @@ A lesson is made of these files:
 
 The project registry (`utils/project_registry.py`) auto-discovers any `utils/project_*.py` that defines a `PROJECT` dict — **no imports needed**, just drop the file in.
 
+**Building a lesson that mixes an editor-view step with blocks and/or a code-driven sim tab?** Read [`BLOCK_BUILDER_SYNC.md`](BLOCK_BUILDER_SYNC.md) first — it documents the editor↔blocks↔sim sync invariants (namespace, sync timing, validation mode, live-source reads) that every such lesson must follow, each backed by a real bug found and fixed.
+
 ### Single-page lessons
 Templates extend `lessons/project_base.html`. Use `{% block intro %}`, `{% block parts %}`, `{% block tips %}`.
 Banner and circuit tabs are handled automatically by the base template.

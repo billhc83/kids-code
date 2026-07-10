@@ -230,6 +230,11 @@
 <script>
 let editor;
 let currentMode = 'blocks';
+
+window.getCurrentSketch = function () {
+  if (currentMode === 'editor' && editor) return editor.getValue();
+  return window.getGeneratedCode ? window.getGeneratedCode() : '';
+};
 const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
 let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
 
@@ -672,6 +677,25 @@ window.addEventListener('bb_step_update', function(e){
 
 // Initial sync for step nav padding based on default drawer state
 syncStepNavPadding();
+</script>
+
+<div id="try-welcome-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);text-align:center;">
+    <h2 style="margin:0 0 8px;font-size:18px;color:#1e293b;">Welcome to KidsCode! 👋</h2>
+    <p style="margin:0 0 16px;font-size:13px;color:#475569;line-height:1.6;">Thanks for checking us out! This is a real Arduino coding lesson — no signup needed to try it. Build it, break it, have fun. Got questions? We'd love to hear from you.</p>
+    <button id="try-welcome-dismiss-btn" type="button" style="width:100%;padding:10px;background:#22c55e;color:#020617;font-weight:600;border:none;border-radius:6px;">Let's build! 🚀</button>
+  </div>
+</div>
+<script>
+(function () {
+  if (sessionStorage.getItem('try_welcome_dismissed')) return;
+  var overlay = document.getElementById('try-welcome-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('try-welcome-dismiss-btn').onclick = function () {
+    sessionStorage.setItem('try_welcome_dismissed', '1');
+    overlay.style.display = 'none';
+  };
+})();
 </script>
 
 <div id="try-email-gate-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">

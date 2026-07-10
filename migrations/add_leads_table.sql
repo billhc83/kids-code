@@ -1,3 +1,5 @@
+COMPLETE 2026/07/09 6:50 EST
+
 -- Migration: add leads table
 -- Run in the Supabase SQL editor before deploying the /try page.
 -- Leads are deliberately NOT rows in `users` — every `users` row must stay

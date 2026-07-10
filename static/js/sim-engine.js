@@ -669,7 +669,8 @@ window.SimEngine = (function () {
     loading.textContent = 'Analysing your code\u2026';
     container.appendChild(loading);
 
-    var sketch = (window.getGeneratedCode ? window.getGeneratedCode() : '') || '';
+    var sketch = (window.getCurrentSketch ? window.getCurrentSketch() :
+      (window.getGeneratedCode ? window.getGeneratedCode() : '')) || '';
     activeRequestId++;
     var thisRequestId = activeRequestId;
 
