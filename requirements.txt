@@ -10,6 +10,7 @@ pytest
 pytest-flask
 responses
 supabase
+stripe
 respx
 lark
 openai
