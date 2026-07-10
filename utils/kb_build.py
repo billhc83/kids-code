@@ -1,9 +1,15 @@
 """Offline build script for the help-chat RAG index.
 
-Run manually (or in CI) whenever lesson drawer content or a utils/kb_*.py
-module changes:
+Run on a weekly cadence (or before a release) — not after every small
+drawer-content edit. Each run calls the OpenAI embeddings API, which costs
+money, so batch content changes and rebuild periodically instead:
 
     python -m utils.kb_build
+
+tests/test_kb_freshness.py will fail between rebuilds if drawer content has
+changed since the last one — that's expected staleness, not a bug to fix
+by re-running the build immediately. Just make sure a rebuild happens
+before a release.
 
 Never imported by the running Flask app — routes/help.py and
 utils/help_kb.py only ever read the two files this script produces:

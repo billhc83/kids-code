@@ -297,6 +297,19 @@
     .parent-feat-body h4 { font-size: 14px; font-weight: 700; color: #0969da; margin-bottom: 2px; }
     .parent-feat-body p  { font-size: 12px; color: #57606a; line-height: 1.6; }
 
+    /* ── Pricing ── */
+    .splash-pricing { background: #f4f8ff; padding: 72px 32px; }
+    .pricing-card {
+      max-width: 340px; margin: 0 auto; background: #fff;
+      border: 2px solid #e4edf8; border-radius: 16px;
+      padding: 36px 32px; text-align: center;
+    }
+    .pricing-amount { font-size: 42px; font-weight: 900; color: #0969da; line-height: 1; }
+    .pricing-amount .pricing-period { font-size: 14px; font-weight: 700; color: #57606a; margin-left: 4px; }
+    .pricing-note { font-size: 12px; color: #57606a; margin: 10px 0 22px; }
+    .pricing-card .cta-primary { width: 100%; }
+    .pricing-footnote { text-align: center; font-size: 12px; color: #57606a; margin-top: 20px; }
+
     /* ── Footer ── */
     .splash-footer {
       background: #050d22; padding: 32px;
@@ -551,6 +564,20 @@
   </div>
 </section>
 
+<!-- ── Pricing ── -->
+<section class="splash-pricing">
+  <div class="container">
+    <h2 class="section-title">Simple pricing</h2>
+    <p class="section-sub">One plan. Every project. Cancel anytime.</p>
+    <div class="pricing-card">
+      <div class="pricing-amount">$5.99<span class="pricing-period">CAD/mo</span></div>
+      <p class="pricing-note">Billed monthly. No contracts.</p>
+      <a href="#" data-action="open-subscribe-modal" class="cta-primary">Start Your First Mission →</a>
+    </div>
+    <p class="pricing-footnote">Includes every project, the parent dashboard, and all new lessons as they're added.</p>
+  </div>
+</section>
+
 <!-- ── Footer ── -->
 <footer class="splash-footer">
   <div class="footer-logo">
@@ -569,24 +596,7 @@
 <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
 <script>
 // ── Circuit diagram ──────────────────────────────────────────────────────────
-const DEMO_CIRCUIT_DEF = {
-  "components": [
-    {
-      "id": "LED1", "type": "LED",
-      "pins": {"anode": {"col": "E", "row": 12}, "cathode": {"col": "E", "row": 11}},
-      "properties": {"color": "red"}
-    },
-    {
-      "id": "R1", "type": "RESISTOR",
-      "pins": {"pin1": {"col": "D", "row": 11}, "pin2": {"col": "D", "row": 7}},
-      "properties": {"ohms": 220}
-    }
-  ],
-  "connections": [
-    {"from": "arduino.D13", "to": "breadboard.A12", "color": "#00AA00"},
-    {"from": "breadboard.E7",  "to": "arduino.GND",  "color": "#111111"}
-  ]
-};
+const DEMO_CIRCUIT_DEF = {{ demo_circuit_json | safe }};
 
 document.addEventListener('DOMContentLoaded', function() {
   try {
@@ -786,7 +796,8 @@ document.addEventListener('DOMContentLoaded', loadDemoBuilder);
 <div id="subscribe-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div id="subscribe-modal" style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);text-align:center;">
     <h2 style="margin:0 0 8px;font-size:18px;">Ready to start building? 🚀</h2>
-    <a href="{{ url_for('auth.register_invite') }}" class="cta-primary" style="display:block;margin-bottom:12px;">Subscribe & Start →</a>
+    <a href="{{ url_for('auth.register_invite') }}" class="cta-primary" style="display:block;margin-bottom:4px;">Subscribe & Start →</a>
+    <p style="margin:0 0 12px;font-size:11px;color:#94a3b8;">$5.99 CAD/mo · cancel anytime</p>
     <a href="{{ url_for('try_it.try_page') }}" style="display:block;color:#0969da;font-weight:600;text-decoration:none;padding:12px;">Try it free first →</a>
   </div>
 </div>

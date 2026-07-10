@@ -650,6 +650,7 @@ def parse_steps(sketch_code):
 
         # 2. Explicit Overrides (key:value)
         palette_override = None
+        active_override = None
         for p in parts:
             p_low = p.lower()
             if p_low.startswith('fill:'):
@@ -665,6 +666,10 @@ def parse_steps(sketch_code):
             if p.lower().startswith('palette:'):
                 palette_override = [t.strip() for t in p.split(':', 1)[1].split(',') if t.strip()]
                 is_filter = True
+            if p_low.startswith('active:'):
+                candidate = p_low.split(':')[1]
+                if candidate in ('global', 'setup', 'loop'):
+                    active_override = candidate
 
         step_config = {
             'flow': "progression",
@@ -684,7 +689,8 @@ def parse_steps(sketch_code):
             'config': step_config,
             'reset': reset,
             'aside': aside,
-            'chunk': chunk
+            'chunk': chunk,
+            'active_override': active_override,
         })
 
     # Parse each step — collecting cumulative locked blocks
@@ -750,6 +756,12 @@ def parse_steps(sketch_code):
             active_section = 'setup'
         elif parsed['global']:
             active_section = 'global'
+        # Explicit 'active:<section>' directive always wins — the heuristic above
+        # only looks at the initial (pre-verify) chunk, which misjudges e.g. a
+        # `verify` step where the student's answer is expected in loop() but the
+        # chunk starts with an empty loop() and a non-empty setup().
+        if step.get('active_override'):
+            active_section = step['active_override']
 
         # Build full workspace for this step:
         # global: cumulative phantom_resolved markers + this chunk's global blocks

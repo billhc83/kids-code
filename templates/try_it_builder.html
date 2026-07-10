@@ -148,15 +148,19 @@
     border-bottom:1px solid #f1f5f9; padding:16px 20px; background: #f8fafc; }
   .drawer-tip { background:#eff6ff; border-bottom:1px solid #dbeafe;
     padding:12px 20px; font-size:12px; color:#2563eb; line-height:1.6; flex-shrink:0; }
-  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #f1f5f9; padding: 0 10px; background: #fff; }
-  .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
-    background:none; border:none; border-bottom:2px solid transparent;
-    color:#64748b; cursor:pointer; text-align:center; transition:all 0.2s; font-weight: 600; }
-  .drawer-tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+  .drawer-tabs { display:flex; flex-shrink:0; gap:4px; margin:12px 20px;
+    padding:4px; background:#f1f5f9; border-radius:10px; }
+  .drawer-tab-btn { flex:1; padding:8px 6px; font-size:11px; font-family:inherit;
+    background:none; border:none; border-radius:7px;
+    color:#64748b; cursor:pointer; text-align:center; transition:background 0.2s, color 0.2s; font-weight: 600; }
+  .drawer-tab-btn:hover { background:#e2e8f0; color:#334155; }
+  .drawer-tab-btn.active { background:#ffffff; color:#3b82f6; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
   .drawer-tab-panels { flex:1; overflow-y:auto; }
   .drawer-tab-panel { display:none; padding:20px; color:#1e293b; }
   .drawer-tab-panel.active { display:block; }
-  .drawer-tab-panel p { font-size:15px; line-height:1.7; white-space:pre-wrap; margin-bottom:12px; }
+  .drawer-tab-panel p { font-size:15px; line-height:1.6; white-space:pre-wrap; margin-bottom:10px; }
+  .drawer-tab-panel ul, .drawer-tab-panel ol { padding-left:22px; margin-bottom:12px; }
+  .drawer-tab-panel li { font-size:15px; line-height:1.55; margin-bottom:7px; }
   .drawer-tab-panel img { width:100%; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
   #step-nav {
     transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -188,6 +192,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
 <!-- Sim Engine -->
 <script src="/static/js/sim-engine.js"></script>
+<!-- Circuit Renderer (static illustrative diagram in the drawer only) -->
+<script src="/static/js/circuit_renderer.js"></script>
 </head>
 
 <body>
@@ -375,6 +381,26 @@ window.updateDrawer = function(stepIdx) {
           SimEngine.initCodeDriven(simDiv, cfg);
         } else {
           SimEngine.init(simDiv, cfg);
+        }
+      }, 0);
+    } else if (tab.type === 'circuit' && tab.circuit_def) {
+      if (tab.content) {
+        const blurb = document.createElement('div');
+        blurb.innerHTML = `<p>${tab.content}</p>`;
+        p.appendChild(blurb);
+      }
+      const circuitDiv = document.createElement('div');
+      circuitDiv.id = `dtab-circuit-canvas-${k}`;
+      circuitDiv.style.cssText = 'max-width:100%; margin:0 auto; background:#f8f5e8; border-radius:8px; padding:12px;';
+      p.appendChild(circuitDiv);
+      pansC.appendChild(p);
+      setTimeout(() => {
+        if (typeof CircuitRenderer === 'undefined') return;
+        try {
+          new CircuitRenderer(tab.circuit_def, circuitDiv.id).render();
+        } catch (e) {
+          console.warn('[Try] Circuit render error:', e);
+          circuitDiv.textContent = 'Circuit preview unavailable';
         }
       }, 0);
     } else {
@@ -698,76 +724,11 @@ syncStepNavPadding();
 })();
 </script>
 
-<div id="try-email-gate-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div id="try-email-gate-modal" style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);">
-    <h2 style="margin:0 0 8px;font-size:18px;">Thanks for trying it out!</h2>
-    <p style="margin:0 0 16px;font-size:13px;color:#475569;">Want a reminder about KidsCode? Leave your email and we'll send you one note — that's it.</p>
-    <form id="try-email-gate-form">
-      <input type="text" name="website" id="try-gate-honeypot" style="position:absolute;left:-9999px;" tabindex="-1" autocomplete="off">
-      <input type="email" id="try-gate-email" placeholder="parent@example.com" required style="width:100%;padding:8px;margin-bottom:10px;border:1px solid #e2e8f0;border-radius:6px;">
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#475569;margin-bottom:16px;">
-        <input type="checkbox" id="try-gate-consent" required style="margin-top:2px;">
-        I'd like to receive one follow-up email about KidsCode.
-      </label>
-      <div id="try-gate-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:10px;"></div>
-      <button type="submit" style="width:100%;padding:10px;background:#22c55e;color:#020617;font-weight:600;border:none;border-radius:6px;">Continue</button>
-    </form>
-    <div id="try-email-gate-thanks" style="display:none;text-align:center;">
-      <p style="font-size:16px;">Thanks for your interest! 🎉</p>
-    </div>
-  </div>
-</div>
-
 <script>
 (function () {
-  // BB.STEPS index whose completion should trigger the gate — index 1 is
-  // "Turn it ON" in utils/project_try_it.py's SKETCH (index 0 "Ready!" is a
-  // non-interactive global-only step). Verified via the parse_steps check
-  // in Task 2 Step 3 of the implementation plan.
-  var GATE_AFTER_STEP_INDEX = 1;
-  var emailCaptured = {{ 'true' if email_captured else 'false' }};
-  var overlay = document.getElementById('try-email-gate-overlay');
-  var form = document.getElementById('try-email-gate-form');
-  var thanks = document.getElementById('try-email-gate-thanks');
-  var errorEl = document.getElementById('try-gate-error');
-
-  function showGate(proceedFn) {
-    form.style.display = '';
-    thanks.style.display = 'none';
-    errorEl.style.display = 'none';
-    overlay.style.display = 'flex';
-    form.onsubmit = function (e) {
-      e.preventDefault();
-      var email = document.getElementById('try-gate-email').value.trim();
-      var consent = document.getElementById('try-gate-consent').checked;
-      var honeypot = document.getElementById('try-gate-honeypot').value;
-      fetch('/try/lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, consent: consent, website: honeypot }),
-      })
-        .then(function (r) { if (!r.ok) throw new Error('failed'); return r.json(); })
-        .then(function () {
-          emailCaptured = true;
-          form.style.display = 'none';
-          thanks.style.display = '';
-          setTimeout(function () {
-            overlay.style.display = 'none';
-            proceedFn();
-          }, 1200);
-        })
-        .catch(function () {
-          errorEl.textContent = 'Something went wrong — please try again.';
-          errorEl.style.display = '';
-        });
-    };
-  }
-
   // window.bbNext (static/js/bb-validation.js) is the actual step-advance
-  // handler wired to the Next-step button's onclick — bb_next_state is only
-  // an informational event for the button's label/enabled state, it cannot
-  // be used to intercept or cancel an advance. bbNext is defined inside the
-  // block-builder scripts that loadBlockBuilder() injects asynchronously
+  // handler wired to the Next-step button's onclick. It's defined inside
+  // the block-builder scripts that loadBlockBuilder() injects asynchronously
   // (see /try/builder), so poll until it exists before wrapping it — same
   // defensive pattern the copied template already uses for window._bbCheckInterval.
   var installPoll = setInterval(function () {
@@ -775,15 +736,6 @@ syncStepNavPadding();
     clearInterval(installPoll);
     var originalBbNext = window.bbNext;
     window.bbNext = function () {
-      var proceed = function () {
-        var atGateStep = window._BB && window._BB.CURRENT_STEP === GATE_AFTER_STEP_INDEX;
-        var isAdvanceClick = window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'next-mode';
-        if (!emailCaptured && atGateStep && isAdvanceClick) {
-          showGate(originalBbNext);
-          return;
-        }
-        originalBbNext();
-      };
       // Clicking "Check Code" while still in editor view (never having
       // tapped "Switch to Blocks") would otherwise validate whatever was
       // last synced into BB.SECTIONS — nothing, on a step that opens in
@@ -794,9 +746,9 @@ syncStepNavPadding();
       var aboutToCheck = typeof currentMode !== 'undefined' && currentMode === 'editor'
         && window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'check-mode';
       if (aboutToCheck) {
-        window.syncEditorToBlocks().then(proceed);
+        window.syncEditorToBlocks().then(originalBbNext);
       } else {
-        proceed();
+        originalBbNext();
       }
     };
   }, 100);
@@ -805,10 +757,19 @@ syncStepNavPadding();
 
 <div id="try-subscribe-prompt-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);text-align:center;">
-    <h2 style="margin:0 0 8px;font-size:18px;">You completed the free trial! 🎉</h2>
-    <p style="margin:0 0 16px;font-size:13px;color:#475569;">Ready to build 18 more real projects?</p>
-    <a href="{{ url_for('auth.register_invite') }}" style="display:block;padding:10px;background:#22c55e;color:#020617;font-weight:600;border-radius:6px;text-decoration:none;margin-bottom:10px;">Subscribe →</a>
-    <button id="try-subscribe-dismiss" style="background:none;border:none;color:#475569;font-size:12px;">Keep exploring</button>
+    <h2 style="margin:0 0 8px;font-size:18px;">Thanks for trying the project! 🎉</h2>
+    <p style="margin:0 0 14px;font-size:13px;color:#475569;">You just wrote and ran real Arduino code — in blocks and in code. Ready to build more projects?</p>
+    <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding:10px 8px;background:#f4f8ff;border-radius:8px;font-size:11px;color:#334155;font-weight:600;">
+      <span>🔒 No social features</span>
+      <span>📊 Parent dashboard</span>
+      <span>🔌 Real hardware skills</span>
+    </div>
+    <a href="{{ url_for('auth.register_invite') }}" style="display:block;padding:10px;background:#22c55e;color:#020617;font-weight:600;border-radius:6px;text-decoration:none;">Subscribe & Start →</a>
+    <p style="margin:6px 0 16px;font-size:11px;color:#94a3b8;">$5.99 CAD/mo · cancel anytime</p>
+    <div style="display:flex;justify-content:center;gap:18px;">
+      <a href="{{ url_for('main.feedback') }}" style="color:#0969da;font-weight:600;font-size:12px;text-decoration:none;">Contact us</a>
+      <button id="try-subscribe-dismiss" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;">Keep exploring</button>
+    </div>
   </div>
 </div>
 <script>
@@ -816,22 +777,29 @@ syncStepNavPadding();
   // Index 3, "Mission Complete", is the last of the 4 steps parsed from
   // utils/project_try_it.py's SKETCH (0 Ready!, 1 Turn it ON, 2 Make it
   // blink!, 3 Mission Complete). window._BB (not window.BB — BB is only a
-  // local alias inside block_builder.js/bb-validation.js, see the email
-  // gate script above) is the same global that gate's atGateStep check
-  // reads, populated asynchronously once /try/builder's scripts load.
+  // local alias inside block_builder.js/bb-validation.js) is populated
+  // asynchronously once /try/builder's scripts load.
   var FINAL_STEP_INDEX = 3;
+  // Non-blocking: the visitor keeps exploring the finished project while
+  // this timer runs. Shown once per session, a few seconds after they
+  // reach the last step — not the instant they arrive there — so it reads
+  // as a friendly follow-up rather than a wall stopping them.
+  var SHOW_DELAY_MS = 8000;
   var overlay = document.getElementById('try-subscribe-prompt-overlay');
   var dismissBtn = document.getElementById('try-subscribe-dismiss');
   dismissBtn.addEventListener('click', function () { overlay.style.display = 'none'; });
 
   var shown = sessionStorage.getItem('try_subscribe_prompt_shown') === 'true';
+  var scheduled = shown;
   var checkInterval = setInterval(function () {
-    if (shown || !window._BB || typeof window._BB.CURRENT_STEP !== 'number') return;
+    if (scheduled || !window._BB || typeof window._BB.CURRENT_STEP !== 'number') return;
     if (window._BB.CURRENT_STEP >= FINAL_STEP_INDEX) {
-      shown = true;
-      sessionStorage.setItem('try_subscribe_prompt_shown', 'true');
-      overlay.style.display = 'flex';
+      scheduled = true;
       clearInterval(checkInterval);
+      setTimeout(function () {
+        sessionStorage.setItem('try_subscribe_prompt_shown', 'true');
+        overlay.style.display = 'flex';
+      }, SHOW_DELAY_MS);
     }
   }, 300);
 })();

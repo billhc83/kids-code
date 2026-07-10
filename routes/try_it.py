@@ -47,7 +47,6 @@ def try_page():
             drawer_steps = normalize_drawer_steps(drawer_content.get("steps") or [drawer_content])
     return render_template(
         "try_it_builder.html",
-        email_captured=bool(session.get("try_email_captured")),
         drawer_steps=drawer_steps,
     )
 

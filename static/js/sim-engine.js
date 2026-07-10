@@ -711,14 +711,24 @@ window.SimEngine = (function () {
   }
 
   function _appendRerunButton(container, simConfig) {
+    var blurb = document.createElement('div');
+    blurb.textContent = 'Changed your code? Click the button to run it and see what happens.';
+    blurb.style.cssText =
+      'margin-top:6px;color:#9db4d1;font-size:11px;text-align:center;' +
+      'font-family:"Courier New",monospace;letter-spacing:0.2px;max-width:260px;';
+    container.appendChild(blurb);
+
     var btn = document.createElement('button');
-    btn.textContent = '\u25b6 Re-run with current code';
+    btn.textContent = '\u25b6 RUN YOUR CODE';
     btn.style.cssText =
-      'margin-top:4px;padding:6px 18px;background:#1e3a5f;color:#7ab;' +
-      'border:1px solid #2d5a8e;border-radius:6px;font-size:11px;' +
-      'cursor:pointer;font-family:"Courier New",monospace;letter-spacing:0.3px;';
-    btn.onmouseover = function () { btn.style.background = '#264d7a'; };
-    btn.onmouseout  = function () { btn.style.background = '#1e3a5f'; };
+      'margin-top:8px;padding:12px 28px;background:#22c55e;color:#052e13;' +
+      'border:none;border-radius:8px;font-size:14px;font-weight:800;' +
+      'letter-spacing:0.5px;cursor:pointer;font-family:"Courier New",monospace;' +
+      'box-shadow:0 3px 0 #15803d,0 4px 12px rgba(34,197,94,0.4);transition:transform 0.1s;';
+    btn.onmouseover = function () { btn.style.background = '#34d465'; };
+    btn.onmouseout  = function () { btn.style.background = '#22c55e'; };
+    btn.onmousedown = function () { btn.style.transform = 'translateY(2px)'; btn.style.boxShadow = '0 1px 0 #15803d,0 2px 6px rgba(34,197,94,0.4)'; };
+    btn.onmouseup   = function () { btn.style.transform = 'translateY(0)'; btn.style.boxShadow = '0 3px 0 #15803d,0 4px 12px rgba(34,197,94,0.4)'; };
     btn.onclick = function () { initCodeDriven(container, simConfig); };
     container.appendChild(btn);
   }

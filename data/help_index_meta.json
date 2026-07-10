@@ -1,8 +1,8 @@
 {
   "embedding_model": "text-embedding-3-small",
   "dimension": 1536,
-  "built_at": "2026-07-06T21:54:35.612029+00:00",
-  "corpus_hash_auto": "eac8a3bc2d56717f3dee21689a98b1a51ca1a1df466ac6d7dc1ac91a08c0e27d",
+  "built_at": "2026-07-10T15:15:13.514042+00:00",
+  "corpus_hash_auto": "ae96d13a6da8c2661f29e62d17a66176762eb38a8080f1c4f4ae93d36ea8ceab",
   "corpus_hash_authored": "7eecd73401fdd48e37b3b4756131b6355e2fd4d8f5a591e6a83f9c72a3537001",
   "chunks": [
     {
@@ -1746,6 +1746,16 @@
       "tags": []
     },
     {
+      "id": "project_one:upload",
+      "source": "auto",
+      "project_key": "project_one",
+      "step_index": null,
+      "tab_key": "upload",
+      "title": "Project 1: Lights ON!! (🚀 Let's Go!)",
+      "text": "This Is Your First Project — Here's Exactly What To Do! 🚀 No worries if this is all brand new. Just follow these steps in order. 1️⃣ Build the circuit Use the Build tab to place your LED, resistor, and wires. Follow each step — you don't need your Arduino plugged in yet. 2️⃣ Check out your Sketch 📖 The code you see is your Sketch — the rule book we just talked about. It's already written for you! Right now, your job is just to send it to your Arduino. 3️⃣ Plug in your Arduino 🔌 Once the circuit is built, plug your Arduino into the computer with its USB cable. 4️⃣ Look for KidsCode Link 🔗 Check for ● KidsCode Link near your Sketch. If it says Offline , open the KidsCode Link app on your computer, then look again. 5️⃣ Pick your board 🎯 Open the dropdown menu and make sure your Arduino is selected. Don't see it? Click Refresh and check again. 6️⃣ Click Upload ⬆️ Press the Upload button and watch the messages — they'll let you know when your code has made it onto the Arduino. 7️⃣ Watch for the light! 💡 If everything worked, your LED should turn on! If it doesn't, that's okay — check the Tips or ask for help. Every builder hits a snag sometimes!",
+      "tags": []
+    },
+    {
       "id": "project_seven:story",
       "source": "auto",
       "project_key": "project_seven",
@@ -2223,6 +2233,66 @@
       "tab_key": "translation",
       "title": "Project 3: Mad Scientist Button Machine (🧬 Translation)",
       "text": "Scientist Code Translation pinMode(8, OUTPUT); Door 8 sends electricity to the crystal 💡 pinMode(2, INPUT_PULLUP); Door 2 listens for the button 🔘 digitalRead(2) Is the button pressed? LOW = pressed 😄 HIGH = not pressed 😴 digitalWrite(8, HIGH); Turn the crystal ON! 💥 digitalWrite(8, LOW); Turn the crystal OFF 🌑 The loop Runs forever like a bubbling experiment 🧪♻️ Check → Decide → Glow → Repeat!",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step0:explain",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 0,
+      "tab_key": "explain",
+      "title": "Try It: Light It Up! — Welcome! 👋 (📖 What's happening)",
+      "text": "Every KidsCode lesson gives your child a real circuit to build with real components — a breadboard, an Arduino UNO, LEDs, sensors — paired with real Arduino C++ code. This trial skips the circuit-building (no hardware required right now) so you can jump straight to the part that surprises people most: watching a real program run, written by a real kid, in under five minutes. You'll do this twice, two different ways. First you'll type one line of code by hand, exactly like a professional Arduino programmer would. Then you'll build the same kind of logic again — this time by clicking blocks together instead of typing. By the end you'll have seen both directions: code becoming blocks, and blocks becoming code. That's the whole idea behind how KidsCode teaches — block-based coding isn't a toy substitute for \"real\" programming here, it's a launchpad into it. Hit Next to get started.",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step1:pitch",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 1,
+      "tab_key": "pitch",
+      "title": "Try It: Light It Up! — Step 1 — Turn it ON 💡 (✨ Why this matters)",
+      "text": "You're looking at the code editor — the exact same place professional programmers write Arduino code. No blocks, no drag-and-drop, just a blinking cursor. Inside loop() you'll see a comment marking the spot, with a blank line right below it. Type this on that blank line: digitalWrite(ledPin, HIGH); That single line means \"send power to the LED pin.\" digitalWrite is a function — it takes two pieces of information (a pin, and a state) and does something real the instant your program reaches that line. Once you've typed it, tap Switch to Blocks in the top bar and watch the line you just typed turn into a block, automatically. That's not a trick: blocks and code are always two views of the exact same program running underneath. Blocks view has three panels — Global (things set up once, before anything runs), setup() (runs one time, at the very start), and loop() (runs over and over, forever — this is where the action is, and where your line just landed). Whichever panel was open last stays open, so if you don't immediately see your block, click the loop() panel to open it. Now for the fun part — open the 🎮 Try It tab and press RUN YOUR CODE . Watch the light switch on. Then come back here and try flipping HIGH to LOW — either by editing the word directly in the code editor, or by clicking the dropdown on the block in Blocks view — and press RUN YOUR CODE again. One word changed, and the result completely flips. That's the core loop of programming: change something small, run it, see what happens. Just flip it back to HIGH before you tap Complete Step — the mission is to turn the light on .",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step1:howto",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 1,
+      "tab_key": "howto",
+      "title": "Try It: Light It Up! — Step 1 — Turn it ON 💡 (🔧 How To)",
+      "text": "Look inside loop() — a comment marks the spot, with a blank line below it. Click that blank line and type: digitalWrite(ledPin, HIGH); Tap Switch to Blocks in the top bar and watch your line become a block. If you don't see it right away, click the loop() panel — that's one of three sections (Global, setup(), loop()), and your code lives in loop(). Open the 🎮 Try It tab and press RUN YOUR CODE — the light turns on. Try it both ways: in Blocks , click the block's HIGH/LOW dropdown and switch it to LOW; in the editor , you can instead edit the word directly. Either way, press RUN YOUR CODE again and watch the light turn off. Set it back to HIGH , then tap Complete Step .",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step2:pitch",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 2,
+      "tab_key": "pitch",
+      "title": "Try It: Light It Up! — Step 2 — Make it blink! ✨ (✨ Why this matters)",
+      "text": "Last step, you typed real code by hand. This time you'll build with blocks instead, using the bucket — the panel of ready-made blocks on the left. Placing a block always follows the same move: click one of the blue boxes in the workspace (that's a spot waiting for a block), it turns purple to show it's selected, then click the block you want in the bucket. It drops straight out of the bucket into that purple box — no typing, no worrying about semicolons or spelling. This step introduces something new: delay() needs that same move done twice , because it has a blank inside it. First place the delay block itself the usual way — blue box, then delay from the bucket. Once it lands, look inside it: there's a second, smaller empty box waiting for a number — that's how long to wait, in milliseconds (1000 ms = 1 second). Click that box, then click value in the bucket's Expressions section — a number field appears right inside your block. Type 500 into it. That's called a value , and nearly every useful block has one hiding somewhere inside it — learning to spot and fill them in is a real programming skill, not just a KidsCode quirk. Once both delay blocks are placed and their numbers are typed in, switch to the 🎮 Try It tab and press RUN YOUR CODE to watch your light blink at that exact speed. Then come back, click into one of those number fields, change 500 to something else — try 100 for a nervous, fast blink, or 2000 for a slow, lazy one — and press RUN YOUR CODE again. Nothing about the blocks changed, only the number inside them, and the whole rhythm of your program changed with it. Set both numbers back to 500 before you tap Complete Step . Tap Switch to Editor any time to see the real code your blocks just wrote — you're still building the exact same program either way, just faster.",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step2:howto",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 2,
+      "tab_key": "howto",
+      "title": "Try It: Light It Up! — Step 2 — Make it blink! ✨ (🔧 How To)",
+      "text": "Click the highlighted blue box in the workspace — it turns purple to show it's selected. Click delay in the bucket — it drops straight into that purple box. Its inner number box is still empty. Click that empty inner box, then click value in the bucket's Expressions section — a number field appears. Type 500 into that field (milliseconds — half a second). Repeat steps 1–4 for the second highlighted box. Open the 🎮 Try It tab and press RUN YOUR CODE to watch it blink. Click back into a number field, try a different number (like 100 or 2000 ), and press RUN YOUR CODE again to see the timing change. Set both numbers back to 500 , then tap Complete Step .",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step3:explain",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 3,
+      "tab_key": "explain",
+      "title": "Try It: Light It Up! — You did it! 🎉 (🚀 What's next)",
+      "text": "Take a second look at what just happened: you controlled real hardware logic, in both code and blocks, with zero setup, zero downloads, and zero prior experience. You typed a real line of C++. You placed real blocks — including filling in a real function argument, a concept plenty of adult beginners trip over. And you used a live simulator to test your own hypothesis about what would happen when you changed a value. That's the actual practice of programming, not a preview of it. Every KidsCode lesson builds on exactly this pattern — except with a real circuit on the desk (an actual LED, actual wires, an actual Arduino UNO), a story to guide the way through it, and code that gets meaningfully more capable with every project: buttons, sensors, sound, motors, and eventually multi-part builds that combine all of it — more projects keep unlocking as you go. Keep exploring this page as long as you like — the 🎮 Try It tab below is still yours to experiment with. When you're ready to build for real, sign up to get started, or reach out if you've got questions first.",
       "tags": []
     },
     {

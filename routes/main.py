@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint, request, session, render_template, redirect, url_for, flash, jsonify
 from utils.decorators import login_required
 from utils.progression import get_user_progression, get_completed_lessons
@@ -6,6 +8,7 @@ from utils.feedback import get_threads_for_user, CATEGORIES, create_thread, add_
 from utils.activity import log_activity
 from utils.lessons import LESSONS, LESSON_BY_KEY, count_unique_projects, TOTAL_PROJECTS
 from utils.auth import mark_first_login_complete
+from utils.demo_circuit import LED_DEMO_CIRCUIT
 from extensions import limiter
 import requests as http_requests
 from config import RESEND_API_KEY
@@ -25,7 +28,7 @@ def index():
         if session.get("is_parent"):
             return redirect(url_for("parent.parent_dashboard"))
         return redirect(url_for("main.dashboard"))
-    return render_template("splash.html")
+    return render_template("splash.html", demo_circuit_json=json.dumps(LED_DEMO_CIRCUIT))
 
 @main_bp.route("/dashboard")
 @login_required

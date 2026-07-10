@@ -129,15 +129,23 @@ Applies to `/try/parse`, `/try/sim`, `/try/lead`:
 
 No CAPTCHA, no bespoke abuse system — bounded inputs plus the rate limiter already in the app.
 
-### SimEngine only — no circuit renderer
+### SimEngine drives the interactive experience — no circuit build tab
 
-The `/try` page never renders `circuit_renderer.js` / a `circuit_image` / wiring `STEPS`.
-`SimEngine` (static/js/sim-engine.js) is a self-contained, code-driven visual simulator that
-needs no photos or physical-hardware assumptions — a visitor writes/places blocks, runs, and
-watches a component (e.g. LED) react on screen. This also means `utils/project_try_it.py`
-needs no `circuit_image` asset and no wiring `STEPS`, only a `sim_config` (per the
-`SimEngine.init` shape documented at the top of sim-engine.js) plus the sketch/steps/drawer
-content that *is* in scope for the follow-up content spec.
+The `/try` page never renders the interactive per-step breadboard build tab: no
+`circuit_image`, no wiring `STEPS`, no walkthrough. `SimEngine` (static/js/sim-engine.js) is a
+self-contained, code-driven visual simulator that needs no photos or physical-hardware
+assumptions — a visitor writes/places blocks, runs, and watches a component (e.g. LED) react
+on screen. This also means `utils/project_try_it.py` needs no `circuit_image` asset and no
+wiring `STEPS`, only a `sim_config` (per the `SimEngine.init` shape documented at the top of
+sim-engine.js) plus the sketch/steps/drawer content that *is* in scope for the follow-up
+content spec.
+
+This does *not* rule out `circuit_renderer.js` entirely: the drawer's Welcome step shows a
+static illustrative diagram of the same LED-on-pin-13 circuit (`utils/demo_circuit.py`'s
+`LED_DEMO_CIRCUIT`, rendered via a `type: "circuit"` drawer tab), the same "teaser graphic,
+no lesson STEPS behind it" pattern splash.html already uses for its marketing demo. The line
+is: a static one-shot diagram is fine anywhere; the interactive build-tab/walkthrough
+machinery (circuit_image + wiring STEPS) is what stays out of `/try`.
 
 ### Email gate
 

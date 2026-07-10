@@ -136,12 +136,13 @@
   border-bottom:1px solid #d0d7de; padding:12px 14px 8px 14px; }
 .drawer-tip { background:#ddf4ff; border-bottom:1px solid #84c7fb;
   padding:8px 14px; font-size:11px; color:#0969da; line-height:1.7; flex-shrink:0; }
-.drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #d0d7de; }
-.drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
-  background:none; border:none; border-bottom:2px solid transparent;
-  color:#57606a; cursor:pointer; text-align:center; transition:color 0.15s; }
-.drawer-tab-btn:hover { color:#24292f; }
-.drawer-tab-btn.active { color:#0969da; border-bottom-color:#0969da; }
+.drawer-tabs { display:flex; flex-shrink:0; gap:4px; margin:10px 14px;
+  padding:4px; background:#eef1f4; border-radius:10px; }
+.drawer-tab-btn { flex:1; padding:8px 6px; font-size:11px; font-family:inherit;
+  font-weight:600; background:none; border:none; border-radius:7px;
+  color:#57606a; cursor:pointer; text-align:center; transition:background 0.15s, color 0.15s; }
+.drawer-tab-btn:hover { background:#e2e6ea; color:#24292f; }
+.drawer-tab-btn.active { background:#ffffff; color:#0969da; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .drawer-tab-panels { flex:1; overflow-y:auto; direction:rtl;
   scrollbar-width:thin; scrollbar-color:#8f9aa6 #eef1f4; }
 .drawer-tab-panels::-webkit-scrollbar { width:9px; }
