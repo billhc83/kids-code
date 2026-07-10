@@ -42,7 +42,15 @@ def get_user_by_email(email):
     resp = supabase.table("users").select("*").eq("email", email).execute()
     return resp.data[0] if resp.data else None
 
-def create_user(email, username, password_hash, is_parent=False, agreed_at=None):
+def get_user_by_id(user_id):
+    resp = supabase.table("users").select("*").eq("id", user_id).execute()
+    return resp.data[0] if resp.data else None
+
+def get_user_by_stripe_subscription_id(subscription_id):
+    resp = supabase.table("users").select("*").eq("stripe_subscription_id", subscription_id).execute()
+    return resp.data[0] if resp.data else None
+
+def create_user(email, username, password_hash, is_parent=False, agreed_at=None, subscription_status="none"):
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
     resp = supabase.table("users").insert({
@@ -56,6 +64,7 @@ def create_user(email, username, password_hash, is_parent=False, agreed_at=None)
         "verification_token_expires": expires,
         "first_login_completed": False,
         "agreed_at": agreed_at,
+        "subscription_status": subscription_status,
     }).execute()
     return resp.data[0] if resp.data else None
 
