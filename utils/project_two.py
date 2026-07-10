@@ -127,6 +127,16 @@ This is how blinking happens — over and over again!
 </p>
 """
         },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "code_driven",
+                "pins": {"8": {"type": "led", "color": "red", "label": "LED"}},
+                "loop_iterations": 4,
+                "max_ms": 8000,
+            }
+        },
         "logic": {
             "label": "💡 Logic",
             "content": """
@@ -169,7 +179,7 @@ void loop() {
   delay(500);
 }""",
     'default_view': 'editor',
-    'read_only': True,
+    'read_only': False,
     'lock_view': True,
     'fill_values': True,
     'fill_conditions': True,

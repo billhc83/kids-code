@@ -326,21 +326,21 @@ window.SimEngine = (function () {
     /* ── Build UI ────────────────────────────────────────────────────────── */
     container.innerHTML = '';
     container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:24px 16px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:14px;';
+      'background:#1a1a2e;border-radius:10px;padding:14px 12px 10px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
 
     var canvas = document.createElement('div');
     canvas.style.cssText =
-      'display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:center;';
+      'display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:center;';
     components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
     container.appendChild(canvas);
 
     var statusBar = document.createElement('div');
     statusBar.style.cssText =
-      'padding:7px 20px;background:rgba(255,255,255,0.04);' +
+      'padding:5px 14px;background:rgba(255,255,255,0.04);' +
       'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
-      'color:#7ab;font-size:11px;font-family:"Courier New",monospace;' +
-      'text-align:center;min-width:220px;max-width:100%;';
+      'color:#7ab;font-size:10px;font-family:"Courier New",monospace;' +
+      'text-align:center;min-width:160px;max-width:100%;';
     statusBar.textContent = 'Ready';
     container.appendChild(statusBar);
 
@@ -552,21 +552,21 @@ window.SimEngine = (function () {
     /* Build UI — same chrome as the interactive sim */
     container.innerHTML = '';
     container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:24px 16px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:14px;';
+      'background:#1a1a2e;border-radius:10px;padding:14px 12px 10px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
 
     var canvas = document.createElement('div');
     canvas.style.cssText =
-      'display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:center;';
+      'display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:center;';
     components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
     container.appendChild(canvas);
 
     var statusBar = document.createElement('div');
     statusBar.style.cssText =
-      'padding:7px 20px;background:rgba(255,255,255,0.04);' +
+      'padding:5px 14px;background:rgba(255,255,255,0.04);' +
       'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
-      'color:#7ab;font-size:11px;font-family:"Courier New",monospace;' +
-      'text-align:center;min-width:220px;max-width:100%;';
+      'color:#7ab;font-size:10px;font-family:"Courier New",monospace;' +
+      'text-align:center;min-width:160px;max-width:100%;';
     statusBar.textContent = 'Simulating…';
     container.appendChild(statusBar);
 
@@ -661,8 +661,8 @@ window.SimEngine = (function () {
     /* Show a loading state while we wait for the server */
     container.innerHTML = '';
     container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:32px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:10px;';
+      'background:#1a1a2e;border-radius:10px;padding:18px 14px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
     var loading = document.createElement('div');
     loading.style.cssText =
       'color:#7ab;font-size:12px;font-family:"Courier New",monospace;letter-spacing:0.5px;';
@@ -685,8 +685,8 @@ window.SimEngine = (function () {
         if (result.error) {
           container.innerHTML = '';
           container.style.cssText =
-            'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
-            'display:flex;flex-direction:column;align-items:center;gap:10px;';
+            'background:#1a1a2e;border-radius:10px;padding:16px 14px;' +
+            'display:flex;flex-direction:column;align-items:center;gap:8px;';
           var errMsg = document.createElement('div');
           errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
           errMsg.textContent = 'Could not run simulation: ' + result.error;
@@ -700,8 +700,8 @@ window.SimEngine = (function () {
       .catch(function () {
         container.innerHTML = '';
         container.style.cssText =
-          'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
-          'display:flex;flex-direction:column;align-items:center;gap:10px;';
+          'background:#1a1a2e;border-radius:10px;padding:16px 14px;' +
+          'display:flex;flex-direction:column;align-items:center;gap:8px;';
         var errMsg = document.createElement('div');
         errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
         errMsg.textContent = 'Simulation error — check your code and try again.';

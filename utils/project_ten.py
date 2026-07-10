@@ -263,8 +263,8 @@ void loop() {
   }
   delay(500); 
 }""",
-    'default_view': 'builder',
-    'read_only': True,
+    'default_view': 'editor',
+    'read_only': False,
     'lock_view': True,
     'fill_values': True,
     'fill_conditions': True,

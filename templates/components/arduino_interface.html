@@ -6,6 +6,7 @@
 
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/drawer.css">
 
 <style>
   * { box-sizing: border-box; }
@@ -320,36 +321,6 @@
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   
-  /* GLOBAL DRAWER */
-  #drawer-tab { position:absolute; right:0; top:48px; bottom:0; width:32px;
-    background:#ef4444; border-left:1px solid #1e293b;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; z-index:100; user-select:none; transition:all 0.2s; }
-  #drawer-tab:hover { background: #dc2626; width: 36px; }
-  #drawer-tab span { writing-mode:vertical-rl; text-orientation:mixed;
-    font-size:13px; font-weight: 600; letter-spacing:.1em; color:#ffffff;
-    text-transform:uppercase; transform:rotate(180deg); }
-  #drawer-panel { position:absolute; right:32px; top:48px; bottom:0; width:0;
-    background:#ffffff; border-left:1px solid #e2e8f0;
-    overflow:hidden; z-index:99; transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-    display:flex; flex-direction:column; box-shadow: -4px 0 15px rgba(0,0,0,0.2); }
-  #drawer-panel.open { width:600px; }
-  #drawer-inner { width:600px; height:100%; display:flex; flex-direction:column; flex-shrink:0; }
-  .drawer-title { font-size:14px; font-weight:700; color:#1e293b;
-    text-transform:uppercase; letter-spacing:.05em; flex-shrink:0;
-    border-bottom:1px solid #f1f5f9; padding:16px 20px; background: #f8fafc; }
-  .drawer-tip { background:#eff6ff; border-bottom:1px solid #dbeafe;
-    padding:12px 20px; font-size:12px; color:#2563eb; line-height:1.6; flex-shrink:0; }
-  .drawer-tabs { display:flex; flex-shrink:0; border-bottom:1px solid #f1f5f9; padding: 0 10px; background: #fff; }
-  .drawer-tab-btn { flex:1; padding:8px 4px; font-size:11px; font-family:inherit;
-    background:none; border:none; border-bottom:2px solid transparent;
-    color:#64748b; cursor:pointer; text-align:center; transition:all 0.2s; font-weight: 600; }
-  .drawer-tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
-  .drawer-tab-panels { flex:1; overflow-y:auto; }
-  .drawer-tab-panel { display:none; padding:20px; color:#1e293b; }
-  .drawer-tab-panel.active { display:block; }
-  .drawer-tab-panel p { font-size:15px; line-height:1.7; white-space:pre-wrap; margin-bottom:12px; }
-  .drawer-tab-panel img { width:100%; border-radius:12px; border:1px solid #e2e8f0; margin-top:12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
   #step-nav {
     transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -463,6 +434,12 @@ let editor;
 let ws;
 let connectedPort;
 let currentMode = 'blocks';
+
+window.getCurrentSketch = function () {
+  if (currentMode === 'editor' && editor) return editor.getValue();
+  return window.getGeneratedCode ? window.getGeneratedCode() : '';
+};
+
 const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
 let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
 

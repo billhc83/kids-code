@@ -79,6 +79,7 @@ def parse():
     return parse_sketch(code, fill_conditions=True, fill_values=True)
 
 @builder_bp.route("/sim/run", methods=["POST"])
+@csrf.exempt
 @login_required
 def sim_run():
     from utils.sim_engine import run as engine_run
