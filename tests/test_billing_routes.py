@@ -20,6 +20,18 @@ def test_subscribe_checkout_redirects_to_stripe(client, monkeypatch):
     assert resp.location == "https://checkout.stripe.com/fake"
 
 
+def test_subscribe_pending_requires_session(client):
+    resp = client.get("/subscribe/pending")
+    assert resp.status_code == 400
+
+
+def test_subscribe_pending_renders_when_session_set(client):
+    with client.session_transaction() as sess:
+        sess["pending_subscription_user_id"] = "user-1"
+    resp = client.get("/subscribe/pending")
+    assert resp.status_code == 200
+
+
 def test_subscribe_success_redirects_to_check_email(client, monkeypatch):
     monkeypatch.setattr("routes.billing.get_user_by_id", lambda uid: {"id": "user-1", "email": "a@example.com"})
     with client.session_transaction() as sess:

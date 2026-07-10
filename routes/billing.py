@@ -49,9 +49,14 @@ def subscribe_cancelled():
     return render_template("subscribe_cancelled.html")
 
 
-@billing_bp.route("/subscribe/pending/<user_id>")
-def subscribe_pending(user_id):
-    session["pending_subscription_user_id"] = user_id
+@billing_bp.route("/subscribe/pending")
+def subscribe_pending():
+    # No user_id in the URL on purpose — only routes/auth.py's login() sets
+    # session['pending_subscription_user_id'], after it has already verified the
+    # caller's username+password. Accepting an id from the URL/query here instead
+    # would let anyone start a Checkout session against an arbitrary account.
+    if not session.get("pending_subscription_user_id"):
+        abort(400)
     return render_template("subscribe_pending.html")
 
 

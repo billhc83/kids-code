@@ -61,6 +61,11 @@
 <div class="auth-wrap">
     <div class="auth-card">
         <h2>Your subscription isn't active yet</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+          {% endif %}
+        {% endwith %}
         <p>If you just paid, give it a moment and <a href="{{ url_for('auth.login') }}">try logging in again</a>.</p>
         <form method="GET" action="{{ url_for('billing.subscribe_checkout') }}">
             <button type="submit">Resume Checkout</button>
