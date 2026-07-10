@@ -3,6 +3,12 @@ import responses
 import bcrypt
 from flask import session
 
+
+@pytest.fixture(autouse=True)
+def _disable_csrf(app):
+    app.config["WTF_CSRF_ENABLED"] = False
+
+
 def test_login_success(client, mock_supabase):
     # Setup mock user
     hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()
@@ -12,7 +18,9 @@ def test_login_success(client, mock_supabase):
         "password_hash": hashed,
         "is_parent": False,
         "is_admin": False,
-        "is_verified": True
+        "is_verified": True,
+        "user_type": "standard",
+        "subscription_status": "active",
     }
     
     # Mock Supabase GET user
@@ -81,7 +89,7 @@ def test_register_success(client, mock_supabase):
         json=[],
         status=200
     )
-    
+
     # Mock user creation
     mock_supabase.add(
         responses.POST,
@@ -89,21 +97,99 @@ def test_register_success(client, mock_supabase):
         json=[{"id": "new-user-id", "verification_token": "mock-token"}],
         status=201
     )
-    
-    # Mock Resend email
-    mock_supabase.add(
-        responses.POST,
-        "https://api.resend.com/emails",
-        json={},
-        status=200
-    )
 
     response = client.post("/register", data={
         "email": "test@example.com",
         "username": "newuser",
         "password": "password123",
-        "is_parent": "false"
+        "is_parent": "false",
+        "agree_tos": "true",
     })
 
     assert response.status_code == 302
-    assert response.location.endswith("/check-email")
+    assert "/subscribe/checkout" in response.location
+
+
+def test_register_redirects_to_checkout(client, mock_supabase):
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/users?username=eq.newuser2&limit=1",
+        json=[],
+        status=200
+    )
+    mock_supabase.add(
+        responses.POST,
+        "https://mock-project.supabase.co/rest/v1/users",
+        json=[{"id": "new-user-id-2", "verification_token": "mock-token-2"}],
+        status=201
+    )
+
+    response = client.post("/register", data={
+        "email": "test2@example.com", "username": "newuser2", "password": "password123",
+        "is_parent": "false", "agree_tos": "true",
+    })
+    assert response.status_code == 302
+    assert "/subscribe/checkout" in response.location
+
+
+def test_login_blocks_standard_user_without_active_subscription(client, mock_supabase):
+    hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()
+    mock_user = {
+        "id": "user-456",
+        "username": "pendinguser",
+        "password_hash": hashed,
+        "is_parent": False,
+        "is_admin": False,
+        "is_verified": True,
+        "user_type": "standard",
+        "subscription_status": "pending",
+    }
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/users?username=eq.pendinguser&limit=1",
+        json=[mock_user],
+        status=200
+    )
+
+    response = client.post("/login", data={"username": "pendinguser", "password": "password123"})
+    assert response.status_code == 302
+    assert "/subscribe/pending" in response.location
+
+
+def test_login_allows_provisioned_user_regardless_of_subscription_status(client, mock_supabase):
+    hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()
+    mock_user = {
+        "id": "user-789",
+        "username": "classuser",
+        "password_hash": hashed,
+        "is_parent": False,
+        "is_admin": False,
+        "is_verified": True,
+        "user_type": "class",
+        "subscription_status": "none",
+        "is_teacher": False,
+        "first_login_completed": True,
+        "agreed_at": "2026-01-01T00:00:00+00:00",
+    }
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/users?username=eq.classuser&limit=1",
+        json=[mock_user],
+        status=200
+    )
+    mock_supabase.add(
+        responses.GET,
+        "https://mock-project.supabase.co/rest/v1/progression?user_id=eq.user-789&lesson_key=eq.getting_started",
+        json=[],
+        status=200
+    )
+    mock_supabase.add(
+        responses.POST,
+        "https://mock-project.supabase.co/rest/v1/progression",
+        json=[],
+        status=201
+    )
+
+    response = client.post("/login", data={"username": "classuser", "password": "password123"})
+    assert response.status_code == 302
+    assert "/subscribe" not in response.location

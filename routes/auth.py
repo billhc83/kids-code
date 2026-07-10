@@ -3,7 +3,7 @@ from extensions import limiter
 import datetime
 from utils.auth import (
     get_user_by_username, check_password, create_user,
-    hash_password, send_verification_email, verify_token,
+    hash_password, verify_token,
     resend_verification_email, create_reset_token, send_reset_email,
     verify_reset_token, reset_password_with_token, mark_first_login_complete,
     is_legacy_hash, upgrade_password_hash
@@ -31,6 +31,9 @@ def login():
             session["pending_email"] = user["email"]
             flash("Please verify your email before logging in.")
             return redirect(url_for("auth.check_email"))
+        if user["user_type"] == "standard" and user.get("subscription_status") not in ("active", "past_due"):
+            flash("Your subscription isn't active yet.")
+            return redirect(url_for("billing.subscribe_pending", user_id=user["id"]))
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["is_parent"] = user["is_parent"]
@@ -84,14 +87,13 @@ def register():
 
         agreed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         password_hash = hash_password(password)
-        user = create_user(email, username, password_hash, is_parent, agreed_at=agreed_at)
+        user = create_user(email, username, password_hash, is_parent, agreed_at=agreed_at, subscription_status="pending")
         if not user:
             flash("Registration failed, please try again")
             return render_template("register.html")
-        
-        send_verification_email(email, user["verification_token"])
-        session["pending_email"] = email
-        return redirect(url_for("auth.check_email"))
+
+        session["pending_subscription_user_id"] = user["id"]
+        return redirect(url_for("billing.subscribe_checkout"))
     return render_template("register.html")
 
 @auth_bp.route("/verify/<token>")
