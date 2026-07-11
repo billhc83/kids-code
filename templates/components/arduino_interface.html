@@ -541,6 +541,8 @@ window.updateDrawer = function(stepIdx) {
         if (!window.SimEngine) return;
         if (cfg.mode === 'code_driven') {
           SimEngine.initCodeDriven(simDiv, cfg);
+        } else if (cfg.mode === 'interpreted') {
+          SimEngine.initInterpreted(simDiv, cfg);
         } else {
           SimEngine.init(simDiv, cfg);
         }

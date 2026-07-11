@@ -184,22 +184,13 @@ If all of these work, your patrol light bar is operating correctly!
             "label": "🎮 Try It",
             "type": "sim",
             "sim_config": {
+              "mode": "interpreted",
               "components": [
                 {"type": "button", "id": "btn1",  "pin": 12, "label": "Master Button"},
                 {"type": "led",    "id": "led_r",  "color": "red",   "pin": 8, "label": "Red Light"},
                 {"type": "led",    "id": "led_b",  "color": "blue",  "pin": 6, "label": "Blue Light"},
                 {"type": "led",    "id": "led_w",  "color": "white", "pin": 4, "label": "Clear Strobe"},
               ],
-              "behaviors": [
-                {
-                  "when": {"btn1": "pressed"},
-                  "then": {"_sequence": ["led_r", "led_b", "led_w"], "_interval": 150}
-                },
-                {
-                  "when": {"btn1": "released"},
-                  "then": {"_stop_sequence": "yes", "led_r": "off", "led_b": "off", "led_w": "off"}
-                },
-              ]
             }
           }
         }

@@ -166,6 +166,17 @@ Turn the crystal OFF 🌑</p>
 Runs forever like a bubbling experiment 🧪♻️<br>
 Check → Decide → Glow → Repeat!</p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "button", "id": "btn1", "pin": 2, "label": "Button"},
+                    {"type": "led",    "id": "led1", "color": "red", "pin": 8, "label": "Crystal"},
+                ],
+            }
         }
     }
 },

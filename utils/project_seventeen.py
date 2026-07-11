@@ -243,23 +243,10 @@ DRAWER_CONTENT = {
                         "label": "🎮 Try It",
                         "type": "sim",
                         "sim_config": {
+                            "mode": "interpreted",
                             "components": [
-                                {"type": "sonar",  "id": "sonar1",    "label": "Musical Sensor", "pin_trig": 9, "pin_echo": 10, "labels": {"safe": "🟢 Higher Pitch", "warning": "🟡 Medium", "danger": "🔴 Lower Pitch"}},
+                                {"type": "sonar",  "id": "sonar1",    "label": "Musical Sensor", "pin_trig": 9, "pin_echo": 10},
                                 {"type": "buzzer", "id": "musmaker",                         "pin": 3, "label": "Music Maker"},
-                            ],
-                            "behaviors": [
-                                {
-                                    "when": {"sonar1": "safe"},
-                                    "then": {"musmaker": "on", "_stop_beep": "yes"}
-                                },
-                                {
-                                    "when": {"sonar1": "warning"},
-                                    "then": {"_stop_beep": "yes", "_beep": "musmaker", "_beep_interval": 300}
-                                },
-                                {
-                                    "when": {"sonar1": "danger"},
-                                    "then": {"musmaker": "on", "_stop_beep": "yes"}
-                                },
                             ]
                         }
                     }

@@ -251,12 +251,9 @@ Try multiple times and see how fast you can react!
             "label": "🎮 Try It",
             "type": "sim",
             "sim_config": {
+              "mode": "interpreted",
               "components": [
                 {"type": "button", "id": "btn1", "pin": 2, "label": "Timer Button"},
-                {"type": "timer",  "id": "tmr1",           "label": "Reaction Time"},
-              ],
-              "behaviors": [
-                {"when": {"btn1": "pressed"}, "then": {"tmr1": "toggle"}},
               ]
             }
           }

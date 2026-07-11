@@ -82,13 +82,24 @@ def parse():
 @csrf.exempt
 @login_required
 def sim_run():
-    from utils.sim_engine import run as engine_run
+    from utils.sim_engine import run as engine_run, interpret
     from utils.badges import award_simulator_badge
     data = request.get_json(silent=True) or {}
     sketch = data.get('sketch', '')
     sim_config = data.get('sim_config', {})
     try:
-        result = engine_run(sketch, sim_config)
+        if sim_config.get('mode') == 'interpreted':
+            # Phase 0 real interpreter (SIM_ENGINE_ROLLOUT_SPEC.md step 1b) —
+            # discrete request/response against a live input_state snapshot,
+            # not a pre-baked timeline. See utils/sim_engine.py::interpret.
+            # `state` (Phase 1, item 4) is the opaque `_state` blob this same
+            # endpoint returned on a previous call for this sketch — the
+            # browser round-trips it verbatim so globals/setup() only run
+            # once and millis()/micros() see a real, persistent clock across
+            # separate button presses instead of resetting every request.
+            result = interpret(sketch, data.get('input_state', {}), state=data.get('state'))
+        else:
+            result = engine_run(sketch, sim_config)
         award_simulator_badge(session["user_id"])
         return result
     except Exception as e:
