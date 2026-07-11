@@ -1,6 +1,6 @@
 /* Shared info-drawer styles — used by templates/components/arduino_interface.html
    and templates/try_it_builder.html. Keep this the single source of truth;
-   don't re-add #drawer-*/.drawer-* rules to either template's inline <style>. */
+   don't re-add #drawer-* or .drawer-* rules to either template's inline <style>. */
 
 #drawer-tab {
   position: absolute; right: 0; top: 48px; bottom: 0; width: 32px;

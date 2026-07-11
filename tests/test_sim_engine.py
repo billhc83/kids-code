@@ -12,8 +12,14 @@ import pytest
 
 from utils.sim_engine import interpret
 import utils.project_three as project_three
+import utils.project_four as project_four
+import utils.project_ten as project_ten
 import utils.project_seventeen as project_seventeen
 import utils.project_nineteen as project_nineteen
+import utils.project_seven as project_seven
+import utils.project_six as project_six
+import utils.project_eight as project_eight
+import utils.project_five as project_five
 
 
 # ── project_three: single if/else, one INPUT_PULLUP button ─────────────────
@@ -32,6 +38,47 @@ def test_project_three_button_pressed_led_on():
     result = interpret(sketch, input_state={2: 0})  # pressed pulls pin LOW
 
     assert result['pin_states'][8] == 'HIGH'
+
+
+# ── project_four: identical shape to three, buzzer instead of LED ──────────
+
+def test_project_four_button_not_pressed_buzzer_off():
+    sketch = project_four.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={})  # pin 2 defaults HIGH (idle, pullup)
+
+    assert result['pin_modes'][2] == 'INPUT_PULLUP'
+    assert result['pin_modes'][8] == 'OUTPUT'
+    assert result['pin_states'][8] == 'LOW'
+
+
+def test_project_four_button_pressed_buzzer_on():
+    sketch = project_four.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={2: 0})  # pressed pulls pin LOW
+
+    assert result['pin_states'][8] == 'HIGH'
+
+
+# ── project_ten: two switches read into vars before the && comparison ──────
+
+def test_project_ten_both_switches_idle_access_granted():
+    sketch = project_ten.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={2: 1, 3: 1})  # idle pullup == 1
+
+    assert result['pin_states'][8] == 'HIGH'
+
+
+def test_project_ten_one_switch_engaged_access_denied():
+    sketch = project_ten.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={2: 0, 3: 1})
+
+    assert result['pin_states'][8] == 'LOW'
+
+
+def test_project_ten_both_switches_engaged_access_denied():
+    sketch = project_ten.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={2: 0, 3: 0})
+
+    assert result['pin_states'][8] == 'LOW'
 
 
 # ── project_eleven-shaped sketch: nested if/else, two INPUT_PULLUP inputs ──
@@ -362,6 +409,146 @@ def test_eight_shaped_bright_branch_has_no_sequence():
     assert 'pin_sequences' not in result
 
 
+# ── Rollout plan Step 1a: A0-A5 constants ───────────────────────────────────
+# Closes the gap noted above — analogRead(A0) previously raised "Unknown
+# identifier 'A0'" because A0 wasn't in _CONSTANTS, even though analogRead()
+# itself already resolved against input_state the same way digitalRead() does.
+
+def test_analog_pin_constants_resolve_to_distinct_pin_numbers():
+    from utils.sim_engine import _CONSTANTS
+
+    analog_pins = [_CONSTANTS['A' + str(i)] for i in range(6)]
+    assert len(set(analog_pins)) == 6
+    assert all(isinstance(p, int) for p in analog_pins)
+
+
+LDR_SKETCH = """
+int lightSensor = A0;
+
+void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  int brightness = analogRead(lightSensor);
+  if (brightness < 300) {
+    digitalWrite(13, HIGH);
+  } else {
+    digitalWrite(13, LOW);
+  }
+}
+"""
+
+
+def test_analog_read_a0_dark_branch_turns_led_on():
+    from utils.sim_engine import _CONSTANTS
+
+    result = interpret(LDR_SKETCH, input_state={_CONSTANTS['A0']: 100})
+    assert result['pin_states'][13] == 'HIGH'
+
+
+def test_analog_read_a0_bright_branch_turns_led_off():
+    from utils.sim_engine import _CONSTANTS
+
+    result = interpret(LDR_SKETCH, input_state={_CONSTANTS['A0']: 800})
+    assert result['pin_states'][13] == 'LOW'
+
+
+# ── Rollout plan Step 4: seven/six/eight real sketches (LDR-dependent) ──────
+# All three read analogRead(A0), which resolves to pin 14 via _CONSTANTS —
+# see the A0 tests above for why that only recently became possible.
+
+def test_seven_bright_light_stays_off():
+    sketch = project_seven.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 800})  # bright, >= 300 threshold
+
+    assert result['pin_modes'][13] == 'OUTPUT'
+    assert result['pin_states'][13] == 'LOW'
+
+
+def test_seven_dark_light_turns_on():
+    sketch = project_seven.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 100})  # dark, < 300 threshold
+
+    assert result['pin_states'][13] == 'HIGH'
+
+
+# ── project_six: LDR + console only, no LED/buzzer at all ──────────────────
+
+def test_six_bright_reports_surface_on_console():
+    sketch = project_six.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 800})  # bright, > 400 threshold
+
+    assert any('SURFACE' in line for line in result['console_lines'])
+    assert not any('MIDNIGHT' in line for line in result['console_lines'])
+
+
+def test_six_dark_reports_midnight_zone_on_console():
+    sketch = project_six.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 100})  # dark, <= 400 threshold
+
+    assert any('MIDNIGHT' in line for line in result['console_lines'])
+    assert not any('SURFACE' in line for line in result['console_lines'])
+
+
+# ── project_five: no branching, no inputs, console-only output ─────────────
+
+def test_five_console_only_no_pin_states():
+    sketch = project_five.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={})
+
+    assert result['console_lines'] == [
+        '--- SPY PHONE ON ---',
+        'I am a hacker!',
+        'Mission: Success!',
+    ]
+    assert result['pin_states'] == {}
+
+
+# ── project_eight: LDR-driven re-triggerable blink+tone alarm ──────────────
+# The dark branch's delay-paced blink+tone is *not* re-triggered server-side
+# on a timer — initInterpreted's existing playSequences() already loops
+# whatever pin_sequences a single interpret() call returns, client-side,
+# every `sequence_duration` ms, until a fresh input event (the LDR slider
+# moving back to bright) tears the loop down (see sim-engine.js's
+# initInterpreted doc comment). Since this branch has no state that changes
+# across passes, replaying the one recorded sequence forever is equivalent
+# to actually re-invoking loop() every pass — so Step 4c's design decision
+# (option (a), prefer client-side) needs zero new code, just confirmation
+# that repeated interpret() calls with the same input keep producing the
+# identical sequence rather than drifting.
+
+def test_eight_dark_produces_blink_and_roar_sequence():
+    sketch = project_eight.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 100})  # dark, < 350 threshold
+
+    assert result['pin_sequences'][13] == [
+        {'t': 0, 'state': 'HIGH'}, {'t': 150, 'state': 'LOW'},
+    ]
+    assert result['pin_sequences'][8] == [
+        {'t': 0, 'state': 'HIGH'}, {'t': 150, 'state': 'LOW'},
+    ]
+    assert result['sequence_duration'] == 300
+
+
+def test_eight_bright_has_no_sequence_stays_quiet():
+    sketch = project_eight.SKETCH_PRESET['sketch']
+    result = interpret(sketch, input_state={14: 800})  # bright, >= 350 threshold
+
+    assert result['pin_states'][13] == 'LOW'
+    assert result['pin_states'][8] == 'LOW'
+    assert 'pin_sequences' not in result
+
+
+def test_eight_repeated_calls_with_unchanged_input_produce_identical_sequence():
+    sketch = project_eight.SKETCH_PRESET['sketch']
+    first = interpret(sketch, input_state={14: 100})
+    second = interpret(sketch, input_state={14: 100})
+
+    assert first['pin_sequences'] == second['pin_sequences']
+    assert first['sequence_duration'] == second['sequence_duration']
+
+
 # ── Phase 1 (SIM_ENGINE_ROLLOUT_SPEC.md item 4): arithmetic, new types,
 #    millis()/micros(), pulseIn, and persistent state across interpret() calls
 # ─────────────────────────────────────────────────────────────────────────
@@ -536,7 +723,11 @@ def test_thirteen_reaction_timer_state_is_json_safe():
 #    interpreter alone (no sim_config/frontend wiring; see rollout spec item
 #    4's "not done yet" note) correctly evaluates persistent sawA/sawB flags,
 #    micros()-based timing, and the float speed calculation against the
-#    project's actual, unmodified Step 10 sketch. ─────────────────────────
+#    project's actual, unmodified Step 10 sketch. `distance` is an int in
+#    centimetres (not a float in metres) because the block-builder parser has
+#    no float→block mapping — any phantom `float` declaration silently
+#    mis-types as a String block, so project_eighteen.py locks the whole
+#    detection/speed-calc logic and keeps `distance` as a plain int. ───────
 
 EIGHTEEN_RESOLVED_SKETCH = """
 int trigA = 2;
@@ -544,7 +735,7 @@ int echoA = 3;
 int trigB = 4;
 int echoB = 5;
 
-float distance = 0.20;
+int distance = 20;
 unsigned long timeA = 0;
 bool sawA = false;
 unsigned long timeB = 0;
@@ -587,7 +778,7 @@ void loop() {
   if (sawA == true && sawB == true) {
     float timeDiff = (timeB - timeA) / 1000000.0;
     float speed = distance / timeDiff;
-    Serial.print("Speed m/s: ");
+    Serial.print("Speed cm/s: ");
     Serial.println(speed);
     sawA = false;
     sawB = false;
@@ -613,8 +804,8 @@ def test_eighteen_speed_trap_persists_sawA_across_calls_and_computes_speed():
         EIGHTEEN_RESOLVED_SKETCH, input_state={3: 3000, 5: 1000},
         state=r1['_state'], now_ms=1_000_500.0,
     )
-    assert r2['console_lines'] == ['Saw B', 'Speed m/s: ', '0.4']
-    # distance (0.20m) / timeDiff (0.5s) = 0.4 m/s
+    assert r2['console_lines'] == ['Saw B', 'Speed cm/s: ', '40.0']
+    # distance (20cm) / timeDiff (0.5s) = 40.0 cm/s
 
     # Pass 3: sawA/sawB were reset by the speed-calc branch — Sensor A must
     # be able to fire again for the next run without a stale flag blocking it.
@@ -623,6 +814,46 @@ def test_eighteen_speed_trap_persists_sawA_across_calls_and_computes_speed():
         state=r2['_state'], now_ms=1_002_000.0,
     )
     assert r3['console_lines'] == ['Saw A']
+
+
+# ── Step 6a/6d: continuous-polling model. `eighteen` has no click to wait
+#    for — the frontend's initInterpreted() polls it on a fixed cadence (see
+#    sim-engine.js's schedulePoll()) instead of only re-running on input
+#    events. There's no JS test harness in this repo (SIM_ENGINE_ROLLOUT_PLAN.md
+#    Step 8's opening note), so this covers what the *engine* must guarantee
+#    for polling to be safe: many rapid interpret() calls with unchanged
+#    input don't re-fire a detection that already latched (sawA's guard),
+#    and repeated calls a poll tick apart (150ms, matching the client's
+#    cadence) stay stable rather than drifting or erroring. ─────────────────
+
+def test_eighteen_repeated_polling_calls_with_unchanged_input_dont_refire_detection():
+    # Object sits still near Sensor A (never reaches B) for several poll
+    # ticks in a row — sawA's guard must keep this to a single "Saw A", not
+    # one per tick, exactly as a single real click would.
+    state = None
+    console_lines = []
+    for i in range(5):
+        r = interpret(
+            EIGHTEEN_RESOLVED_SKETCH, input_state={3: 1000, 5: 3000},
+            state=state, now_ms=1_000_000.0 + i * 150,
+        )
+        state = r['_state']
+        console_lines += r.get('console_lines', [])
+    assert console_lines == ['Ready!', 'Saw A']
+
+
+def test_eighteen_polling_cadence_produces_no_errors_and_stable_state():
+    # Nothing near either sensor for a run of 150ms-spaced ticks (the
+    # client's poll interval) — should just idle indefinitely with no
+    # exceptions and no spurious prints.
+    state = None
+    for i in range(10):
+        r = interpret(
+            EIGHTEEN_RESOLVED_SKETCH, input_state={3: 3000, 5: 3000},
+            state=state, now_ms=1_000_000.0 + i * 150,
+        )
+        assert 'console_lines' not in r or r['console_lines'] == ['Ready!']
+        state = r['_state']
 
 
 # ── Phase 2 (SIM_ENGINE_ROLLOUT_SPEC.md item 5): map() + continuous
@@ -711,6 +942,119 @@ def test_tone_without_frequency_arg_has_no_pin_frequencies():
     result = interpret(sketch, {})
     assert result['pin_states'][3] == 'HIGH'
     assert 'pin_frequencies' not in result
+
+
+# ── project_fifteen-shaped sketch: sonar distance → 3-way if/elseif/else
+#    zones (safe/warning/danger), tone()/noTone() buzzer, no persisted
+#    state across calls. Hand-resolved (directives stripped) equivalent of
+#    utils/project_fifteen.py's Mission Complete step, same convention as
+#    eleven above.
+
+FIFTEEN_RESOLVED_SKETCH = """
+int trigPin = 9;
+int echoPin = 10;
+int buzzerPin = 3;
+int greenLED = 4;
+int yellowLED = 5;
+int redLED = 6;
+long duration = 0;
+int distance = 0;
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(yellowLED, OUTPUT);
+  pinMode(redLED, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  if (duration == 0) {
+    distance = 999;
+  }
+  else {
+    distance = duration * 0.034 / 2;
+  }
+  if (distance > 50) {
+    noTone(buzzerPin);
+    digitalWrite(greenLED, HIGH);
+    digitalWrite(yellowLED, LOW);
+    digitalWrite(redLED, LOW);
+  }
+  else if (distance > 20) {
+    tone(buzzerPin, 1000);
+    delay(300);
+    noTone(buzzerPin);
+    delay(300);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(yellowLED, HIGH);
+    digitalWrite(redLED, LOW);
+  }
+  else {
+    tone(buzzerPin, 1500);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(yellowLED, LOW);
+    digitalWrite(redLED, HIGH);
+  }
+  delay(50);
+}
+"""
+
+
+def _fifteen_duration_for_cm(distance_cm):
+    # Inverse of the sketch's own distance = duration * 0.034 / 2.
+    return distance_cm * 2 / 0.034
+
+
+def test_fifteen_safe_zone_green_on_buzzer_off():
+    result = interpret(FIFTEEN_RESOLVED_SKETCH, input_state={10: _fifteen_duration_for_cm(60)})
+    assert result['pin_states'][4] == 'HIGH'   # green
+    assert result['pin_states'][5] == 'LOW'    # yellow
+    assert result['pin_states'][6] == 'LOW'    # red
+    assert result['pin_states'][3] == 'LOW'    # buzzer off (noTone)
+    assert 3 not in result.get('pin_frequencies', {})
+    assert 'pin_sequences' not in result       # no repeated write to any pin
+
+
+def test_fifteen_no_echo_treated_as_safe():
+    # duration == 0 (nothing detected) is explicitly special-cased to a
+    # far-away distance (999), which must land in the safe zone.
+    result = interpret(FIFTEEN_RESOLVED_SKETCH, input_state={10: 0})
+    assert result['pin_states'][4] == 'HIGH'
+    assert result['pin_states'][3] == 'LOW'
+
+
+def test_fifteen_warning_zone_yellow_on_buzzer_beeps():
+    result = interpret(FIFTEEN_RESOLVED_SKETCH, input_state={10: _fifteen_duration_for_cm(30)})
+    assert result['pin_states'][4] == 'LOW'
+    assert result['pin_states'][5] == 'HIGH'
+    assert result['pin_states'][6] == 'LOW'
+    # tone() then noTone() within the same pass — final state is off, but
+    # the two writes must show up as a repeating beep timeline, not a
+    # single flat state.
+    assert result['pin_states'][3] == 'LOW'
+    assert result['pin_sequences'][3] == [
+        {'t': 0, 'state': 'HIGH'},
+        {'t': 300, 'state': 'LOW'},
+    ]
+
+
+def test_fifteen_danger_zone_red_on_buzzer_continuous():
+    result = interpret(FIFTEEN_RESOLVED_SKETCH, input_state={10: _fifteen_duration_for_cm(10)})
+    assert result['pin_states'][4] == 'LOW'
+    assert result['pin_states'][5] == 'LOW'
+    assert result['pin_states'][6] == 'HIGH'
+    assert result['pin_states'][3] == 'HIGH'
+    assert result['pin_frequencies'][3] == 1500
+    assert 'pin_sequences' not in result       # single continuous tone, not a beep
 
 
 # ── project_seventeen's real Mission Complete sketch — sonar distance

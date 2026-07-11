@@ -1,8 +1,8 @@
 {
   "embedding_model": "text-embedding-3-small",
   "dimension": 1536,
-  "built_at": "2026-07-10T15:15:13.514042+00:00",
-  "corpus_hash_auto": "ae96d13a6da8c2661f29e62d17a66176762eb38a8080f1c4f4ae93d36ea8ceab",
+  "built_at": "2026-07-11T17:52:17.408054+00:00",
+  "corpus_hash_auto": "876bc41adf77dc4b2ff3bc2e6905b2e341dc49ef9215852ca8b388123e83658c",
   "corpus_hash_authored": "7eecd73401fdd48e37b3b4756131b6355e2fd4d8f5a591e6a83f9c72a3537001",
   "chunks": [
     {
@@ -352,7 +352,7 @@
       "step_index": 1,
       "tab_key": "explain",
       "title": "Project 18: Drag Race Speed Tracker — Step 2 — Timing & State Vars ⏱️ (📖 What & Why)",
-      "text": "The sensor pins are mapped — now your speed trap needs three more things! 📋 It needs to know how far apart the sensors are, an empty stopwatch for Sensor A, and a flag to remember if something already passed through. Without these, the calculator has nothing to work with when the object zooms by! ⏱️",
+      "text": "The sensor pins are mapped — now your speed trap needs two more things! 📋 It needs to know how far apart the sensors are, and a flag to remember if something already passed Sensor A. Without these, the calculator has nothing to work with when the object zooms by! ⏱️",
       "tags": []
     },
     {
@@ -362,7 +362,7 @@
       "step_index": 1,
       "tab_key": "howto",
       "title": "Project 18: Drag Race Speed Tracker — Step 2 — Timing & State Vars ⏱️ (🔧 How To)",
-      "text": "1. Distance between sensors 📌 Tell the Arduino how far apart your two sensors are placed. 🧱 Use a Declare decimal label block — it stores numbers with a decimal point. 🔢 Name: distance | Value: 0.20 (sensors are 20 cm apart). Change this if you move them! ✅ The Arduino knows your track length. 📏 2. Sensor A timer 📌 Create an empty stopwatch to record when Sensor A fires. 🧱 Use a Declare big number label block — it holds the very large numbers needed for microsecond time. 🔢 Name: timeA | Start at 0 — the watch hasn't started yet. ✅ Stopwatch timeA is standing by! ⏱️ 3. Sensor A detection flag 📌 Create a yes/no flag that remembers if Sensor A already spotted something this run. 🧱 Use a Declare yes/no label block — it can only be true or false. 🔢 Name: sawA | Start at false — nothing has passed yet. ✅ The flag is down. Sensor A hasn't seen anything yet! 🚩 Locked: timeB and sawB are the matching boxes for Sensor B — pre-filled so you focus on one sensor at a time.",
+      "text": "1. Distance between sensors 📌 Tell the Arduino how far apart your two sensors are placed, in centimetres. 🧱 Use a Declare number label block. 🔢 Name: distance | Value: 20 (sensors are 20 cm apart). Change this if you move them! ✅ The Arduino knows your track length. 📏 2. Sensor A detection flag 📌 Create a yes/no flag that remembers if Sensor A already spotted something this run. 🧱 Use a Declare yes/no label block — it can only be true or false. 🔢 Name: sawA | Start at false — nothing has passed yet. ✅ The flag is down. Sensor A hasn't seen anything yet! 🚩 Locked: timeA and timeB are stopwatch boxes that hold the exact microsecond each sensor fires, and sawB is Sensor B's matching flag — pre-filled so you focus on the two ideas above.",
       "tags": []
     },
     {
@@ -542,7 +542,7 @@
       "step_index": 7,
       "tab_key": "howto",
       "title": "Project 18: Drag Race Speed Tracker — Step 8 — Detect at Sensor A 🚩 (🔧 How To)",
-      "text": "1. Check if Sensor A spotted something 📌 Check two things at once: is something close to Sensor A, AND has it not already been detected this run? 🧱 Use an If block with two conditions joined by AND. 🔢 distanceA &lt; 30 (something within 30 cm) AND sawA == false (first detection only). ✅ If both are true, the Arduino records the time — otherwise it skips. 2. Record the time at Sensor A 📌 Stamp the exact microsecond the object crossed Sensor A into the timeA memory box. 🧱 Use a Set label block with a Micros reading inside. 🔢 micros() gives the current time in microseconds. Store it in timeA . ✅ timeA now holds the start time of the run! ⏱️ 3. Mark Sensor A as triggered 📌 Raise the flag so Sensor A won't fire again during this run. 🧱 Set label block. 🔢 Set sawA to true . ✅ The start flag is up — Sensor A is done for this run! 🚩 Locked: Serial.println prints a confirmation to the Serial Monitor — useful for watching detections live during testing.",
+      "text": "1. Check if Sensor A spotted something 📌 Check two things at once: is something close to Sensor A, AND has it not already been detected this run? 🧱 Use an If block with two conditions joined by AND. 🔢 distanceA &lt; 30 (something within 30 cm) AND sawA == false (first detection only). ✅ If both are true, the Arduino records the time — otherwise it skips. 2. Record the time at Sensor A 📌 Stamp the exact microsecond the object crossed Sensor A into the timeA memory box. 🧱 Use a Set label block with a Micros reading block inside. 🔢 micros() gives the current time in microseconds — more precise than millis(), which is why our speed trap uses it. Store it in timeA . ✅ timeA now holds the start time of the run! ⏱️ 3. Mark Sensor A as triggered 📌 Raise the flag so Sensor A won't fire again during this run. 🧱 Set label block. 🔢 Set sawA to true . ✅ The start flag is up — Sensor A is done for this run! 🚩 Locked: Serial.println prints a confirmation to the Serial Monitor — useful for watching detections live during testing.",
       "tags": []
     },
     {
@@ -552,7 +552,7 @@
       "step_index": 7,
       "tab_key": "logic",
       "title": "Project 18: Drag Race Speed Tracker — Step 8 — Detect at Sensor A 🚩 (🧠 Logic)",
-      "text": "Think of a trip wire at the start of a race track! 🏁 The moment a car breaks the wire, a crew member yells the time into the radio. Setting sawA = true is like that crew member shouting GOT IT — so nobody records the start twice! 🔊",
+      "text": "Think of a trip wire at the start of a race track! 🏁 The moment a car breaks the wire, a crew member stamps the time and shouts GOT IT into the radio. Setting sawA = true is like that crew member shouting — so nobody records the start twice! 🔊",
       "tags": []
     },
     {
@@ -562,7 +562,7 @@
       "step_index": 8,
       "tab_key": "explain",
       "title": "Project 18: Drag Race Speed Tracker — Step 9 — Detect at Sensor B 🏁 (📖 What & Why)",
-      "text": "Sensor A has stamped the start — now we need the finish! 🏎️ Sensor B watches the far end of the speed trap. This step checks three things every loop: is something close to Sensor B, did Sensor A already fire, and has Sensor B NOT fired yet? All three must be true for a valid finish-line crossing. ⏱️",
+      "text": "Sensor A has stamped the start — now we need the finish! 🏎️ Sensor B watches the far end of the speed trap. The finish-line check itself is given to you this step — it combines three things at once (something is close to Sensor B, the race already started at Sensor A, AND the finish hasn't been recorded yet), which is a lot to line up in one go. Once that check passes, you'll build the same two moves you just did for Sensor A: stamp the time, raise the flag. ⏱️",
       "tags": []
     },
     {
@@ -572,7 +572,7 @@
       "step_index": 8,
       "tab_key": "howto",
       "title": "Project 18: Drag Race Speed Tracker — Step 9 — Detect at Sensor B 🏁 (🔧 How To)",
-      "text": "1. Check if Sensor B caught the object 📌 Confirm something is close to Sensor B, the race started, AND the finish hasn't been recorded yet. 🧱 If block with three conditions joined by AND. 🔢 distanceB &lt; 30 AND sawA == true AND sawB == false . ✅ Only a real, complete pass triggers this — no false alarms! 2. Record the time at Sensor B 📌 Stamp the finish-line crossing time into timeB. 🧱 Set label block with Micros inside. 🔢 micros() captures the exact moment. Store in timeB . ✅ timeB is the finish time — now we have both! 🏁 3. Mark Sensor B as triggered 📌 Raise the Sensor B flag so the finish isn't recorded twice. 🧱 Set label block. 🔢 Set sawB to true . ✅ Both timestamps locked in. Speed calculation can begin! 🔒 Locked: Serial.println confirms the finish-line trigger live — pre-filled as a testing helper.",
+      "text": "1. Record the time at Sensor B 📌 Stamp the finish-line crossing time into timeB. 🧱 Use a Set label block with a Micros reading block inside — same combo as Step 8. 🔢 micros() captures the exact moment. Store it in timeB . ✅ timeB is the finish time — now we have both! 🏁 2. Mark Sensor B as triggered 📌 Raise the Sensor B flag so the finish isn't recorded twice. 🧱 Set label block. 🔢 Set sawB to true . ✅ Both timestamps locked in. Speed calculation can begin! 🔒 Locked: the surrounding if (distanceB &lt; 30 && sawA == true && sawB == false) check and the closing Serial.println confirmation are pre-filled — the three-way check is given so you can focus on what happens once it passes.",
       "tags": []
     },
     {
@@ -592,7 +592,7 @@
       "step_index": 9,
       "tab_key": "explain",
       "title": "Project 18: Drag Race Speed Tracker — Step 10 — Calculate & Show Speed 🚀 (📖 What & Why)",
-      "text": "Both sensors have fired — the data is in! 🏁 The Arduino subtracts the start time from the finish time to get how long the run took, then divides your 20 cm track by that time. The result prints live to the screen: real speed in metres per second! Then the trap resets for the next run. 🔄",
+      "text": "Both sensors have fired — the data is in! 🏁 The Arduino subtracts the start time from the finish time to get how long the run took, then divides your track distance by that time. The result prints live to the screen: real speed in centimetres per second! Then the trap resets for the next run. 🔄",
       "tags": []
     },
     {
@@ -602,7 +602,7 @@
       "step_index": 9,
       "tab_key": "howto",
       "title": "Project 18: Drag Race Speed Tracker — Step 10 — Calculate & Show Speed 🚀 (🔧 How To)",
-      "text": "1. Check if both sensors fired 📌 Make sure we only calculate when BOTH sensors recorded a hit. 🧱 If block with two AND conditions. 🔢 sawA == true AND sawB == true . ✅ The calculator only runs after a complete, valid pass! 2. Calculate the speed 📌 Divide the track distance by the time taken to get the speed. 🧱 Declare decimal label block with a divide operation inside. 🔢 distance (0.20 m) divided by timeDiff (time in seconds). Name it speed . ✅ speed holds the real speed in metres per second! 🚀 3. Display the speed 📌 Print the speed number on the Serial Monitor. 🧱 Print line block. 🔢 Print the speed label — the actual calculated number. ✅ Your speed pops up on screen right after the label! 📺 4. Reset Sensor A 📌 Put Sensor A's flag back down so the trap is ready for the next object. 🧱 Set label block. 🔢 Set sawA to false . ✅ Sensor A is armed for the next run! 🏁 5. Wait before the next run 📌 Pause one second so the object is fully clear before the trap resets. 🧱 Delay block. 🔢 1000 milliseconds = 1 second. ✅ The speed trap resets cleanly — ready for the next challenger! 🔄 Locked: timeDiff converts the gap from microseconds to seconds (÷ 1,000,000). Serial.print prints the label text before the number. sawB = false resets the finish flag.",
+      "text": "1. Check if both sensors fired 📌 Make sure we only calculate when BOTH sensors recorded a hit. 🧱 If block with two AND conditions. 🔢 sawA == true AND sawB == true . ✅ The calculator only runs after a complete, valid pass! 2. Display the speed 📌 Print the speed number on the Serial Monitor. 🧱 Print line block. 🔢 Print the speed label — the actual calculated number. ✅ Your speed pops up on screen right after the label! 📺 3. Reset Sensor A 📌 Put Sensor A's flag back down so the trap is ready for the next object. 🧱 Set label block. 🔢 Set sawA to false . ✅ Sensor A is armed for the next run! 🏁 4. Wait before the next run 📌 Pause one second so the object is fully clear before the trap resets. 🧱 Delay block. 🔢 1000 milliseconds = 1 second. ✅ The speed trap resets cleanly — ready for the next challenger! 🔄 Locked: timeDiff converts the microsecond gap into seconds (÷ 1,000,000). speed = distance ÷ timeDiff is the actual physics formula — given so you can see it, since it needs a decimal (not whole-number) block our builder doesn't have yet. Serial.print prints the label text before the number. sawB = false resets the finish flag.",
       "tags": []
     },
     {
@@ -612,7 +612,7 @@
       "step_index": 9,
       "tab_key": "logic",
       "title": "Project 18: Drag Race Speed Tracker — Step 10 — Calculate & Show Speed 🚀 (🧠 Logic)",
-      "text": "Speed = Distance ÷ Time — the same maths real race engineers use! 🏎️ If your toy car covers 20 cm in 0.5 seconds, it's going 0.40 m/s. The Arduino does all of this in microseconds — your speed trap is a real scientific instrument! 🔬",
+      "text": "Speed = Distance ÷ Time — the same maths real race engineers use! 🏎️ If your toy car covers 20 cm in 0.5 seconds, it's going 40 cm/s. The Arduino does all of this in microseconds — your speed trap is a real scientific instrument! 🔬",
       "tags": []
     },
     {
@@ -632,7 +632,7 @@
       "step_index": 10,
       "tab_key": "howto",
       "title": "Project 18: Drag Race Speed Tracker — Mission Complete 🎉 (🔧 Try This Next)",
-      "text": "Now that your speed trap works, here are some ideas to make it even better! 🟢 Change the distance — move your sensors further apart, update the distance value, and see how readings change. 🟢 Adjust the threshold — change &lt; 30 to &lt; 20 in both detection steps and test if it triggers more reliably. 🟡 Speed LED — add an LED that flashes every time a speed is recorded. 🟡 Record breaker — store the fastest speed and print NEW RECORD! whenever it's beaten. 🔴 Top 3 leaderboard — save the three fastest speeds and print the full leaderboard after each run. 🔴 Convert to km/h — multiply the speed by 3.6 and display both m/s and km/h for every run. Experimenting is how real drag strip engineers improve their systems! 🔧",
+      "text": "Now that your speed trap works, here are some ideas to make it even better! 🟢 Change the distance — move your sensors further apart, update the distance value, and see how readings change. 🟡 Adjust the threshold — switch to the code editor and change &lt; 30 to &lt; 20 in the detection code, then test if it triggers more reliably. 🟡 Speed LED — add an LED that flashes every time a speed is recorded. 🟡 Record breaker — store the fastest speed and print NEW RECORD! whenever it's beaten. 🔴 Top 3 leaderboard — save the three fastest speeds and print the full leaderboard after each run. 🔴 Convert to km/h — multiply the speed by 0.036 and display both cm/s and km/h for every run. Experimenting is how real drag strip engineers improve their systems! 🔧",
       "tags": []
     },
     {
@@ -1742,7 +1742,17 @@
       "step_index": null,
       "tab_key": "pins",
       "title": "Project 1: Lights ON!! (🤖 Pins)",
-      "text": "Meet the Pins — Your Arduino's Body! Imagine your Arduino is a tiny robot brain 🤖 The pins are how it interacts with the world — like arms, ears, and a mouth! Without pins, the brain would just sit there thinking. Pins let it sense and act . 👂 The \"Ear\" Pins (Inputs) These pins listen to the world: ❓ Is someone pressing my button? ❓ Is it dark in this room? ❓ Is there something moving nearby? 🗣️ The \"Mouth\" Pins (Outputs) These pins talk to your components: 💡 Turn on the light! ⚙️ Spin the motor! 🎵 Beep-beep! Two Ways to Talk 1️⃣ On or Off (Digital) Like a light switch — YES or NO 💡 2️⃣ A Little Bit (PWM) Like a volume knob — dim lights or slow motors 🔉",
+      "text": "Meet the Pins — Your Arduino's Body! Imagine your Arduino is a tiny robot brain 🤖 The pins are how it interacts with the world — like arms, ears, and a mouth! Without pins, the brain would just sit there thinking. Pins let it sense and act . 👂 The \"Ear\" Pins (Inputs) These pins listen to the world: ❓ Is someone pressing my button? ❓ Is it dark in this room? ❓ Is there something moving nearby? 🗣️ The \"Mouth\" Pins (Outputs) These pins talk to your components: 💡 Turn on the light! ⚙️ Spin the motor! 🎵 Beep-beep! Two Ways to Talk 1️⃣ On or Off (Digital) Like a light switch — YES or NO 💡 2️⃣ A Little Bit (PWM) Like a volume knob — dim lights or slow motors 🔉 🔌 This Project's Pin Your LED talks to Arduino through Pin 8 . Pin 8 is a Mouth pin — it sends power out to turn your light ON! 💡",
+      "tags": []
+    },
+    {
+      "id": "project_one:words",
+      "source": "auto",
+      "project_key": "project_one",
+      "step_index": null,
+      "tab_key": "words",
+      "title": "Project 1: Lights ON!! (🔤 Words to Know)",
+      "text": "🔤 Words to Know New words in your Sketch? Let's crack the code! 🕵️ pinMode This tells Arduino \"get this pin ready!\" It's like putting on your shoes before you run. 👟 OUTPUT This means \"this pin will send power out.\" It's a Mouth pin, ready to talk! 🗣️ digitalWrite This tells a pin exactly what to do right now. It's like flipping a light switch. 🔦 HIGH This means \"turn ON! Send power now!\" ⚡ The opposite is LOW, which means \"turn OFF.\"",
       "tags": []
     },
     {
@@ -2242,7 +2252,17 @@
       "step_index": 0,
       "tab_key": "explain",
       "title": "Try It: Light It Up! — Welcome! 👋 (📖 What's happening)",
-      "text": "Every KidsCode lesson gives your child a real circuit to build with real components — a breadboard, an Arduino UNO, LEDs, sensors — paired with real Arduino C++ code. This trial skips the circuit-building (no hardware required right now) so you can jump straight to the part that surprises people most: watching a real program run, written by a real kid, in under five minutes. You'll do this twice, two different ways. First you'll type one line of code by hand, exactly like a professional Arduino programmer would. Then you'll build the same kind of logic again — this time by clicking blocks together instead of typing. By the end you'll have seen both directions: code becoming blocks, and blocks becoming code. That's the whole idea behind how KidsCode teaches — block-based coding isn't a toy substitute for \"real\" programming here, it's a launchpad into it. Hit Next to get started.",
+      "text": "👋 Every KidsCode lesson gives you a real circuit and real Arduino code. This trial skips building the circuit — no hardware needed right now. Curious what it looks like? Switch to the 🔌 The Circuit tab above. You'll jump straight to the fun part: making a program run. In under 5 minutes. 🔁 You'll do it twice, two different ways: ⌨️ First, type one line of code by hand — like a real programmer. 🧩 Then, build the same idea again with blocks — click instead of type. By the end, you'll see code become blocks, and blocks become code. That's the whole idea behind KidsCode. 👉 Hit Next to get started.",
+      "tags": []
+    },
+    {
+      "id": "project_try_it:step0:circuit",
+      "source": "auto",
+      "project_key": "project_try_it",
+      "step_index": 0,
+      "tab_key": "circuit",
+      "title": "Try It: Light It Up! — Welcome! 👋 (🔌 The Circuit)",
+      "text": "Here's the circuit behind this trial: one LED, one resistor, wired into pin 13. Every real KidsCode project comes with a diagram just like this one to follow — so once you're ready, you can build it for real on your own Arduino, with your own hands.",
       "tags": []
     },
     {
@@ -2252,7 +2272,7 @@
       "step_index": 1,
       "tab_key": "pitch",
       "title": "Try It: Light It Up! — Step 1 — Turn it ON 💡 (✨ Why this matters)",
-      "text": "You're looking at the code editor — the exact same place professional programmers write Arduino code. No blocks, no drag-and-drop, just a blinking cursor. Inside loop() you'll see a comment marking the spot, with a blank line right below it. Type this on that blank line: digitalWrite(ledPin, HIGH); That single line means \"send power to the LED pin.\" digitalWrite is a function — it takes two pieces of information (a pin, and a state) and does something real the instant your program reaches that line. Once you've typed it, tap Switch to Blocks in the top bar and watch the line you just typed turn into a block, automatically. That's not a trick: blocks and code are always two views of the exact same program running underneath. Blocks view has three panels — Global (things set up once, before anything runs), setup() (runs one time, at the very start), and loop() (runs over and over, forever — this is where the action is, and where your line just landed). Whichever panel was open last stays open, so if you don't immediately see your block, click the loop() panel to open it. Now for the fun part — open the 🎮 Try It tab and press RUN YOUR CODE . Watch the light switch on. Then come back here and try flipping HIGH to LOW — either by editing the word directly in the code editor, or by clicking the dropdown on the block in Blocks view — and press RUN YOUR CODE again. One word changed, and the result completely flips. That's the core loop of programming: change something small, run it, see what happens. Just flip it back to HIGH before you tap Complete Step — the mission is to turn the light on .",
+      "text": "You're in the code editor 👨‍💻 — the same place real Arduino programmers write code. Look inside loop() . Find the blank line under the comment. Type this: digitalWrite(ledPin, HIGH); That line means: \"send power to the LED pin.\" 💡 Tap Switch to Blocks . Watch your line turn into a block — automatically! Blocks and code are always the same program. Just two different views. 🧭 Blocks view has 3 panels: 🌐 Global — set up once, before anything runs. ⚙️ setup() — runs one time, right at the start. 🔁 loop() — runs forever. This is where your code just landed! Don't see your block? Click the loop() panel to open it. 🎮 Now open the Try It tab and press RUN YOUR CODE . Watch the light turn on! Now try flipping HIGH to LOW : ✏️ In the editor: edit the word directly. 🧩 In Blocks: click the dropdown on your block. Press RUN YOUR CODE again. One word changed. The result flipped! That's the core loop of programming: change something small → run it → see what happens. ⚠️ Flip it back to HIGH before you tap Complete Step . The mission is to turn the light on .",
       "tags": []
     },
     {
@@ -2262,7 +2282,7 @@
       "step_index": 1,
       "tab_key": "howto",
       "title": "Try It: Light It Up! — Step 1 — Turn it ON 💡 (🔧 How To)",
-      "text": "Look inside loop() — a comment marks the spot, with a blank line below it. Click that blank line and type: digitalWrite(ledPin, HIGH); Tap Switch to Blocks in the top bar and watch your line become a block. If you don't see it right away, click the loop() panel — that's one of three sections (Global, setup(), loop()), and your code lives in loop(). Open the 🎮 Try It tab and press RUN YOUR CODE — the light turns on. Try it both ways: in Blocks , click the block's HIGH/LOW dropdown and switch it to LOW; in the editor , you can instead edit the word directly. Either way, press RUN YOUR CODE again and watch the light turn off. Set it back to HIGH , then tap Complete Step .",
+      "text": "🔍 Find the blank line inside loop() , under the comment. ⌨️ Type: digitalWrite(ledPin, HIGH); 🧩 Tap Switch to Blocks . Watch your line become a block. 🔁 Don't see it? Click the loop() panel — that's where your code lives. 🎮 Open Try It and press RUN YOUR CODE . The light turns on! 🔀 Try LOW instead: flip the block's dropdown (Blocks), or edit the word (editor). Run again — the light turns off. ✅ Set it back to HIGH . Tap Complete Step .",
       "tags": []
     },
     {
@@ -2272,7 +2292,7 @@
       "step_index": 2,
       "tab_key": "pitch",
       "title": "Try It: Light It Up! — Step 2 — Make it blink! ✨ (✨ Why this matters)",
-      "text": "Last step, you typed real code by hand. This time you'll build with blocks instead, using the bucket — the panel of ready-made blocks on the left. Placing a block always follows the same move: click one of the blue boxes in the workspace (that's a spot waiting for a block), it turns purple to show it's selected, then click the block you want in the bucket. It drops straight out of the bucket into that purple box — no typing, no worrying about semicolons or spelling. This step introduces something new: delay() needs that same move done twice , because it has a blank inside it. First place the delay block itself the usual way — blue box, then delay from the bucket. Once it lands, look inside it: there's a second, smaller empty box waiting for a number — that's how long to wait, in milliseconds (1000 ms = 1 second). Click that box, then click value in the bucket's Expressions section — a number field appears right inside your block. Type 500 into it. That's called a value , and nearly every useful block has one hiding somewhere inside it — learning to spot and fill them in is a real programming skill, not just a KidsCode quirk. Once both delay blocks are placed and their numbers are typed in, switch to the 🎮 Try It tab and press RUN YOUR CODE to watch your light blink at that exact speed. Then come back, click into one of those number fields, change 500 to something else — try 100 for a nervous, fast blink, or 2000 for a slow, lazy one — and press RUN YOUR CODE again. Nothing about the blocks changed, only the number inside them, and the whole rhythm of your program changed with it. Set both numbers back to 500 before you tap Complete Step . Tap Switch to Editor any time to see the real code your blocks just wrote — you're still building the exact same program either way, just faster.",
+      "text": "Last step, you typed code by hand. This time: blocks . 🧩 Every block follows the same move: 🔵 Click a blue box in the workspace. 🟣 It turns purple — selected! 🪣 Click the block you want in the bucket. ✨ It drops right in. No typing. No semicolons. No spelling. ⏱️ This step is different: delay() has a blank inside it. delay() pauses your program. But for how long? You have to say — in milliseconds. (1000 ms = 1 second.) So delay needs that move done twice : 🔵🟣🪣 Place the delay block the usual way. 🔎 Look inside it — there's a smaller empty box. Click that box, then click value in the bucket's Expressions section. ⌨️ A number field appears. Type 500 . That empty box is called a value . Almost every useful block has one hiding inside it. Spotting them is a real programming skill! 🎮 Once both delays are placed and filled in, open Try It and press RUN YOUR CODE . Watch it blink! 🔬 Now experiment: Click a number field. Change 500 . Try 100 — a fast, nervous blink. ⚡ Try 2000 — a slow, lazy blink. 🐢 Press RUN YOUR CODE again each time. Same blocks. Different number. Totally different rhythm. ✅ Set both numbers back to 500 . Then tap Complete Step . Tip: tap Switch to Editor anytime to see the real code your blocks wrote.",
       "tags": []
     },
     {
@@ -2282,7 +2302,7 @@
       "step_index": 2,
       "tab_key": "howto",
       "title": "Try It: Light It Up! — Step 2 — Make it blink! ✨ (🔧 How To)",
-      "text": "Click the highlighted blue box in the workspace — it turns purple to show it's selected. Click delay in the bucket — it drops straight into that purple box. Its inner number box is still empty. Click that empty inner box, then click value in the bucket's Expressions section — a number field appears. Type 500 into that field (milliseconds — half a second). Repeat steps 1–4 for the second highlighted box. Open the 🎮 Try It tab and press RUN YOUR CODE to watch it blink. Click back into a number field, try a different number (like 100 or 2000 ), and press RUN YOUR CODE again to see the timing change. Set both numbers back to 500 , then tap Complete Step .",
+      "text": "🔵 Click the highlighted blue box — it turns 🟣 purple. 🪣 Click delay in the bucket. It drops right in. 🔎 Click the empty box inside it. 🪣 Click value in the bucket's Expressions section. ⌨️ Type 500 into the number field. 🔁 Repeat steps 1–5 for the second highlighted box. 🎮 Open Try It and press RUN YOUR CODE . Watch it blink! 🔬 Change a number (try 100 or 2000 ). Run again — hear the difference in speed. ✅ Set both numbers back to 500 . Tap Complete Step .",
       "tags": []
     },
     {
@@ -2292,7 +2312,7 @@
       "step_index": 3,
       "tab_key": "explain",
       "title": "Try It: Light It Up! — You did it! 🎉 (🚀 What's next)",
-      "text": "Take a second look at what just happened: you controlled real hardware logic, in both code and blocks, with zero setup, zero downloads, and zero prior experience. You typed a real line of C++. You placed real blocks — including filling in a real function argument, a concept plenty of adult beginners trip over. And you used a live simulator to test your own hypothesis about what would happen when you changed a value. That's the actual practice of programming, not a preview of it. Every KidsCode lesson builds on exactly this pattern — except with a real circuit on the desk (an actual LED, actual wires, an actual Arduino UNO), a story to guide the way through it, and code that gets meaningfully more capable with every project: buttons, sensors, sound, motors, and eventually multi-part builds that combine all of it — more projects keep unlocking as you go. Keep exploring this page as long as you like — the 🎮 Try It tab below is still yours to experiment with. When you're ready to build for real, sign up to get started, or reach out if you've got questions first.",
+      "text": "Look what you just did: 💻 Controlled real hardware logic — in code and blocks. ⌨️ Typed a real line of C++. 🧩 Placed real blocks, including filling in a real value. (Plenty of adults trip on that one!) 🔬 Used a live simulator to test your own idea. That's the actual practice of programming. Not a preview of it. 🎯 Every KidsCode lesson builds on exactly this: 🔌 A real circuit on your desk — real LED, real wires, real Arduino. 📖 A story to guide you. 🚀 Code that grows: buttons, sensors, sound, motors — even multi-part builds. More projects keep unlocking as you go. 🎮 Keep playing with the Try It tab below — it's still yours. Ready to build for real? Sign up below. Or reach out with questions first. 👇",
       "tags": []
     },
     {

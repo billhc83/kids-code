@@ -186,6 +186,17 @@ The system repeats forever:<br>
 Check → Decide → Sound → Repeat 🔁
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "button", "id": "btn1", "pin": 2, "label": "Launch Button"},
+                    {"type": "buzzer", "id": "buz1", "pin": 8, "label": "Launch Alarm"},
+                ],
+            }
         }
     }
 },

@@ -348,8 +348,6 @@ window.updateDrawer = function(stepIdx) {
           SimEngine.initCodeDriven(simDiv, cfg);
         } else if (cfg.mode === 'interpreted') {
           SimEngine.initInterpreted(simDiv, cfg);
-        } else {
-          SimEngine.init(simDiv, cfg);
         }
       }, 0);
     } else if (tab.type === 'circuit' && tab.circuit_def) {

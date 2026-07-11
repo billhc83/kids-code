@@ -422,26 +422,13 @@ DRAWER_CONTENT = {
             "label": "🎮 Try It",
             "type": "sim",
             "sim_config": {
+                "mode": "interpreted",
                 "components": [
                     {"type": "sonar",  "id": "sonar1",    "label": "Distance Sensor", "pin_trig": 9, "pin_echo": 10},
                     {"type": "led",    "id": "greenLED",  "color": "green",  "pin": 4, "label": "Safe"},
                     {"type": "led",    "id": "yellowLED", "color": "yellow", "pin": 5, "label": "Warning"},
                     {"type": "led",    "id": "redLED",    "color": "red",    "pin": 6, "label": "Danger"},
                     {"type": "buzzer", "id": "buz1",                         "pin": 3, "label": "Buzzer"},
-                ],
-                "behaviors": [
-                    {
-                        "when": {"sonar1": "safe"},
-                        "then": {"greenLED": "on", "yellowLED": "off", "redLED": "off", "buz1": "off", "_stop_beep": "yes"}
-                    },
-                    {
-                        "when": {"sonar1": "warning"},
-                        "then": {"greenLED": "off", "yellowLED": "on", "redLED": "off", "_stop_beep": "yes", "_beep": "buz1", "_beep_interval": 400}
-                    },
-                    {
-                        "when": {"sonar1": "danger"},
-                        "then": {"greenLED": "off", "yellowLED": "off", "redLED": "on", "buz1": "on", "_stop_beep": "yes"}
-                    },
                 ]
             }
         }

@@ -235,6 +235,7 @@ class BlockTransformer(Transformer):
         full_name = f"{prefix}.{name}" if prefix else name
         
         if full_name == "millis": return {'type': 'millis', 'params': [], 'children': []}
+        if full_name == "micros": return {'type': 'micros', 'params': [], 'children': []}
         if full_name == "Serial.available": return {'type': 'serialavailable', 'params': [], 'children': []}
         if full_name == "analogRead": return {'type': 'analogread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
         if full_name == "digitalRead": return {'type': 'digitalread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
@@ -288,7 +289,7 @@ def strip_expr_values(node):
     if node is None: return None
     t = node['type']
     if t == 'value': return None
-    if t in ('millis', 'serialavailable', 'serialreadstring'): return node
+    if t in ('millis', 'micros', 'serialavailable', 'serialreadstring'): return node
     if t == 'servoread': return {'type': 'servoread', 'params': [''], 'children': []}
     if t in ('analogread', 'digitalread'): return {'type': t, 'params': [''], 'children': []}
     if t == 'pulsein': return {'type': 'pulsein', 'params': ['', 'HIGH'], 'children': []}

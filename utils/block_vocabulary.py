@@ -152,6 +152,13 @@ BLOCKS = {
         "as_expr":   True,
         "note":      "Used as: currentTime = millis();",
     },
+    "micros": {
+        "syntax":    "micros()",
+        "zones":     ["loop", "if", "for", "while"],
+        "teachable": True,
+        "as_expr":   True,
+        "note":      "Used as: currentTime = micros(); — microsecond-resolution timing.",
+    },
     "map": {
         "syntax":    "map({val}, {fromLow}, {fromHigh}, {toLow}, {toHigh})",
         "zones":     ["loop", "if", "for", "while"],

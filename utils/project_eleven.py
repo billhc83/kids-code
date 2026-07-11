@@ -229,17 +229,12 @@ If all of these work, your engine logic is correct!
             "label": "🎮 Try It",
             "type": "sim",
             "sim_config": {
+              "mode": "interpreted",
               "components": [
                 {"type": "switch", "id": "sw1",  "pin": 9, "label": "Arm Switch"},
                 {"type": "button", "id": "btn1", "pin": 7, "label": "Start Button"},
                 {"type": "led",    "id": "led1", "color": "red", "pin": 2, "label": "Armed Light"},
                 {"type": "buzzer", "id": "buz1", "pin": 5, "label": "Engine"},
-              ],
-              "behaviors": [
-                {"when": {"sw1": "on"},                        "then": {"led1": "on"}},
-                {"when": {"sw1": "on",  "btn1": "pressed"},    "then": {"buz1": "on"}},
-                {"when": {"sw1": "on",  "btn1": "released"},   "then": {"buz1": "off"}},
-                {"when": {"sw1": "off"},                       "then": {"led1": "off", "buz1": "off"}},
               ]
             }
           }

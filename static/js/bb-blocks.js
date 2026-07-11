@@ -41,7 +41,7 @@
   BB.UNO_PWM_PINS        = ['3','5','6','9','10','11'];
 
   BB.EXPR_COLORS = {
-    'analogread': '#1a7f37', 'digitalread': '#1a7f37', 'pulsein': '#1a7f37', 'millis': '#0969da',
+    'analogread': '#1a7f37', 'digitalread': '#1a7f37', 'pulsein': '#1a7f37', 'millis': '#0969da', 'micros': '#0969da',
     'random': '#e36209', 'math': '#9a6700', 'map': '#6f42c1', 'constrain': '#cf222e', 'value': '#57606a'
   };
 
@@ -141,6 +141,11 @@
       allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
       inputs: [],
       genExpr: function (p) { return 'millis()'; }
+    },
+    micros: {
+      allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
+      inputs: [],
+      genExpr: function (p) { return 'micros()'; }
     },
     tone: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,

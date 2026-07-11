@@ -168,14 +168,24 @@ sketch (see audit tables above for which projects land where).
   carve-out discussion above; recommend resolving this as a scope decision before
   counting it into any estimate.
 
-### What becomes obsolete
+### What becomes obsolete — done
 
-- `templates/admin/sim_builder.html` (Sim Builder GUI) — nothing left to author by hand
-  once `sim_config` is just a components/pins declaration (visual mapping only) and all
-  logic comes from interpreting the live sketch.
-- The `behaviors` key in `sim_config` entirely, once every shipped project is retrofitted.
-- Until full retrofit lands, `code_driven` and `behaviors` project configs still need to
-  coexist — this doc doesn't assume a big-bang cutover.
+Retired in `SIM_ENGINE_ROLLOUT_PLAN.md` Step 9, once a repo-wide grep confirmed zero
+remaining `"behaviors"`/hand-authored `components`-mode configs across `utils/project_*.py`:
+
+- `templates/admin/sim_builder.html` (Sim Builder GUI) — deleted, along with its
+  `/admin/sim-builder` route in `routes/admin.py` and its dashboard link in
+  `templates/admin/index.html`.
+- The `behaviors` key in `sim_config` — no project references it anymore.
+- The hand-authored client path in `static/js/sim-engine.js` — the `init()` function
+  (behavior evaluation, sequence/beep/timer helpers, zone-based sonar) is deleted, along
+  with the now-dead `applySonar()`/`SONAR_ZONE_*` helpers it exclusively used. The
+  `else` fallback branch that called `SimEngine.init()` is removed from both dispatch
+  sites (`templates/components/arduino_interface.html`,
+  `templates/try_it_builder.html`) — every `sim_config` now resolves to either
+  `code_driven` or `interpreted`. `initTimeline()` is unaffected (still used internally
+  by `initCodeDriven()` for `one`/`two`/`sixteen`/`try_it`) and is no longer part of the
+  public `SimEngine` export since nothing outside the module called it directly.
 
 ---
 

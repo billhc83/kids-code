@@ -141,10 +141,9 @@ int echoB = 5;
 
 //>> Step 2 — Timing & State Vars | guided | blocks
 
-//?? Set the distance between sensors
-float distance = 0.20;
-//?? Create a timer for Sensor A
-unsigned long timeA = 0;
+//?? Set the distance between sensors in centimetres
+int distance = 20;
+//## unsigned long timeA = 0;
 //?? Track if Sensor A saw something
 bool sawA = false;
 //## unsigned long timeB = 0;
@@ -301,15 +300,13 @@ void loop() {
   //##   sawA = true;
   //##   Serial.println("Saw A");
   //## }
-
-  //?? Check if Sensor B caught the object
-  if (distanceB < 30 && sawA == true && sawB == false) {
+  //## if (distanceB < 30 && sawA == true && sawB == false) {
     //?? Record the time at Sensor B
     timeB = micros();
     //?? Mark that Sensor B saw the object
     sawB = true;
     //## Serial.println("Saw B");
-  }
+  //## }
 }
 
 //>> Step 10 — Calculate & Show Speed | guided | blocks
@@ -345,9 +342,8 @@ void loop() {
   //?? Check if both sensors caught the object
   if (sawA == true && sawB == true) {
     //## float timeDiff = (timeB - timeA) / 1000000.0;
-    //?? Calculate speed from distance and time
-    float speed = distance / timeDiff;
-    //## Serial.print("Speed m/s: ");
+    //## float speed = distance / timeDiff;
+    //## Serial.print("Speed cm/s: ");
     //?? Display the speed on the monitor
     Serial.println(speed);
     //?? Reset Sensor A for the next race
@@ -390,15 +386,15 @@ DRAWER_CONTENT = {
             },
             {
                 "title": "Step 2 — Timing & State Vars ⏱️",
-                "tip": "Set up your stopwatches and detection flags before the race begins!",
+                "tip": "Set the track length and a detection flag before the race begins!",
                 "tabs": {
                     "explain": {
                         "label": "📖 What & Why",
-                        "content": "<p>The sensor pins are mapped — now your speed trap needs three more things! 📋 It needs to know how far apart the sensors are, an empty stopwatch for Sensor A, and a flag to remember if something already passed through.</p><p>Without these, the calculator has nothing to work with when the object zooms by! ⏱️</p>"
+                        "content": "<p>The sensor pins are mapped — now your speed trap needs two more things! 📋 It needs to know how far apart the sensors are, and a flag to remember if something already passed Sensor A.</p><p>Without these, the calculator has nothing to work with when the object zooms by! ⏱️</p>"
                     },
                     "howto": {
                         "label": "🔧 How To",
-                        "content": "<p><strong>1. Distance between sensors</strong></p><p>📌 Tell the Arduino how far apart your two sensors are placed.</p><p>🧱 Use a <strong>Declare decimal label</strong> block — it stores numbers with a decimal point.</p><p>🔢 Name: <code>distance</code> | Value: <code>0.20</code> (sensors are 20 cm apart). Change this if you move them!</p><p>✅ The Arduino knows your track length. 📏</p><hr><p><strong>2. Sensor A timer</strong></p><p>📌 Create an empty stopwatch to record when Sensor A fires.</p><p>🧱 Use a <strong>Declare big number label</strong> block — it holds the very large numbers needed for microsecond time.</p><p>🔢 Name: <code>timeA</code> | Start at <code>0</code> — the watch hasn't started yet.</p><p>✅ Stopwatch timeA is standing by! ⏱️</p><hr><p><strong>3. Sensor A detection flag</strong></p><p>📌 Create a yes/no flag that remembers if Sensor A already spotted something this run.</p><p>🧱 Use a <strong>Declare yes/no label</strong> block — it can only be true or false.</p><p>🔢 Name: <code>sawA</code> | Start at <code>false</code> — nothing has passed yet.</p><p>✅ The flag is down. Sensor A hasn't seen anything yet! 🚩</p><p><em>Locked: timeB and sawB are the matching boxes for Sensor B — pre-filled so you focus on one sensor at a time.</em></p>"
+                        "content": "<p><strong>1. Distance between sensors</strong></p><p>📌 Tell the Arduino how far apart your two sensors are placed, in centimetres.</p><p>🧱 Use a <strong>Declare number label</strong> block.</p><p>🔢 Name: <code>distance</code> | Value: <code>20</code> (sensors are 20 cm apart). Change this if you move them!</p><p>✅ The Arduino knows your track length. 📏</p><hr><p><strong>2. Sensor A detection flag</strong></p><p>📌 Create a yes/no flag that remembers if Sensor A already spotted something this run.</p><p>🧱 Use a <strong>Declare yes/no label</strong> block — it can only be true or false.</p><p>🔢 Name: <code>sawA</code> | Start at <code>false</code> — nothing has passed yet.</p><p>✅ The flag is down. Sensor A hasn't seen anything yet! 🚩</p><p><em>Locked: timeA and timeB are stopwatch boxes that hold the exact microsecond each sensor fires, and sawB is Sensor B's matching flag — pre-filled so you focus on the two ideas above.</em></p>"
                     },
                     "logic": {
                         "label": "🧠 Logic",
@@ -506,11 +502,11 @@ DRAWER_CONTENT = {
                     },
                     "howto": {
                         "label": "🔧 How To",
-                        "content": "<p><strong>1. Check if Sensor A spotted something</strong></p><p>📌 Check two things at once: is something close to Sensor A, AND has it not already been detected this run?</p><p>🧱 Use an <strong>If</strong> block with two conditions joined by AND.</p><p>🔢 <code>distanceA &lt; 30</code> (something within 30 cm) AND <code>sawA == false</code> (first detection only).</p><p>✅ If both are true, the Arduino records the time — otherwise it skips.</p><hr><p><strong>2. Record the time at Sensor A</strong></p><p>📌 Stamp the exact microsecond the object crossed Sensor A into the timeA memory box.</p><p>🧱 Use a <strong>Set label</strong> block with a <strong>Micros</strong> reading inside.</p><p>🔢 micros() gives the current time in microseconds. Store it in <code>timeA</code>.</p><p>✅ timeA now holds the start time of the run! ⏱️</p><hr><p><strong>3. Mark Sensor A as triggered</strong></p><p>📌 Raise the flag so Sensor A won't fire again during this run.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawA</code> to <code>true</code>.</p><p>✅ The start flag is up — Sensor A is done for this run! 🚩</p><p><em>Locked: Serial.println prints a confirmation to the Serial Monitor — useful for watching detections live during testing.</em></p>"
+                        "content": "<p><strong>1. Check if Sensor A spotted something</strong></p><p>📌 Check two things at once: is something close to Sensor A, AND has it not already been detected this run?</p><p>🧱 Use an <strong>If</strong> block with two conditions joined by AND.</p><p>🔢 <code>distanceA &lt; 30</code> (something within 30 cm) AND <code>sawA == false</code> (first detection only).</p><p>✅ If both are true, the Arduino records the time — otherwise it skips.</p><hr><p><strong>2. Record the time at Sensor A</strong></p><p>📌 Stamp the exact microsecond the object crossed Sensor A into the timeA memory box.</p><p>🧱 Use a <strong>Set label</strong> block with a <strong>Micros</strong> reading block inside.</p><p>🔢 micros() gives the current time in microseconds — more precise than millis(), which is why our speed trap uses it. Store it in <code>timeA</code>.</p><p>✅ timeA now holds the start time of the run! ⏱️</p><hr><p><strong>3. Mark Sensor A as triggered</strong></p><p>📌 Raise the flag so Sensor A won't fire again during this run.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawA</code> to <code>true</code>.</p><p>✅ The start flag is up — Sensor A is done for this run! 🚩</p><p><em>Locked: Serial.println prints a confirmation to the Serial Monitor — useful for watching detections live during testing.</em></p>"
                     },
                     "logic": {
                         "label": "🧠 Logic",
-                        "content": "<p>Think of a trip wire at the start of a race track! 🏁 The moment a car breaks the wire, a crew member yells the time into the radio.</p><p>Setting sawA = true is like that crew member shouting GOT IT — so nobody records the start twice! 🔊</p>"
+                        "content": "<p>Think of a trip wire at the start of a race track! 🏁 The moment a car breaks the wire, a crew member stamps the time and shouts GOT IT into the radio.</p><p>Setting sawA = true is like that crew member shouting — so nobody records the start twice! 🔊</p>"
                     }
                 }
             },
@@ -520,11 +516,11 @@ DRAWER_CONTENT = {
                 "tabs": {
                     "explain": {
                         "label": "📖 What & Why",
-                        "content": "<p>Sensor A has stamped the start — now we need the finish! 🏎️ Sensor B watches the far end of the speed trap. This step checks three things every loop: is something close to Sensor B, did Sensor A already fire, and has Sensor B NOT fired yet?</p><p>All three must be true for a valid finish-line crossing. ⏱️</p>"
+                        "content": "<p>Sensor A has stamped the start — now we need the finish! 🏎️ Sensor B watches the far end of the speed trap. The finish-line check itself is given to you this step — it combines three things at once (something is close to Sensor B, the race already started at Sensor A, AND the finish hasn't been recorded yet), which is a lot to line up in one go.</p><p>Once that check passes, you'll build the same two moves you just did for Sensor A: stamp the time, raise the flag. ⏱️</p>"
                     },
                     "howto": {
                         "label": "🔧 How To",
-                        "content": "<p><strong>1. Check if Sensor B caught the object</strong></p><p>📌 Confirm something is close to Sensor B, the race started, AND the finish hasn't been recorded yet.</p><p>🧱 <strong>If</strong> block with three conditions joined by AND.</p><p>🔢 <code>distanceB &lt; 30</code> AND <code>sawA == true</code> AND <code>sawB == false</code>.</p><p>✅ Only a real, complete pass triggers this — no false alarms!</p><hr><p><strong>2. Record the time at Sensor B</strong></p><p>📌 Stamp the finish-line crossing time into timeB.</p><p>🧱 <strong>Set label</strong> block with <strong>Micros</strong> inside.</p><p>🔢 micros() captures the exact moment. Store in <code>timeB</code>.</p><p>✅ timeB is the finish time — now we have both! 🏁</p><hr><p><strong>3. Mark Sensor B as triggered</strong></p><p>📌 Raise the Sensor B flag so the finish isn't recorded twice.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawB</code> to <code>true</code>.</p><p>✅ Both timestamps locked in. Speed calculation can begin! 🔒</p><p><em>Locked: Serial.println confirms the finish-line trigger live — pre-filled as a testing helper.</em></p>"
+                        "content": "<p><strong>1. Record the time at Sensor B</strong></p><p>📌 Stamp the finish-line crossing time into timeB.</p><p>🧱 Use a <strong>Set label</strong> block with a <strong>Micros</strong> reading block inside — same combo as Step 8.</p><p>🔢 micros() captures the exact moment. Store it in <code>timeB</code>.</p><p>✅ timeB is the finish time — now we have both! 🏁</p><hr><p><strong>2. Mark Sensor B as triggered</strong></p><p>📌 Raise the Sensor B flag so the finish isn't recorded twice.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawB</code> to <code>true</code>.</p><p>✅ Both timestamps locked in. Speed calculation can begin! 🔒</p><p><em>Locked: the surrounding <code>if (distanceB &lt; 30 && sawA == true && sawB == false)</code> check and the closing Serial.println confirmation are pre-filled — the three-way check is given so you can focus on what happens once it passes.</em></p>"
                     },
                     "logic": {
                         "label": "🧠 Logic",
@@ -538,15 +534,15 @@ DRAWER_CONTENT = {
                 "tabs": {
                     "explain": {
                         "label": "📖 What & Why",
-                        "content": "<p>Both sensors have fired — the data is in! 🏁 The Arduino subtracts the start time from the finish time to get how long the run took, then divides your 20 cm track by that time.</p><p>The result prints live to the screen: real speed in metres per second! Then the trap resets for the next run. 🔄</p>"
+                        "content": "<p>Both sensors have fired — the data is in! 🏁 The Arduino subtracts the start time from the finish time to get how long the run took, then divides your track distance by that time.</p><p>The result prints live to the screen: real speed in centimetres per second! Then the trap resets for the next run. 🔄</p>"
                     },
                     "howto": {
                         "label": "🔧 How To",
-                        "content": "<p><strong>1. Check if both sensors fired</strong></p><p>📌 Make sure we only calculate when BOTH sensors recorded a hit.</p><p>🧱 <strong>If</strong> block with two AND conditions.</p><p>🔢 <code>sawA == true</code> AND <code>sawB == true</code>.</p><p>✅ The calculator only runs after a complete, valid pass!</p><hr><p><strong>2. Calculate the speed</strong></p><p>📌 Divide the track distance by the time taken to get the speed.</p><p>🧱 <strong>Declare decimal label</strong> block with a divide operation inside.</p><p>🔢 <code>distance</code> (0.20 m) divided by <code>timeDiff</code> (time in seconds). Name it <code>speed</code>.</p><p>✅ speed holds the real speed in metres per second! 🚀</p><hr><p><strong>3. Display the speed</strong></p><p>📌 Print the speed number on the Serial Monitor.</p><p>🧱 <strong>Print line</strong> block.</p><p>🔢 Print the <code>speed</code> label — the actual calculated number.</p><p>✅ Your speed pops up on screen right after the label! 📺</p><hr><p><strong>4. Reset Sensor A</strong></p><p>📌 Put Sensor A's flag back down so the trap is ready for the next object.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawA</code> to <code>false</code>.</p><p>✅ Sensor A is armed for the next run! 🏁</p><hr><p><strong>5. Wait before the next run</strong></p><p>📌 Pause one second so the object is fully clear before the trap resets.</p><p>🧱 <strong>Delay</strong> block.</p><p>🔢 <code>1000</code> milliseconds = 1 second.</p><p>✅ The speed trap resets cleanly — ready for the next challenger! 🔄</p><p><em>Locked: timeDiff converts the gap from microseconds to seconds (÷ 1,000,000). Serial.print prints the label text before the number. sawB = false resets the finish flag.</em></p>"
+                        "content": "<p><strong>1. Check if both sensors fired</strong></p><p>📌 Make sure we only calculate when BOTH sensors recorded a hit.</p><p>🧱 <strong>If</strong> block with two AND conditions.</p><p>🔢 <code>sawA == true</code> AND <code>sawB == true</code>.</p><p>✅ The calculator only runs after a complete, valid pass!</p><hr><p><strong>2. Display the speed</strong></p><p>📌 Print the speed number on the Serial Monitor.</p><p>🧱 <strong>Print line</strong> block.</p><p>🔢 Print the <code>speed</code> label — the actual calculated number.</p><p>✅ Your speed pops up on screen right after the label! 📺</p><hr><p><strong>3. Reset Sensor A</strong></p><p>📌 Put Sensor A's flag back down so the trap is ready for the next object.</p><p>🧱 <strong>Set label</strong> block.</p><p>🔢 Set <code>sawA</code> to <code>false</code>.</p><p>✅ Sensor A is armed for the next run! 🏁</p><hr><p><strong>4. Wait before the next run</strong></p><p>📌 Pause one second so the object is fully clear before the trap resets.</p><p>🧱 <strong>Delay</strong> block.</p><p>🔢 <code>1000</code> milliseconds = 1 second.</p><p>✅ The speed trap resets cleanly — ready for the next challenger! 🔄</p><p><em>Locked: timeDiff converts the microsecond gap into seconds (÷ 1,000,000). speed = distance ÷ timeDiff is the actual physics formula — given so you can see it, since it needs a decimal (not whole-number) block our builder doesn't have yet. Serial.print prints the label text before the number. sawB = false resets the finish flag.</em></p>"
                     },
                     "logic": {
                         "label": "🧠 Logic",
-                        "content": "<p>Speed = Distance ÷ Time — the same maths real race engineers use! 🏎️ If your toy car covers 20 cm in 0.5 seconds, it's going 0.40 m/s.</p><p>The Arduino does all of this in microseconds — your speed trap is a real scientific instrument! 🔬</p>"
+                        "content": "<p>Speed = Distance ÷ Time — the same maths real race engineers use! 🏎️ If your toy car covers 20 cm in 0.5 seconds, it's going 40 cm/s.</p><p>The Arduino does all of this in microseconds — your speed trap is a real scientific instrument! 🔬</p>"
                     }
                 }
             },
@@ -560,7 +556,7 @@ DRAWER_CONTENT = {
                     },
                     "howto": {
                         "label": "🔧 Try This Next",
-                        "content": "<p>Now that your speed trap works, here are some ideas to make it even better!</p><ul><li>🟢 <strong>Change the distance</strong> — move your sensors further apart, update the distance value, and see how readings change.</li><li>🟢 <strong>Adjust the threshold</strong> — change &lt; 30 to &lt; 20 in both detection steps and test if it triggers more reliably.</li><li>🟡 <strong>Speed LED</strong> — add an LED that flashes every time a speed is recorded.</li><li>🟡 <strong>Record breaker</strong> — store the fastest speed and print NEW RECORD! whenever it's beaten.</li><li>🔴 <strong>Top 3 leaderboard</strong> — save the three fastest speeds and print the full leaderboard after each run.</li><li>🔴 <strong>Convert to km/h</strong> — multiply the speed by 3.6 and display both m/s and km/h for every run.</li></ul><p>Experimenting is how real drag strip engineers improve their systems! 🔧</p>"
+                        "content": "<p>Now that your speed trap works, here are some ideas to make it even better!</p><ul><li>🟢 <strong>Change the distance</strong> — move your sensors further apart, update the distance value, and see how readings change.</li><li>🟡 <strong>Adjust the threshold</strong> — switch to the code editor and change &lt; 30 to &lt; 20 in the detection code, then test if it triggers more reliably.</li><li>🟡 <strong>Speed LED</strong> — add an LED that flashes every time a speed is recorded.</li><li>🟡 <strong>Record breaker</strong> — store the fastest speed and print NEW RECORD! whenever it's beaten.</li><li>🔴 <strong>Top 3 leaderboard</strong> — save the three fastest speeds and print the full leaderboard after each run.</li><li>🔴 <strong>Convert to km/h</strong> — multiply the speed by 0.036 and display both cm/s and km/h for every run.</li></ul><p>Experimenting is how real drag strip engineers improve their systems! 🔧</p>"
                     },
                     "logic": {
                         "label": "🧠 What You Learned",
@@ -570,39 +566,12 @@ DRAWER_CONTENT = {
                         "label": "🎮 Try It",
                         "type": "sim",
                         "sim_config": {
-                            "mode": "components",
+                            "mode": "interpreted",
+                            "polling": True,
                             "components": [
-                                {
-                                    "id": "sonar_a",
-                                    "type": "sonar",
-                                    "label": "Start Gate",
-                                    "pin": 2,
-                                    "labels": {
-                                        "safe": "🏁 CLEAR",
-                                        "warning": "⚡ INCOMING",
-                                        "danger": "🚗 TRIGGERED!"
-                                    }
-                                },
-                                {
-                                    "id": "timer1",
-                                    "type": "timer",
-                                    "label": "Race Timer"
-                                },
-                                {
-                                    "id": "sonar_b",
-                                    "type": "sonar",
-                                    "label": "Finish Gate",
-                                    "pin": 4,
-                                    "labels": {
-                                        "safe": "🏁 CLEAR",
-                                        "warning": "⚡ INCOMING",
-                                        "danger": "🏎️ TRIGGERED!"
-                                    }
-                                }
-                            ],
-                            "behaviors": [
-                                {"when": {"sonar_a": "danger"}, "then": {"timer1": "toggle"}},
-                                {"when": {"sonar_b": "danger", "sonar_a": "safe"}, "then": {"timer1": "toggle"}}
+                                {"type": "sonar", "id": "sonar_a", "label": "Start Gate", "pin_trig": 2, "pin_echo": 3},
+                                {"type": "sonar", "id": "sonar_b", "label": "Finish Gate", "pin_trig": 4, "pin_echo": 5},
+                                {"type": "console", "id": "console1", "label": "Serial Monitor"},
                             ]
                         }
                     }

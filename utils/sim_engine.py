@@ -606,6 +606,10 @@ _CONSTANTS = {
     'HIGH': 1, 'LOW': 0,
     'INPUT': 'INPUT', 'OUTPUT': 'OUTPUT', 'INPUT_PULLUP': 'INPUT_PULLUP',
     'true': True, 'false': False,
+    # Uno's analog pins are physically pins 14-19 on the chip — analogRead(A0)
+    # compiles to analogRead(14) on real hardware, so these resolve the same
+    # way rather than occupying a separate namespace from digital pins 0-13.
+    'A0': 14, 'A1': 15, 'A2': 16, 'A3': 17, 'A4': 18, 'A5': 19,
 }
 
 _DEFAULTS_BY_TYPE = {

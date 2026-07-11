@@ -232,6 +232,18 @@ Variables store state.<br>
 Logic combines conditions to make decisions.
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "switch", "id": "sw1",  "pin": 2, "label": "Lock A"},
+                    {"type": "switch", "id": "sw2",  "pin": 3, "label": "Lock B"},
+                    {"type": "led",    "id": "led1", "color": "red", "pin": 8, "label": "Vault Access"},
+                ],
+            }
         }
     }
     }
