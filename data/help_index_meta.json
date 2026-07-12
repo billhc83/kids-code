@@ -1,7 +1,7 @@
 {
   "embedding_model": "text-embedding-3-small",
   "dimension": 1536,
-  "built_at": "2026-07-11T17:52:17.408054+00:00",
+  "built_at": "2026-07-12T22:00:02.788409+00:00",
   "corpus_hash_auto": "876bc41adf77dc4b2ff3bc2e6905b2e341dc49ef9215852ca8b388123e83658c",
   "corpus_hash_authored": "7eecd73401fdd48e37b3b4756131b6355e2fd4d8f5a591e6a83f9c72a3537001",
   "chunks": [
