@@ -11,6 +11,7 @@ from utils.auth import (
     mark_registration_invite_used, send_registration_invite_email
 )
 from utils.progression import seed_first_lesson
+from utils.referrals import resolve_valid_referral_code
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -84,9 +85,19 @@ def register_invite():
     # docs/superpowers/specs/2026-07-10-stripe-registration-gate-design.md.
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        referral_code = request.form.get("referral_code", "").strip() or None
+        referral_code_input = request.form.get("referral_code", "").strip() or None
+        # Resolve to a referral_code_id, silently dropping anything invalid/expired/
+        # capped/dead — never a distinct rejection. See "Validation at request time"
+        # in docs/superpowers/specs/2026-07-12-referral-codes-design.md: flashing a
+        # different response for a bad code turns this rate-limited endpoint into an
+        # oracle for harvesting live parent codes or exhausting a capped admin promo.
+        referral_code_id = None
+        if referral_code_input:
+            code_row = resolve_valid_referral_code(referral_code_input)
+            if code_row:
+                referral_code_id = code_row["id"]
         if email:
-            token = create_registration_invite(email, referral_code)
+            token = create_registration_invite(email, referral_code_id)
             send_registration_invite_email(email, token)
         # Always the same response whether or not the address is real/already in the
         # system — same enumeration-prevention pattern as forgot-password-style flows.
@@ -140,6 +151,11 @@ def register():
         mark_registration_invite_used(token)
 
         session["pending_subscription_user_id"] = user["id"]
+        # Carried into billing.subscribe_checkout (piece 4) to build the Checkout
+        # session's discount/metadata. Not re-validated here — /register/invite
+        # already validated it; a final live check happens again at redemption
+        # (handle_checkout_completed), since time passes during Checkout.
+        session["pending_referral_code_id"] = invite.get("referral_code_id")
         return redirect(url_for("billing.subscribe_checkout"))
 
     token = request.args.get("token", "")

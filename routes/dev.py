@@ -11,6 +11,13 @@ dev_bp = Blueprint('dev', __name__, url_prefix='/dev')
 _COMPARE_DIR = os.path.join(os.path.dirname(__file__), '..', 'static', 'circuit_compare')
 
 
+@dev_bp.route('/raise-error')
+@admin_required
+def raise_error():
+    """Throwaway route to verify the friendly 500 page end-to-end. Admin-only."""
+    raise RuntimeError("Test error triggered from /dev/raise-error")
+
+
 @dev_bp.route('/circuit/sandbox')
 @admin_required
 def circuit_sandbox():

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if mode == 'crash' %}Something broke{% else %}Page not found{% endif %} — KidsCode</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f6f8fa;
+            color: #24292f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid #eaeef2;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+        .card img { height: 40px; margin-bottom: 16px; }
+        .card h1 { font-size: 22px; margin: 0 0 8px; }
+        .card p { color: #57606a; line-height: 1.5; margin: 0 0 20px; }
+        .error-id {
+            display: inline-block;
+            font-family: monospace;
+            background: #f6f8fa;
+            border: 1px solid #eaeef2;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            color: #57606a;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background: #0969da;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 70px;
+            margin-bottom: 12px;
+        }
+        .report-form { text-align: left; margin: 20px 0; padding-top: 20px; border-top: 1px solid #eaeef2; }
+        .report-form label { font-size: 13px; font-weight: 600; color: #57606a; display: block; margin-bottom: 6px; }
+        .report-btn {
+            background: #7c3aed;
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="{{ url_for('static', filename='graphics/logo.png') }}" alt="KidsCode">
+        {% if mode == 'crash' %}
+            <h1>Something broke on our end 🛠️</h1>
+            <p>Sorry about that! Our team has already been notified. You can try again, or head back and pick up where you left off.</p>
+            <div class="error-id">Error ID: {{ error_id }}</div>
+            <div>
+                <a class="btn" href="{{ '/dashboard' if session.user_id else '/' }}">
+                    {{ 'Back to Dashboard' if session.user_id else 'Back to KidsCode' }}
+                </a>
+            </div>
+            <form class="report-form" method="POST" action="{{ url_for('main.error_report') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="error_id" value="{{ error_id }}">
+                <label for="message">What were you doing when this happened? (optional)</label>
+                <textarea name="message" id="message" placeholder="e.g. I clicked Save on Project 3..."></textarea>
+                <button class="report-btn" type="submit">Send Report</button>
+            </form>
+        {% else %}
+            <h1>That page doesn't exist</h1>
+            <p>The link might be old, or the page may have moved.</p>
+            <div>
+                <a class="btn" href="{{ '/dashboard' if session.user_id else '/' }}">
+                    {{ 'Back to Dashboard' if session.user_id else 'Back to KidsCode' }}
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

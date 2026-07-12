@@ -30,6 +30,7 @@ def subscribe_checkout():
         user,
         success_url=url_for("billing.subscribe_success", _external=True),
         cancel_url=url_for("billing.subscribe_cancelled", _external=True),
+        referral_code_id=session.get("pending_referral_code_id"),
     )
     return redirect(url)
 

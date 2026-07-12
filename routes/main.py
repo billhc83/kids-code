@@ -5,6 +5,7 @@ from utils.decorators import login_required
 from utils.progression import get_user_progression, get_completed_lessons
 from utils.badges import get_user_badges, BADGE_DEFINITIONS
 from utils.feedback import get_threads_for_user, CATEGORIES, create_thread, add_message, notify_discord_feedback
+from utils.error_reporting import notify_discord_error_report
 from utils.activity import log_activity
 from utils.lessons import LESSONS, LESSON_BY_KEY, count_unique_projects, TOTAL_PROJECTS
 from utils.auth import mark_first_login_complete
@@ -114,6 +115,18 @@ def feedback():
         threads=threads,
         categories=CATEGORIES
     )
+
+@main_bp.route("/error-report", methods=["POST"])
+@limiter.limit("5 per hour")
+def error_report():
+    error_id = request.form.get("error_id", "unknown")
+    message = request.form.get("message", "").strip()
+    who = session.get("username") or "anonymous"
+    notify_discord_error_report(error_id, who, message)
+    flash("Thanks — your report was sent!")
+    if session.get("user_id"):
+        return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.index"))
 
 @main_bp.route("/open-coding")
 @login_required

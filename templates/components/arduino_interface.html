@@ -449,6 +449,8 @@ function switchTab(btn, panelId) {
   inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(panelId).classList.add('active');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  if (pansC) pansC.scrollTop = 0;
 }
 
 window.flash = function(txt) {

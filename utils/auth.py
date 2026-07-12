@@ -147,16 +147,19 @@ def send_verification_email(to_email, token):
     if not resp.ok:
         print(f"[send_verification_email] Resend error {resp.status_code}: {resp.text}")
 
-def create_registration_invite(email, referral_code=None):
+def create_registration_invite(email, referral_code_id=None):
     """Issue a one-time registration-invite token for /register/invite. See
     docs/superpowers/specs/2026-07-10-stripe-registration-gate-design.md
-    ('Registration-access gate') for why /register requires one of these."""
+    ('Registration-access gate') for why /register requires one of these.
+    referral_code_id is already-validated (see utils.referrals.resolve_valid_referral_code)
+    by the time it reaches here — the old free-text `referral_code` column is no
+    longer written to, per docs/superpowers/specs/2026-07-12-referral-codes-design.md."""
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60)).isoformat()
     supabase.table("registration_invites").insert({
         "token": token,
         "email": email,
-        "referral_code": referral_code,
+        "referral_code_id": referral_code_id,
         "expires_at": expires,
     }).execute()
     return token

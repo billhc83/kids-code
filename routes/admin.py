@@ -1,7 +1,9 @@
+import datetime
 import io
 import os
 import re
 import requests
+import stripe
 from flask import Blueprint, request, session, render_template, redirect, url_for, flash, current_app, jsonify, make_response
 from utils.decorators import login_required, admin_required
 from utils.feedback import add_message, delete_thread, get_all_threads
@@ -15,7 +17,10 @@ from utils.auth import (
     create_batch_students_for_teacher, get_teachers, get_all_cohorts,
     delete_cohort, rows_to_csv_string
 )
-from config import SUPABASE_URL, SUPABASE_KEY
+from utils.referrals import create_admin_discount_code, list_referral_codes, disable_referral_code
+from config import SUPABASE_URL, SUPABASE_KEY, STRIPE_SECRET_KEY, STRIPE_PRICE_ID
+
+stripe.api_key = STRIPE_SECRET_KEY
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -161,6 +166,7 @@ def admin_dashboard():
 
     teachers = get_teachers()
     cohorts = get_all_cohorts()
+    referral_codes = list_referral_codes()
 
     return render_template(
         "admin/index.html",
@@ -173,6 +179,7 @@ def admin_dashboard():
         audit_log=audit_log,
         teachers=teachers,
         cohorts=cohorts,
+        referral_codes=referral_codes,
     )
 
 @admin_bp.route("/admin/provision", methods=["POST"])
@@ -261,6 +268,99 @@ def admin_delete_cohort():
                      "cohort_delete", "cohort", cohort,
                      {"members_deleted": count})
     flash(f"Cohort \"{cohort}\" deleted — {count} account(s) removed.")
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@admin_bp.route("/admin/referral-codes", methods=["POST"])
+@login_required
+@admin_required
+def admin_create_discount_code():
+    # See "Admin discount codes and Stripe Coupons" in
+    # docs/superpowers/specs/2026-07-12-referral-codes-design.md — the Stripe
+    # Coupon is created first and is the thing Checkout actually enforces;
+    # the referral_codes row is the lifecycle wrapper around it.
+    discount_type = request.form.get("discount_type", "").strip()
+    discount_value_raw = request.form.get("discount_value", "").strip()
+    max_redemptions_raw = request.form.get("max_redemptions", "").strip()
+    valid_till_raw = request.form.get("valid_till", "").strip()
+
+    if discount_type not in ("percent", "fixed"):
+        flash("Discount type must be percent or fixed.")
+        return redirect(url_for("admin.admin_dashboard"))
+
+    try:
+        discount_value = float(discount_value_raw)
+        if discount_value <= 0:
+            raise ValueError
+        if discount_type == "percent" and discount_value > 100:
+            raise ValueError
+    except ValueError:
+        flash("Invalid discount value.")
+        return redirect(url_for("admin.admin_dashboard"))
+
+    max_redemptions = None
+    if max_redemptions_raw:
+        try:
+            max_redemptions = int(max_redemptions_raw)
+            if max_redemptions <= 0:
+                raise ValueError
+        except ValueError:
+            flash("Invalid max redemptions.")
+            return redirect(url_for("admin.admin_dashboard"))
+
+    valid_till = None
+    if valid_till_raw:
+        try:
+            valid_till = datetime.datetime.fromisoformat(valid_till_raw) \
+                .replace(tzinfo=datetime.timezone.utc).isoformat()
+        except ValueError:
+            flash("Invalid expiry date.")
+            return redirect(url_for("admin.admin_dashboard"))
+
+    # duration='once': discounts exactly one month's charge (the first invoice,
+    # via Checkout's `discounts` param) — same "one month" unit as the
+    # parent-referral reward, applied at a different moment (see "Duration" in
+    # the design doc).
+    coupon_kwargs = {"duration": "once"}
+    if discount_type == "percent":
+        coupon_kwargs["percent_off"] = discount_value
+    else:
+        price = stripe.Price.retrieve(STRIPE_PRICE_ID)
+        coupon_kwargs["amount_off"] = int(round(discount_value * 100))
+        coupon_kwargs["currency"] = price["currency"]
+    coupon = stripe.Coupon.create(**coupon_kwargs)
+
+    code_row = create_admin_discount_code(
+        created_by=session["user_id"],
+        discount_type=discount_type,
+        discount_value=discount_value,
+        stripe_coupon_id=coupon["id"],
+        max_redemptions=max_redemptions,
+        valid_till=valid_till,
+    )
+    log_admin_action(session["user_id"], session["username"],
+                     "referral_code_create", "referral_code", code_row["id"],
+                     {"discount_type": discount_type, "discount_value": discount_value,
+                      "max_redemptions": max_redemptions})
+    flash(f"Discount code created: {code_row['code']}")
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@admin_bp.route("/admin/referral-codes/<code_id>/disable", methods=["POST"])
+@login_required
+@admin_required
+def admin_disable_referral_code(code_id):
+    # Admin kill switch (abuse case) — see "Lifecycle states" in
+    # docs/superpowers/specs/2026-07-12-referral-codes-design.md. Works on
+    # either code_type: an admin_discount code an admin wants to retire early,
+    # or a parent_referral code being abused.
+    if not _is_valid_uuid(code_id):
+        flash("Invalid code ID.")
+        return redirect(url_for("admin.admin_dashboard"))
+    disable_referral_code(code_id)
+    log_admin_action(session["user_id"], session["username"],
+                     "referral_code_disable", "referral_code", code_id)
+    flash("Referral code disabled.")
     return redirect(url_for("admin.admin_dashboard"))
 
 

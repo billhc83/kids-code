@@ -1,9 +1,14 @@
 import datetime
 from flask import Blueprint, request, session, render_template, flash, redirect, url_for
 from utils.decorators import login_required, parent_required
-from utils.auth import get_students_for_parent, create_student_for_parent, reset_student_password, mark_first_login_complete
+from utils.auth import (
+    get_students_for_parent, create_student_for_parent, reset_student_password,
+    mark_first_login_complete, get_user_by_id
+)
 from utils.progression import get_completed_lessons
 from utils.deletion import request_account_deletion
+from utils.referrals import get_or_create_parent_referral_code, VALID_REDEMPTION_SUBSCRIPTION_STATUSES
+from config import REFERRAL_REWARD_MONTHS
 
 parent_bp = Blueprint('parent', __name__)
 
@@ -73,6 +78,16 @@ def parent_dashboard():
             else:
                 error = "Student account not found."
 
+    # Referral code: only rendered/revealed to a parent whose subscription is
+    # currently active/past_due, per "Parent referral code provisioning" in
+    # docs/superpowers/specs/2026-07-12-referral-codes-design.md — not deleted
+    # or regenerated on lapse, just not shown while inert.
+    referral_code = None
+    parent_user = get_user_by_id(session["user_id"])
+    if parent_user and parent_user.get("subscription_status") in VALID_REDEMPTION_SUBSCRIPTION_STATUSES:
+        code_row = get_or_create_parent_referral_code(session["user_id"], REFERRAL_REWARD_MONTHS)
+        referral_code = code_row["code"] if code_row else None
+
     return render_template(
         "parent.html",
         students=students,
@@ -80,5 +95,7 @@ def parent_dashboard():
         max_students=3,
         error=error,
         success=success,
-        show_welcome=session.get("show_welcome", False)
+        show_welcome=session.get("show_welcome", False),
+        referral_code=referral_code,
+        referral_reward_months=REFERRAL_REWARD_MONTHS,
     )
