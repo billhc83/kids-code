@@ -12,7 +12,7 @@ def test_subscribe_checkout_requires_pending_session(client):
 
 def test_subscribe_checkout_redirects_to_stripe(client, monkeypatch):
     monkeypatch.setattr("routes.billing.get_user_by_id", lambda uid: {"id": "user-1", "email": "a@example.com"})
-    monkeypatch.setattr("routes.billing.create_checkout_session", lambda user, success_url, cancel_url: "https://checkout.stripe.com/fake")
+    monkeypatch.setattr("routes.billing.create_checkout_session", lambda user, success_url, cancel_url, referral_code_id=None: "https://checkout.stripe.com/fake")
     with client.session_transaction() as sess:
         sess["pending_subscription_user_id"] = "user-1"
     resp = client.get("/subscribe/checkout")
