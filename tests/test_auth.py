@@ -3,6 +3,15 @@ import responses
 import bcrypt
 from flask import session
 
+
+@pytest.fixture(autouse=True)
+def _disable_csrf(app):
+    # /login and /register are real form posts in production and carry a
+    # csrf_token; these tests exercise the auth logic directly without
+    # rendering the form, so CSRF is scoped off here rather than globally.
+    app.config["WTF_CSRF_ENABLED"] = False
+
+
 def test_login_success(client, mock_supabase):
     # Setup mock user
     hashed = bcrypt.hashpw("password123".encode(), bcrypt.gensalt()).decode()

@@ -17,7 +17,6 @@ def app():
     flask_app.config.update({
         "TESTING": True,
         "SECRET_KEY": "test-secret-key",
-        "WTF_CSRF_ENABLED": False,
     })
     return flask_app
 
