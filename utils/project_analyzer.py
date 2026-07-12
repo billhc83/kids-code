@@ -54,6 +54,7 @@ def _detect_concepts(sketch_text):
         "analogRead":   r"\banalogRead\b",
         "pulseIn":      r"\bpulseIn\b",
         "millis":       r"\bmillis\b",
+        "micros":       r"\bmicros\b",
         "tone":         r"\btone\b",
         "map":          r"\bmap\b",
         "constrain":    r"\bconstrain\b",
@@ -190,7 +191,7 @@ def analyze_all():
 
     all_possible_concepts = {
         "if/else", "while loop", "for loop", "analogRead", "pulseIn",
-        "millis", "tone", "map", "constrain", "Serial", "servo",
+        "millis", "micros", "tone", "map", "constrain", "Serial", "servo",
         "random", "analogWrite",
     }
 

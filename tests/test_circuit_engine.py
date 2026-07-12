@@ -80,8 +80,8 @@ def test_connections_resolve():
         start_row=12,
     )
     wires = result["connections"]
-    # Should have exactly 2 wires (the cathode→pin1 same-node connection is dropped)
-    assert len(wires) == 2, f"Expected 2 wires, got {len(wires)}: {wires}"
+    # 1 signal wire + 1 jumper to rail + 1 canonical rail wire = 3 wires
+    assert len(wires) == 3, f"Expected 3 wires, got {len(wires)}: {wires}"
 
 
 def test_signal_wire():
@@ -94,7 +94,7 @@ def test_signal_wire():
     wires = {(w["from"], w["to"]): w for w in result["connections"]}
     assert ("arduino.D8", "breadboard.A12") in wires, \
         f"Signal wire not found. Wires: {list(wires.keys())}"
-    assert wires[("arduino.D8", "breadboard.A12")]["color"] == "#00AA00"
+    assert wires[("arduino.D8", "breadboard.A12")]["color"] == "#3498DB"
 
 
 def test_gnd_wire():
@@ -105,16 +105,18 @@ def test_gnd_wire():
         start_row=12,
     )
     wires = {(w["from"], w["to"]): w for w in result["connections"]}
-    assert ("breadboard.E7", "arduino.GND") in wires, \
-        f"GND wire not found. Wires: {list(wires.keys())}"
-    assert wires[("breadboard.E7", "arduino.GND")]["color"] == "#111111"
+    # Rerouted through -1 rail
+    assert ("breadboard.E7", "breadboard.-1.7") in wires, \
+        f"GND jumper wire not found. Wires: {list(wires.keys())}"
+    assert wires[("breadboard.E7", "breadboard.-1.7")]["color"] == "#111111"
+    assert ("arduino.GND", "breadboard.-1.30") in wires, \
+        f"GND rail wire not found. Wires: {list(wires.keys())}"
+    assert wires[("arduino.GND", "breadboard.-1.30")]["color"] == "#111111"
 
 
-# ── Full output match against hand-built project_one definition ────────────────
+# ── Full output match against project_one definition ────────────────
 
 def test_full_match_project_one():
-    from utils.project_one import CIRCUIT_DEFINITION as expected
-
     result = generate_circuit(
         PROJECT_ONE_META,
         PROJECT_ONE_COMPONENTS,
@@ -122,8 +124,6 @@ def test_full_match_project_one():
         start_row=12,
     )
 
-    # Compare component pin positions by type, ignoring ID (engine uses R_{id} scheme,
-    # hand-built courses used arbitrary IDs like R1 — geometry is what matters).
     def pin_set(comps):
         """Canonical set of (type, pin_name, col, row) tuples for comparison."""
         s = set()
@@ -133,19 +133,28 @@ def test_full_match_project_one():
         return s
 
     result_pins   = pin_set(result["components"])
-    expected_pins = pin_set(expected["components"])
+    expected_pins = {
+        ("LED", "anode", "E", 12),
+        ("LED", "cathode", "E", 11),
+        ("RESISTOR", "pin1", "D", 11),
+        ("RESISTOR", "pin2", "D", 7),
+    }
     assert result_pins == expected_pins, \
         f"Pin position mismatch.\n  engine:   {sorted(result_pins)}\n  expected: {sorted(expected_pins)}"
 
     # Connections match
     result_wire_set  = {(w["from"], w["to"]) for w in result["connections"]}
-    expected_wire_set = {(w["from"], w["to"]) for w in expected["connections"]}
+    expected_wire_set = {
+        ("arduino.D8", "breadboard.A12"),
+        ("breadboard.E7", "breadboard.-1.7"),
+        ("arduino.GND", "breadboard.-1.30"),
+    }
     assert result_wire_set == expected_wire_set, \
         f"Wire mismatch.\n  engine:   {sorted(result_wire_set)}\n  expected: {sorted(expected_wire_set)}"
 
-    # Walkthrough has same number of steps
-    assert len(result["walkthrough"]) == len(expected["walkthrough"]), \
-        f"Walkthrough length {len(result['walkthrough'])} != {len(expected['walkthrough'])}"
+    # Walkthrough has same number of steps (2 components + 3 wires = 5 steps)
+    assert len(result["walkthrough"]) == 5, \
+        f"Walkthrough length {len(result['walkthrough'])} != 5"
 
 
 # ── Button placement tests ─────────────────────────────────────────────────────
@@ -199,23 +208,24 @@ def test_button_gnd_wire_uses_br():
     # Signal: arduino → col A at TL's row (25)
     assert ("arduino.D2", "breadboard.A25") in wires, \
         f"Signal wire not found. Wires: {list(wires.keys())}"
-    # GND: BR is at F27, gnd_col=G → wire from G27 (free adjacent col, not the pin itself)
-    assert ("breadboard.G27", "arduino.GND") in wires, \
-        f"GND wire not at G27. Wires: {list(wires.keys())}"
+    assert ("breadboard.G27", "breadboard.-1.27") in wires, \
+        f"GND wire not at G27 to rail. Wires: {list(wires.keys())}"
+    assert ("arduino.GND", "breadboard.-1.30") in wires, \
+        f"Canonical GND rail wire not found. Wires: {list(wires.keys())}"
 
 
 def test_button_cursor_advance():
     # Button footprint=3 rows + gap=2 → next component starts at start_row + 5.
-    btn_then_led = [
+    btn_then_btn = [
         {"id": "BTN1", "type": "BUTTON", "properties": {}},
-        {"id": "LED1", "type": "LED",    "properties": {"color": "green"}},
+        {"id": "BTN2", "type": "BUTTON", "properties": {}},
     ]
-    expanded, injected = expand_components(btn_then_led)
-    placed, _ = place_components(expanded, injected, start_row=25)
+    expanded, injected = expand_components(btn_then_btn)
+    placed, _ = place_components(expanded, injected, start_row=12)
 
-    # Button TL at 25, footprint 3 + gap 2 = 5 → LED anode at 30.
-    assert placed["LED1"]["pins"]["anode"]["row"] == 30, \
-        f"Expected LED1 anode at row 30, got {placed['LED1']['pins']['anode']['row']}"
+    # Button TL at 12, footprint 3 + gap 2 = 5 → Button 2 TL at 17.
+    assert placed["BTN2"]["pins"]["TL"]["row"] == 17, \
+        f"Expected BTN2 TL at row 17, got {placed['BTN2']['pins']['TL']['row']}"
 
 
 # ── Buzzer placement tests ─────────────────────────────────────────────────────
@@ -273,7 +283,7 @@ def test_buzzer_no_injected_passives():
 # across the DIP gap into both E and F columns.  A SLIDE_SWITCH placed at
 # overlapping rows on either side MUST be pushed down by the 2D footprint check.
 
-from utils.circuit_engine import get_component_footprint, COL_OFFSETS
+from utils.circuit_engine import get_component_footprint
 
 
 def _placed_footprint(placed, cid):

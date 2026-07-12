@@ -127,6 +127,16 @@ Runs forever 🔁<br>
 Send → Wait → Send → Wait
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "console", "id": "console1", "label": "Serial Monitor"},
+                ],
+            }
         }
     }
 },

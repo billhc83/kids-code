@@ -1,6 +1,6 @@
 from collections import Counter
 from utils.db_client import supabase
-from utils.lessons import LESSON_BY_KEY, count_unique_projects
+from utils.lessons import LESSON_BY_KEY, count_unique_projects, NON_PROJECT_KEYS
 from utils.progression import get_completion_dates
 
 # Define all badges
@@ -132,7 +132,7 @@ def check_and_award_badges(user_id, completed_lessons):
     if any(_is_troubleshoot_lesson(l) for l in completed_lessons) and "troubleshooter" not in awarded:
         award_badge(user_id, "troubleshooter")
 
-    completion_dates = get_completion_dates(user_id)
+    completion_dates = [d for key, d in get_completion_dates(user_id) if key not in NON_PROJECT_KEYS]
     streak = _longest_day_streak(completion_dates)
 
     if streak >= 3 and "streak_3" not in awarded:

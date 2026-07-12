@@ -192,6 +192,17 @@ Runs forever 🔁<br>
 Read → Decide → Report → Repeat
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "ldr", "id": "ldr1", "pin": 14, "label": "Light Sensor"},
+                    {"type": "console", "id": "console1", "label": "Serial Monitor"},
+                ],
+            }
         }
     }
 },

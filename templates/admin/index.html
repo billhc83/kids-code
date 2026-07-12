@@ -13,7 +13,6 @@
             <div style="display:flex;gap:8px;">
                 <a href="{{ url_for('admin.preset_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">📝 Preset Builder</a>
                 <a href="{{ url_for('admin.step_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🔧 Step Builder</a>
-                <a href="{{ url_for('admin.sim_builder') }}" class="next-btn" style="text-decoration:none;font-size:14px;">🎮 Sim Builder</a>
             </div>
         </div>
     </div>
@@ -635,6 +634,132 @@ function filterUsers() {
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Referral / Discount Codes -->
+        <div class="dash-card" style="margin-top:16px;">
+            <div class="dash-card-label">🎟️ Create Discount Code</div>
+            <p style="font-size:13px;color:#57606a;margin:0 0 14px;">
+                Creates a Stripe coupon and a matching code an invitee can enter at
+                <code>/register/invite</code>. Applies once, to the invitee's first month's
+                charge. The generated code is shown in the flash message — copy it before
+                navigating away.
+            </p>
+            <form method="POST" action="{{ url_for('admin.admin_create_discount_code') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">Type</label>
+                        <select name="discount_type" required
+                                style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;">
+                            <option value="percent">Percent off</option>
+                            <option value="fixed">Fixed amount off</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">
+                            Value <span style="font-weight:400;">(% or currency units)</span>
+                        </label>
+                        <input type="number" name="discount_value" step="0.01" min="0.01" required
+                               placeholder="e.g. 20"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:120px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">
+                            Max redemptions <span style="font-weight:400;">(optional)</span>
+                        </label>
+                        <input type="number" name="max_redemptions" min="1" placeholder="unlimited"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;
+                                      font-size:14px;width:130px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:12px;font-weight:600;color:#57606a;margin-bottom:4px;">
+                            Expires <span style="font-weight:400;">(optional)</span>
+                        </label>
+                        <input type="date" name="valid_till"
+                               style="padding:8px 12px;border:1px solid #d0d7de;border-radius:6px;font-size:14px;">
+                    </div>
+                    <button type="submit" class="next-btn" style="margin-bottom:0;white-space:nowrap;">
+                        Create Code
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Referral / Discount Codes — listing -->
+        <div class="dash-card" style="margin-top:16px;">
+            <div class="dash-card-label">📋 All Referral / Discount Codes ({{ referral_codes|length }})</div>
+            {% if referral_codes %}
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f6f8fa;">
+                        <th style="padding:9px 12px;text-align:left;border:1px solid #d0d7de;font-weight:700;">Code</th>
+                        <th style="padding:9px 12px;text-align:left;border:1px solid #d0d7de;font-weight:700;">Type</th>
+                        <th style="padding:9px 12px;text-align:left;border:1px solid #d0d7de;font-weight:700;">Value</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Redemptions</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Status</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Expires</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Created</th>
+                        <th style="padding:9px 12px;text-align:center;border:1px solid #d0d7de;font-weight:700;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rc in referral_codes %}
+                    <tr style="border-bottom:1px solid #dbeafe;">
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;font-family:monospace;font-weight:700;">
+                            {{ rc.code }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;">
+                            {{ 'Admin discount' if rc.code_type == 'admin_discount' else 'Parent referral' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;">
+                            {% if rc.code_type == 'admin_discount' %}
+                                {{ rc.discount_value }}{{ '%' if rc.discount_type == 'percent' else ' off' }}
+                            {% else %}
+                                {{ rc.reward_months }} month{{ 's' if rc.reward_months != 1 else '' }} (both sides)
+                            {% endif %}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;">
+                            {{ rc.redemption_count }}{{ ' / ' ~ rc.max_redemptions if rc.max_redemptions else '' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;">
+                            <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;
+                                         {% if rc.status == 'active' %}background:#dcfce7;color:#166534;
+                                         {% elif rc.status == 'disabled' %}background:#fee2e2;color:#991b1b;
+                                         {% else %}background:#f3f4f6;color:#57606a;{% endif %}">
+                                {{ rc.status }}
+                            </span>
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;
+                                   font-size:12px;color:#57606a;">
+                            {{ rc.valid_till[:10] if rc.valid_till else '—' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;
+                                   font-size:12px;color:#57606a;">
+                            {{ rc.created_at[:10] if rc.created_at else '—' }}
+                        </td>
+                        <td style="padding:9px 12px;border:1px solid #d0d7de;text-align:center;">
+                            {% if rc.status == 'active' %}
+                            <form method="POST" action="{{ url_for('admin.admin_disable_referral_code', code_id=rc.id) }}"
+                                  onsubmit="return confirm('Disable code {{ rc.code }}? This cannot be undone.')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="admin-btn delete-btn"
+                                        style="padding:5px 14px;white-space:nowrap;">
+                                    Disable
+                                </button>
+                            </form>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#57606a;font-size:14px;margin:0;">No referral codes yet.</p>
+            {% endif %}
         </div>
 
     </div>

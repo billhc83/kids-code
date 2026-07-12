@@ -235,6 +235,7 @@ class BlockTransformer(Transformer):
         full_name = f"{prefix}.{name}" if prefix else name
         
         if full_name == "millis": return {'type': 'millis', 'params': [], 'children': []}
+        if full_name == "micros": return {'type': 'micros', 'params': [], 'children': []}
         if full_name == "Serial.available": return {'type': 'serialavailable', 'params': [], 'children': []}
         if full_name == "analogRead": return {'type': 'analogread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
         if full_name == "digitalRead": return {'type': 'digitalread', 'params': [str(args[0]['params'][0]) if args else ''], 'children': []}
@@ -288,7 +289,7 @@ def strip_expr_values(node):
     if node is None: return None
     t = node['type']
     if t == 'value': return None
-    if t in ('millis', 'serialavailable', 'serialreadstring'): return node
+    if t in ('millis', 'micros', 'serialavailable', 'serialreadstring'): return node
     if t == 'servoread': return {'type': 'servoread', 'params': [''], 'children': []}
     if t in ('analogread', 'digitalread'): return {'type': t, 'params': [''], 'children': []}
     if t == 'pulsein': return {'type': 'pulsein', 'params': ['', 'HIGH'], 'children': []}
@@ -650,6 +651,7 @@ def parse_steps(sketch_code):
 
         # 2. Explicit Overrides (key:value)
         palette_override = None
+        active_override = None
         for p in parts:
             p_low = p.lower()
             if p_low.startswith('fill:'):
@@ -665,6 +667,10 @@ def parse_steps(sketch_code):
             if p.lower().startswith('palette:'):
                 palette_override = [t.strip() for t in p.split(':', 1)[1].split(',') if t.strip()]
                 is_filter = True
+            if p_low.startswith('active:'):
+                candidate = p_low.split(':')[1]
+                if candidate in ('global', 'setup', 'loop'):
+                    active_override = candidate
 
         step_config = {
             'flow': "progression",
@@ -684,7 +690,8 @@ def parse_steps(sketch_code):
             'config': step_config,
             'reset': reset,
             'aside': aside,
-            'chunk': chunk
+            'chunk': chunk,
+            'active_override': active_override,
         })
 
     # Parse each step — collecting cumulative locked blocks
@@ -750,6 +757,12 @@ def parse_steps(sketch_code):
             active_section = 'setup'
         elif parsed['global']:
             active_section = 'global'
+        # Explicit 'active:<section>' directive always wins — the heuristic above
+        # only looks at the initial (pre-verify) chunk, which misjudges e.g. a
+        # `verify` step where the student's answer is expected in loop() but the
+        # chunk starts with an empty loop() and a non-empty setup().
+        if step.get('active_override'):
+            active_section = step['active_override']
 
         # Build full workspace for this step:
         # global: cumulative phantom_resolved markers + this chunk's global blocks

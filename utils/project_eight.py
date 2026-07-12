@@ -279,6 +279,18 @@ Controls how fast the alarm flashes ⏱️
 Sensor → Decision → Light + Sound → Repeat 🔁
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "ldr", "id": "ldr1", "pin": 14, "label": "Crystal Sensor"},
+                    {"type": "led", "id": "led1", "color": "red", "pin": 13, "label": "Dragon Fire"},
+                    {"type": "buzzer", "id": "buz1", "pin": 8, "label": "Dragon Roar"},
+                ],
+            }
         }
     }
     }

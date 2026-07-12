@@ -85,35 +85,21 @@ DRAWER_CONTENT = {
             "content": """
 <h3>Welcome to the Mad Scientist Laboratory! 🧠⚡</h3>
 
-<p>
-Strange machines are buzzing… wires are glowing… and something amazing is about to happen!
-</p>
+<p>Strange machines are buzzing… wires are glowing… and something amazing is about to happen!</p>
 
-<p>
-In this experiment, <b>YOU</b> are the mad scientist 😈
-</p>
+<p>In this experiment, <b>YOU</b> are the mad scientist 😈</p>
 
-<p>
-Your mission:
-</p>
+<p>Your mission:</p>
 
-<p>
-👉 Press the button — The crystal wakes up and the light turns ON 💡<br>
-✋ Let go — The crystal goes back to sleep 😴
-</p>
+<p>👉 Press the button — The crystal wakes up and the light turns ON 💡<br>
+✋ Let go — The crystal goes back to sleep 😴</p>
 
-<p>
-You are teaching the machine to <b>listen to you</b>.
-</p>
+<p>You are teaching the machine to <b>listen to you</b>.</p>
 
-<p>
-Press = ON<br>
-Release = OFF
-</p>
+<p>Press = ON<br>
+Release = OFF</p>
 
-<p>
-Mwahahaha! You are in control of the experiment! 🧪⚡
-</p>
+<p>Mwahahaha! You are in control of the experiment! 🧪⚡</p>
 """
         },
         "code": {
@@ -136,9 +122,7 @@ void loop() {
 }
 </pre>
 
-<p>
-This is the rule book your machine follows.
-</p>
+<p>This is the rule book your machine follows. <b>setup()</b> runs just once, the moment the crystal powers on, to get both doors ready. <b>loop()</b> never stops — it keeps checking the button, deciding ON or OFF, and starting over again, forever!</p>
 """
         },
         "logic": {
@@ -146,22 +130,14 @@ This is the rule book your machine follows.
             "content": """
 <h3>How the Machine Thinks</h3>
 
-<p>
-The Arduino is constantly asking:
-</p>
+<p>The Arduino is constantly asking:</p>
 
-<p>
-❓ "Is the button pressed?"
-</p>
+<p>❓ "Is the button pressed?"</p>
 
-<p>
-If YES → Turn the light ON 💡<br>
-If NO → Turn the light OFF 🌑
-</p>
+<p>If YES → Turn the light ON 💡<br>
+If NO → Turn the light OFF 🌑</p>
 
-<p>
-This decision happens over and over again, super fast!
-</p>
+<p>This decision happens over and over again, super fast!</p>
 """
         },
         "translation": {
@@ -169,39 +145,38 @@ This decision happens over and over again, super fast!
             "content": """
 <h3>Scientist Code Translation</h3>
 
-<p>
-<b>pinMode(8, OUTPUT);</b><br>
-Door 8 sends electricity to the crystal 💡
-</p>
+<p><b>pinMode(8, OUTPUT);</b><br>
+Door 8 sends electricity to the crystal 💡</p>
 
-<p>
-<b>pinMode(2, INPUT_PULLUP);</b><br>
-Door 2 listens for the button 🔘
-</p>
+<p><b>pinMode(2, INPUT_PULLUP);</b><br>
+Door 2 listens for the button 🔘</p>
 
-<p>
-<b>digitalRead(2)</b><br>
+<p><b>digitalRead(2)</b><br>
 Is the button pressed?<br>
 LOW = pressed 😄<br>
-HIGH = not pressed 😴
-</p>
+HIGH = not pressed 😴</p>
 
-<p>
-<b>digitalWrite(8, HIGH);</b><br>
-Turn the crystal ON! 💥
-</p>
+<p><b>digitalWrite(8, HIGH);</b><br>
+Turn the crystal ON! 💥</p>
 
-<p>
-<b>digitalWrite(8, LOW);</b><br>
-Turn the crystal OFF 🌑
-</p>
+<p><b>digitalWrite(8, LOW);</b><br>
+Turn the crystal OFF 🌑</p>
 
-<p>
-<b>The loop</b><br>
+<p><b>The loop</b><br>
 Runs forever like a bubbling experiment 🧪♻️<br>
-Check → Decide → Glow → Repeat!
-</p>
+Check → Decide → Glow → Repeat!</p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "button", "id": "btn1", "pin": 2, "label": "Button"},
+                    {"type": "led",    "id": "led1", "color": "red", "pin": 8, "label": "Crystal"},
+                ],
+            }
         }
     }
 },

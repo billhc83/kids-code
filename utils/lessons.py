@@ -11,12 +11,6 @@ LESSONS = [
         "part": None,
         "block_builder": None
     },
-    {"key": "block_builder_tutorial",
-        "title": "How to use the block builder",
-        "template": "lessons/block_builder_tutorial.html",
-        "part": None,
-        "block_builder": "block_builder_tutorial"
-    },
     {
         "key": "project_one",
         "title": "💡 Lights On",
@@ -79,6 +73,13 @@ LESSONS = [
         "template": "lessons/project_nine.html",
         "part": None,
         "block_builder": "project_nine"
+    },
+    {
+        "key": "block_builder_tutorial",
+        "title": "How to use the block builder",
+        "template": "lessons/block_builder_tutorial.html",
+        "part": None,
+        "block_builder": "block_builder_tutorial"
     },
     {
         "key": "project_ten",
@@ -223,11 +224,18 @@ LESSONS = [
 LESSON_BY_KEY = {l["key"]: l for l in LESSONS}
 LESSON_SEQUENCE = [l["key"] for l in LESSONS]
 
+# Lessons that aren't "real" projects (onboarding, tutorial, open-ended challenge) —
+# excluded from project counts (progress bars, badges) even though they're in LESSONS.
+NON_PROJECT_KEYS = {"getting_started", "block_builder_tutorial", "challenge_one"}
+
 def count_unique_projects(lesson_keys):
-    """Collapse multi-part lesson groups (e.g. 'Code Breaker' parts 1-3) into one project each."""
+    """Collapse multi-part lesson groups (e.g. 'Code Breaker' parts 1-3) into one project each.
+    Excludes non-project lessons (see NON_PROJECT_KEYS)."""
     seen_parts = set()
     count = 0
     for key in lesson_keys:
+        if key in NON_PROJECT_KEYS:
+            continue
         lesson = LESSON_BY_KEY.get(key)
         if not lesson:
             continue

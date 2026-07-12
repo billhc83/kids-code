@@ -1,11 +1,12 @@
 from flask import Flask, render_template, session, request, redirect, url_for, flash, abort
 import json
-from config import SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, SUPABASE_ANON_KEY
+from config import SECRET_KEY, SUPABASE_URL, SUPABASE_KEY
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
 from extensions import limiter, csrf
+from utils.error_reporting import generate_error_id, log_server_error, notify_discord_error
 
 # Routes imports
 from routes.auth import auth_bp
@@ -19,6 +20,8 @@ from routes.main import main_bp
 from routes.help import help_bp
 from routes.dev import dev_bp
 from routes.account import account_bp
+from routes.try_it import try_it_bp
+from routes.billing import billing_bp
 
 from utils.progression import get_user_progression
 from utils.lessons import get_sidebar_groups, LESSON_BY_KEY
@@ -52,6 +55,8 @@ app.register_blueprint(main_bp)
 app.register_blueprint(help_bp)
 app.register_blueprint(dev_bp)
 app.register_blueprint(account_bp)
+app.register_blueprint(try_it_bp)
+app.register_blueprint(billing_bp)
 
 _TOS_EXEMPT_PREFIXES = ("/static/", "/welcome/agree", "/logout",
                         "/privacy", "/terms", "/favicon")
@@ -92,8 +97,13 @@ def inject_globals():
     sidebar_standalone = []
     sidebar_groups = {}
     if "user_id" in session:
-        unlocked = get_user_progression(session["user_id"])
-        sidebar_standalone, sidebar_groups = get_sidebar_groups(unlocked)
+        try:
+            unlocked = get_user_progression(session["user_id"])
+            sidebar_standalone, sidebar_groups = get_sidebar_groups(unlocked)
+        except Exception:
+            # Degrade to empty sidebar/progression rather than let a DB hiccup
+            # take down every page render on the site (including the error page).
+            app.logger.exception("inject_globals: failed to load progression/sidebar")
     return {
         "unlocked_lessons": unlocked,
         "sidebar_standalone": sidebar_standalone,
@@ -102,6 +112,42 @@ def inject_globals():
         "hover_zoom": hover_zoom_html,
         "lesson_by_key": LESSON_BY_KEY
     }
+
+_FALLBACK_ERROR_HTML = """<!DOCTYPE html><html><head><title>KidsCode</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:60px 20px;">
+<h1>{heading}</h1><p>{message}</p><p><a href="/">Back to KidsCode</a></p>
+</body></html>"""
+
+@app.errorhandler(500)
+def handle_server_error(exc):
+    error_id = generate_error_id()
+    tb_str = log_server_error(
+        error_id, exc, path=request.path, method=request.method,
+        user_id=session.get("user_id"),
+    )
+    notify_discord_error(
+        error_id, request.path, request.method,
+        session.get("username"), tb_str,
+    )
+    try:
+        return render_template("error.html", mode="crash", error_id=error_id), 500
+    except Exception:
+        app.logger.exception("Failed to render error.html for a 500 — using inline fallback")
+        return _FALLBACK_ERROR_HTML.format(
+            heading="Something broke on our end 🛠️",
+            message=f"Sorry about that! Error ID: {error_id}",
+        ), 500
+
+@app.errorhandler(404)
+def handle_not_found(exc):
+    try:
+        return render_template("error.html", mode="not_found"), 404
+    except Exception:
+        app.logger.exception("Failed to render error.html for a 404 — using inline fallback")
+        return _FALLBACK_ERROR_HTML.format(
+            heading="Page not found",
+            message="That page doesn't exist.",
+        ), 404
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

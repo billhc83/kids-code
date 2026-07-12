@@ -1,0 +1,107 @@
+/* Shared info-drawer styles — used by templates/components/arduino_interface.html
+   and templates/try_it_builder.html. Keep this the single source of truth;
+   don't re-add #drawer-* or .drawer-* rules to either template's inline <style>. */
+
+#drawer-tab {
+  position: absolute; right: 0; top: 48px; bottom: 0; width: 32px;
+  background: #163d73; border-left: 1px solid #0f2c54;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 100; user-select: none; transition: all 0.2s;
+}
+#drawer-tab:hover { background: #1c4a8a; width: 36px; }
+#drawer-tab span {
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font-size: 13px; font-weight: 600; letter-spacing: .1em; color: #ffffff;
+  text-transform: uppercase; transform: rotate(180deg);
+}
+#drawer-panel {
+  position: absolute; right: 32px; top: 48px; bottom: 0; width: 0;
+  background: #f5f7fb; border-left: 1px solid #d8e0eb;
+  overflow: hidden; z-index: 99; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; flex-direction: column; box-shadow: -4px 0 15px rgba(0,0,0,0.15);
+}
+#drawer-panel.open { width: 600px; }
+#drawer-inner { width: 600px; height: 100%; display: flex; flex-direction: column; flex-shrink: 0; }
+
+.drawer-title {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 12px; font-weight: 700; color: #163d73; text-transform: uppercase;
+  letter-spacing: .1em; flex-shrink: 0; border-bottom: 1px solid #d8e0eb;
+  padding: 16px 20px; background: #e8edf4;
+}
+.drawer-tip {
+  background: #dfe9f5; border-left: 3px solid #163d73; border-bottom: 1px solid #cddcee;
+  padding: 10px 20px; font-size: 12px; color: #163d73; line-height: 1.6; flex-shrink: 0;
+}
+.drawer-tabs {
+  display: flex; flex-shrink: 0; gap: 4px; margin: 12px 16px 4px;
+  padding: 4px; background: #e1e7ef; border-radius: 10px;
+}
+.drawer-tab-btn {
+  flex: 1; padding: 8px 8px; font-size: 11px; font-family: inherit; font-weight: 600;
+  background: none; border: none; border-radius: 7px;
+  color: #626b78; cursor: pointer; text-align: center; transition: background 0.2s, color 0.2s;
+}
+.drawer-tab-btn:hover { background: #d3ddea; color: #163d73; }
+.drawer-tab-btn.active { background: #f5f7fb; color: #163d73; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+.drawer-tab-panels {
+  flex: 1; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: #a9b7c9 #e8edf4;
+}
+.drawer-tab-panels::-webkit-scrollbar { width: 9px; }
+.drawer-tab-panels::-webkit-scrollbar-track { background: #e8edf4; }
+.drawer-tab-panels::-webkit-scrollbar-thumb { background: #a9b7c9; border-radius: 5px; }
+.drawer-tab-panels::-webkit-scrollbar-thumb:hover { background: #163d73; }
+
+.drawer-tab-panel { display: none; padding: 20px 22px; font-family: 'Inter', -apple-system, sans-serif; color: #101114; }
+.drawer-tab-panel.active { display: block; }
+
+/* ---- content typography ---- */
+.drawer-tab-panel p { font-size: 15px; line-height: 1.7; margin: 0 0 12px; }
+.drawer-tab-panel h3 {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 15px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase;
+  color: #101114; margin: 4px 0 14px;
+}
+.drawer-tab-panel h3::before { content: "// "; color: #163d73; }
+.drawer-tab-panel h4 { font-size: 13.5px; font-weight: 700; color: #101114; margin: 20px 0 8px; }
+.drawer-tab-panel b, .drawer-tab-panel strong {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 13px; font-weight: 600; color: #101114; background: #e3e9f2;
+  padding: 1px 6px; border-radius: 3px;
+}
+.drawer-tab-panel em, .drawer-tab-panel i { color: #163d73; font-style: italic; }
+.drawer-tab-panel hr {
+  border: none; height: 1px; margin: 20px 0;
+  background: repeating-linear-gradient(90deg, #163d73 0 6px, transparent 6px 12px);
+  opacity: .5;
+}
+.drawer-tab-panel ul, .drawer-tab-panel ol { margin: 0 0 12px; padding-left: 22px; }
+.drawer-tab-panel li { font-size: 15px; line-height: 1.6; margin-bottom: 7px; }
+.drawer-tab-panel code {
+  display: inline-block; font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 12.5px; color: #101114; background: #e3e9f2; border: 1px solid #d8e0eb;
+  border-radius: 3px; padding: 1px 6px;
+}
+.drawer-tab-panel pre {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 12.5px; line-height: 1.6; color: #101114; background: #e8edf4;
+  border: 1px solid #d8e0eb; border-radius: 6px; padding: 12px 14px; margin: 0 0 12px;
+  overflow-x: auto; white-space: pre;
+}
+.drawer-tab-panel pre code { background: none; border: none; padding: 0; }
+.drawer-tab-panel img {
+  width: 100%; border-radius: 8px; border: 1px solid #d8e0eb; margin-top: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
+}
+
+/* Optional badge convention for paired distinctions (e.g. input/output).
+   Opt-in per project — see /lesson-drawer-audit. */
+.drawer-tab-panel .badge {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 3px; margin-right: 4px; display: inline-block;
+}
+.drawer-tab-panel .badge-a { background: #d8e5f4; color: #163d73; }
+.drawer-tab-panel .badge-b { background: #ffe9d1; color: #a3540a; }

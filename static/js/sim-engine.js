@@ -1,23 +1,35 @@
 /**
  * SimEngine — interactive Arduino circuit simulator for the drawer sim tab.
- * Usage: SimEngine.init(containerElement, simConfig)
+ * Usage: SimEngine.initCodeDriven(containerElement, simConfig) or
+ *        SimEngine.initInterpreted(containerElement, simConfig)
  *
  * simConfig shape:
  *   components: [{type, id, color?, pin?, label}]
- *   behaviors:  [{when: {id: state, ...}, then: {id: state, ...}}]
- *
- * Special then-keys:
- *   _sequence: ["id1","id2",...]  — starts a cyclic LED flash loop
- *   _interval: <ms>              — interval for _sequence (default 150)
- *   _stop_sequence: "yes"        — stops any running sequence
- *   _beep: "buzzerId"            — starts a pulsing on/off beep on a buzzer
- *   _beep_interval: <ms>         — half-period for _beep (default 400)
- *   _stop_beep: "yes"            — stops any running beep
+ *   mode:       "code_driven" → initCodeDriven (timeline replay of a regex-extracted
+ *               sketch, no branching awareness)
+ *               "interpreted" → initInterpreted (discrete request/response through the
+ *               real Phase 0 interpreter, see SIM_ENGINE_ROLLOUT_SPEC.md)
+ *   endpoint    (code_driven / interpreted only) — sim-run URL to POST to. Defaults to
+ *               '/sim/run' when absent.
+ *   polling     (interpreted only) — when true, initInterpreted() keeps re-POSTing the
+ *               current input state on a fixed cadence instead of only on click/drag,
+ *               for sketches whose loop() polls its inputs every pass with nothing to
+ *               click (e.g. project_eighteen's dual-sonar speed trap). See
+ *               SIM_ENGINE_ROLLOUT_PLAN.md Step 6a.
  *
  * Special component types:
- *   timer — shows a running millisecond counter; toggled via {timerId: "toggle"}
- *   sonar — HC-SR04 ultrasonic sensor with a distance slider (0-100 cm);
- *            state emitted: "safe" (>50 cm), "warning" (20-50 cm), "danger" (<20 cm)
+ *   sonar  — HC-SR04 ultrasonic sensor with a distance slider (0-100 cm). The
+ *            slider's raw pulse duration (debounced) is sent on the component's
+ *            `pin_echo`, and whatever the sketch's own map()/if-chain does with
+ *            it is what shows up (e.g. a continuous buzzer pitch via
+ *            `pin_frequencies` — see SIM_ENGINE_ROLLOUT_SPEC.md item 5).
+ *   servo  — output-only rotating dial (0-180°), painted from the result's
+ *            `servo_angles`/`servo_sequences` keys. See
+ *            SIM_ENGINE_ROLLOUT_SPEC.md item 6 / project_nineteen.
+ *   ldr    — photoresistor with a brightness slider (0-100%, dark→bright). The
+ *            slider's UI level is converted to a raw analogRead() value
+ *            (0-1023) and sent on the component's `pin`, debounced the same
+ *            way sonar's distance is. See SIM_ENGINE_ROLLOUT_PLAN.md Step 1.
  */
 window.SimEngine = (function () {
   'use strict';
@@ -101,6 +113,27 @@ window.SimEngine = (function () {
     );
   }
 
+  function servoSVG(id) {
+    return (
+      '<svg data-id="' + id + '" width="80" height="72" viewBox="-40 -8 80 72"' +
+      ' style="overflow:visible;display:block;cursor:default">' +
+      /* Housing */
+      '<rect x="-24" y="18" width="48" height="34" rx="4" fill="#2563eb" stroke="#1e40af" stroke-width="1.5"/>' +
+      '<rect x="-24" y="18" width="48" height="9" fill="#1e40af"/>' +
+      '<rect x="-30" y="24" width="6" height="10" rx="1.5" fill="#1e3a8a"/>' +
+      '<rect x="24"  y="24" width="6" height="10" rx="1.5" fill="#1e3a8a"/>' +
+      /* Output shaft */
+      '<circle cx="0" cy="18" r="7" fill="#1e293b" stroke="#0f172a" stroke-width="1"/>' +
+      /* Rotating arm — origin is the shaft center (0,18); applyServo() sets
+         the rotate() transform's angle */
+      '<g id="' + id + '-arm" transform="rotate(-90 0 18)">' +
+      '<rect x="-3" y="-14" width="6" height="32" rx="3" fill="#f59e0b" stroke="#b45309" stroke-width="1"/>' +
+      '<circle cx="0" cy="-14" r="3.5" fill="#fbbf24"/>' +
+      '</g>' +
+      '</svg>'
+    );
+  }
+
   function timerSVG(id) {
     return (
       '<svg data-id="' + id + '" width="140" height="56" viewBox="0 0 140 56"' +
@@ -149,6 +182,29 @@ window.SimEngine = (function () {
     );
   }
 
+  function ldrSVG(id) {
+    return (
+      '<svg data-id="' + id + '" width="60" height="66" viewBox="-30 -16 60 66"' +
+      ' style="overflow:visible;display:block;cursor:default">' +
+      /* Light rays — brightness-tinted by applyLdr() */
+      '<g id="' + id + '-rays">' +
+      '<line x1="0" y1="-30" x2="0" y2="-24" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>' +
+      '<line x1="-9" y1="-27" x2="-6" y2="-22" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>' +
+      '<line x1="9"  y1="-27" x2="6"  y2="-22" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>' +
+      '</g>' +
+      /* Disc body */
+      '<circle cx="0" cy="0" r="22" fill="#c9a86a" stroke="#8a6d3b" stroke-width="1.5"/>' +
+      '<circle id="' + id + '-face" cx="0" cy="0" r="17" fill="#3a3020"/>' +
+      /* Zigzag resistive track */
+      '<path d="M -11 -6 L -6 6 L -1 -6 L 4 6 L 9 -6" fill="none" stroke="#d4af37"' +
+      ' stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>' +
+      /* Leads */
+      '<line x1="-14" y1="18" x2="-14" y2="30" stroke="#888" stroke-width="1.5"/>' +
+      '<line x1="14"  y1="18" x2="14"  y2="30" stroke="#888" stroke-width="1.5"/>' +
+      '</svg>'
+    );
+  }
+
   /* ── Visual state appliers ───────────────────────────────────────────────── */
   function applyLED(id, on, color) {
     var c = PALETTES[color] || PALETTES.red;
@@ -171,6 +227,24 @@ window.SimEngine = (function () {
     if (dot)  dot.setAttribute('fill',  on ? '#00ff88' : '#444');
   }
 
+  /* freq is Hz or undefined/null — blanked when the buzzer isn't actively
+     toning at a known frequency (see SIM_ENGINE_ROLLOUT_SPEC.md item 5). */
+  function applyBuzzerFreq(id, freq) {
+    var el = document.getElementById(id + '-hz');
+    if (el) el.textContent = (freq === undefined || freq === null) ? '' : Math.round(freq) + ' Hz';
+  }
+
+  /* angle is Arduino servo.write()'s 0-180 degree argument. Rotation is
+     offset -90deg so 90 (the SG90's natural rest/center position most
+     projects write on startup) points the arm straight up rather than
+     sideways. */
+  function applyServo(id, angle) {
+    var arm = document.getElementById(id + '-arm');
+    if (arm) arm.setAttribute('transform', 'rotate(' + (angle - 90) + ' 0 18)');
+    var readout = document.getElementById(id + '-readout');
+    if (readout) readout.textContent = Math.round(angle) + '°';
+  }
+
   function applySwitch(id, on) {
     var knob   = document.getElementById(id + '-knob');
     var kshine = document.getElementById(id + '-kshine');
@@ -191,22 +265,13 @@ window.SimEngine = (function () {
     if (shine) shine.setAttribute('opacity', pressed ? '0.1' : '0.28');
   }
 
-  var SONAR_ZONE_COLORS  = { safe: '#00ff88', warning: '#ffcc00', danger: '#ff4444' };
-  var SONAR_ZONE_LABELS  = { safe: '🟢 SAFE', warning: '🟡 WARNING', danger: '🔴 DANGER' };
-
-  function applySonar(id, zone, customLabels) {
-    var labels = customLabels || SONAR_ZONE_LABELS;
-    var color = SONAR_ZONE_COLORS[zone] || '#00ff88';
-    /* Recolour signal rings */
-    [1, 2, 3].forEach(function (n) {
-      var r = document.getElementById(id + '-r' + n);
-      if (r) r.setAttribute('stroke', color);
-    });
-    /* Recolour readout badge */
-    var readout = document.getElementById(id + '-readout');
-    var zoneTag = document.getElementById(id + '-zone');
-    if (readout) readout.style.color = color;
-    if (zoneTag) { zoneTag.textContent = labels[zone] || zone; zoneTag.style.color = color; }
+  /* level is the LDR slider's 0 (dark) - 100 (bright) UI value — purely
+     cosmetic (dims/brightens the rays icon), independent of the raw
+     analogRead() value ldrRawValue() derives from the same level for the
+     actual sim payload. */
+  function applyLdr(id, level) {
+    var rays = document.getElementById(id + '-rays');
+    if (rays) rays.setAttribute('opacity', (0.15 + (level / 100) * 0.85).toFixed(2));
   }
 
   function sonarPingFlash(id) {
@@ -246,8 +311,40 @@ window.SimEngine = (function () {
       case 'led':     wrap.innerHTML = ledSVG(comp.id, comp.color || 'red'); break;
       case 'button':  wrap.innerHTML = buttonSVG(comp.id); break;
       case 'switch':  wrap.innerHTML = switchSVG(comp.id); break;
-      case 'buzzer':  wrap.innerHTML = buzzerSVG(comp.id); break;
       case 'timer':   wrap.innerHTML = timerSVG(comp.id);  break;
+      case 'servo': {
+        wrap.innerHTML = servoSVG(comp.id);
+        /* Angle readout — populated only by initInterpreted() from
+           servo_angles/servo_sequences (SIM_ENGINE_ROLLOUT_SPEC.md item 6).
+           A servo is output-only, same as an LED/buzzer — no input state
+           for it in buildInputPayload(). */
+        var angleReadout = document.createElement('div');
+        angleReadout.id = comp.id + '-readout';
+        angleReadout.style.cssText =
+          'font-size:11px;font-weight:700;font-family:"Courier New",monospace;color:#f59e0b;';
+        angleReadout.textContent = '90°';
+        col.appendChild(wrap);
+        col.appendChild(angleReadout);
+        col.appendChild(makeLbl(comp));
+        return col;
+      }
+      case 'buzzer': {
+        wrap.innerHTML = buzzerSVG(comp.id);
+        /* Pitch (Hz) readout — populated only by initInterpreted() when a
+           result carries pin_frequencies (a continuous tone() pitch, e.g.
+           map()'d from a sonar distance — see SIM_ENGINE_ROLLOUT_SPEC.md
+           item 5). Empty/blank for every other mode and for buzzers that
+           only ever get a plain on/off tone(). */
+        var hzReadout = document.createElement('div');
+        hzReadout.id = comp.id + '-hz';
+        hzReadout.style.cssText =
+          'font-size:10px;font-weight:700;font-family:"Courier New",monospace;' +
+          'color:#00ff88;min-height:12px;';
+        col.appendChild(wrap);
+        col.appendChild(hzReadout);
+        col.appendChild(makeLbl(comp));
+        return col;
+      }
       case 'sonar': {
         wrap.innerHTML = sonarSVG(comp.id);
         /* Distance readout + zone badge */
@@ -284,6 +381,54 @@ window.SimEngine = (function () {
         col.appendChild(makeLbl(comp));
         return col;
       }
+      case 'ldr': {
+        wrap.innerHTML = ldrSVG(comp.id);
+        /* Brightness readout + slider — same shape as the sonar component's
+           distance readout/slider above, 0-100 range copied straight from
+           that pattern rather than re-derived (see rollout plan Step 1b). */
+        var ldrReadout = document.createElement('div');
+        ldrReadout.id = comp.id + '-readout';
+        ldrReadout.style.cssText = 'font-size:14px;font-weight:700;font-family:"Courier New",monospace;color:#fbbf24;';
+        ldrReadout.textContent = '50%';
+        var ldrSliderWrap = document.createElement('div');
+        ldrSliderWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:5px;';
+        var ldrSliderEl = document.createElement('input');
+        ldrSliderEl.type = 'range';
+        ldrSliderEl.id = comp.id + '-slider';
+        ldrSliderEl.min = '0';
+        ldrSliderEl.max = '100';
+        ldrSliderEl.value = '50';
+        ldrSliderEl.style.cssText = 'width:110px;cursor:pointer;accent-color:#fbbf24;';
+        var ldrHints = document.createElement('div');
+        ldrHints.style.cssText = 'display:flex;justify-content:space-between;width:110px;font-size:8px;color:#475569;';
+        ldrHints.innerHTML = '<span>🌑 Dark</span><span>☀️ Bright</span>';
+        ldrSliderWrap.appendChild(ldrSliderEl);
+        ldrSliderWrap.appendChild(ldrHints);
+        col.appendChild(wrap);
+        col.appendChild(ldrReadout);
+        col.appendChild(ldrSliderWrap);
+        col.appendChild(makeLbl(comp));
+        return col;
+      }
+      case 'console': {
+        /* Serial monitor — output-only, no pin (Serial isn't wired to a
+           physical pin), so makeLbl() below just shows the label with no
+           "Pin N" badge, same as it already does for any component missing
+           `.pin`. Scrolls its own history rather than showing one line at a
+           time, since a real serial monitor is a running transcript, not a
+           status readout — see rollout plan Step 2a. */
+        var consoleBody = document.createElement('div');
+        consoleBody.id = comp.id + '-console';
+        consoleBody.style.cssText =
+          'width:230px;height:120px;overflow-y:auto;background:#05050a;' +
+          'border:1px solid rgba(0,255,136,0.25);border-radius:6px;' +
+          'padding:6px 8px;font-family:"Courier New",monospace;font-size:11px;' +
+          'line-height:1.5;color:#00ff88;text-align:left;white-space:pre-wrap;' +
+          'word-break:break-word;';
+        col.appendChild(consoleBody);
+        col.appendChild(makeLbl(comp));
+        return col;
+      }
       default: return col;
     }
 
@@ -292,240 +437,19 @@ window.SimEngine = (function () {
     return col;
   }
 
-  /* ── Main init ───────────────────────────────────────────────────────────── */
-  function init(container, config) {
-    /* Clean up any previous sim instance in this container */
-    if (container._simCleanup) { container._simCleanup(); }
-
-    var components = config.components || [];
-    var behaviors  = config.behaviors  || [];
-
-    /* Per-component state */
-    var state = {};
-    var colorMap = {};
-    components.forEach(function (c) {
-      state[c.id] = (c.type === 'switch') ? 'off'
-                  : (c.type === 'button') ? 'released'
-                  : (c.type === 'sonar')  ? 'safe'
-                  : 'off';
-      if (c.type === 'led') colorMap[c.id] = c.color || 'red';
+  /* Appends this pass's console_lines to a `console`-type component's
+     scroll region and pins the scroll to the bottom, same shape as any
+     other applyX() state setter — called from initInterpreted() once per
+     result (see SIM_ENGINE_ROLLOUT_SPEC.md item 4). */
+  function applyConsole(id, lines) {
+    var box = document.getElementById(id + '-console');
+    if (!box || !lines || !lines.length) return;
+    lines.forEach(function (line) {
+      var row = document.createElement('div');
+      row.textContent = line;
+      box.appendChild(row);
     });
-
-    /* Sequence + timer + beep handles */
-    var seqHandle = null;
-    var seqIds    = [];
-    var seqIdx    = 0;
-    var timerHandle  = null;
-    var timerRunning = false;
-    var timerStart   = 0;
-    var beepHandle = null;
-    var beepId     = null;
-
-    /* ── Build UI ────────────────────────────────────────────────────────── */
-    container.innerHTML = '';
-    container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:24px 16px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:14px;';
-
-    var canvas = document.createElement('div');
-    canvas.style.cssText =
-      'display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:center;';
-    components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
-    container.appendChild(canvas);
-
-    var statusBar = document.createElement('div');
-    statusBar.style.cssText =
-      'padding:7px 20px;background:rgba(255,255,255,0.04);' +
-      'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
-      'color:#7ab;font-size:11px;font-family:"Courier New",monospace;' +
-      'text-align:center;min-width:220px;max-width:100%;';
-    statusBar.textContent = 'Ready';
-    container.appendChild(statusBar);
-
-    function setStatus(msg) { statusBar.textContent = msg; }
-
-    /* ── Beep helpers ────────────────────────────────────────────────────── */
-    function stopBeep() {
-      if (beepHandle) { clearInterval(beepHandle); beepHandle = null; }
-      if (beepId)     { applyBuzzer(beepId, false); beepId = null; }
-    }
-
-    function startBeep(id, interval) {
-      if (beepHandle && beepId === id) return; /* already beeping this buzzer */
-      stopBeep();
-      beepId = id;
-      var on = true;
-      beepHandle = setInterval(function () {
-        applyBuzzer(id, on);
-        on = !on;
-      }, interval || 400);
-    }
-
-    /* ── Sequence helpers ────────────────────────────────────────────────── */
-    function stopSequence() {
-      if (seqHandle) { clearInterval(seqHandle); seqHandle = null; }
-    }
-
-    function startSequence(ids, interval) {
-      stopSequence();
-      seqIds = ids;
-      seqIdx = 0;
-      /* Turn all sequence LEDs off first */
-      ids.forEach(function (id) { applyState(id, 'off', false); });
-
-      seqHandle = setInterval(function () {
-        /* Turn off previous */
-        var prev = seqIds[(seqIdx - 1 + seqIds.length) % seqIds.length];
-        applyState(prev, 'off', false);
-        /* Turn on current */
-        var cur = seqIds[seqIdx % seqIds.length];
-        applyState(cur, 'on', false);
-        var comp = compById(cur);
-        setStatus((comp ? comp.label : cur) + '  ON');
-        seqIdx++;
-      }, interval || 150);
-    }
-
-    /* ── Timer helpers ───────────────────────────────────────────────────── */
-    function handleTimerToggle(timerId) {
-      if (!timerRunning) {
-        timerRunning = true;
-        timerStart   = Date.now();
-        timerHandle  = setInterval(function () {
-          var el = document.getElementById(timerId + '-display');
-          if (el) el.textContent = ((Date.now() - timerStart) / 1000).toFixed(3) + 's';
-        }, 50);
-        setStatus('Timer running — press again to stop!');
-      } else {
-        timerRunning = false;
-        clearInterval(timerHandle);
-        timerHandle = null;
-        var elapsed = ((Date.now() - timerStart) / 1000).toFixed(3);
-        var el = document.getElementById(timerId + '-display');
-        if (el) el.textContent = elapsed + 's';
-        setStatus('Reaction time: ' + elapsed + 's  ·  press to restart');
-      }
-    }
-
-    /* ── Lookup helper ───────────────────────────────────────────────────── */
-    function compById(id) {
-      return components.find(function (c) { return c.id === id; });
-    }
-
-    /* ── Visual applier (does not re-evaluate behaviors) ─────────────────── */
-    function applyState(id, newState, evaluate) {
-      var changed = state[id] !== newState;
-      state[id] = newState;
-      var comp = compById(id);
-      if (!comp) return;
-      switch (comp.type) {
-        case 'led':    applyLED(id, newState === 'on', colorMap[id]); break;
-        case 'buzzer': applyBuzzer(id, newState === 'on'); break;
-        case 'switch': applySwitch(id, newState === 'on'); break;
-        case 'button': applyButton(id, newState === 'pressed'); break;
-        case 'sonar':  applySonar(id, newState, comp.labels); break;
-      }
-      if (evaluate !== false && changed) evalBehaviors();
-    }
-
-    /* ── Behavior evaluation ─────────────────────────────────────────────── */
-    function evalBehaviors() {
-      behaviors.forEach(function (beh) {
-        var match = Object.keys(beh.when).every(function (id) {
-          return state[id] === beh.when[id];
-        });
-        if (!match) return;
-
-        var then = beh.then;
-        /* Handle special keys — order matters: stop before start */
-        if (then._stop_sequence) { stopSequence(); }
-        if (then._stop_beep)     { stopBeep(); }
-        if (then._sequence) { startSequence(then._sequence, then._interval || 150); }
-        if (then._beep)     { startBeep(then._beep, then._beep_interval || 400); }
-
-        Object.keys(then).forEach(function (id) {
-          if (id === '_sequence' || id === '_stop_sequence' || id === '_interval' ||
-              id === '_beep'     || id === '_stop_beep'     || id === '_beep_interval') return;
-
-          var val  = then[id];
-          var comp = compById(id);
-          if (comp && comp.type === 'timer' && val === 'toggle') {
-            handleTimerToggle(id);
-          } else {
-            applyState(id, val, false); /* false = don't recurse */
-          }
-        });
-      });
-    }
-
-    /* ── Pin label helper for status bar ─────────────────────────────────── */
-    function pinDesc(comp, st) {
-      if (!comp.pin && comp.pin !== 0) return '';
-      var sig = (comp.type === 'button') ? (st === 'pressed' ? 'LOW (0V)' : 'HIGH (5V)')
-              : (comp.type === 'switch') ? (st === 'on'      ? 'LOW (0V)' : 'HIGH (5V)')
-              : '';
-      return sig ? '  ·  Pin ' + comp.pin + ' → ' + sig : '';
-    }
-
-    /* ── Event binding ───────────────────────────────────────────────────── */
-    components.forEach(function (comp) {
-      var el = container.querySelector('[data-id="' + comp.id + '"]');
-      if (!el) return;
-
-      if (comp.type === 'button') {
-        function press(e) {
-          if (e.preventDefault) e.preventDefault();
-          applyState(comp.id, 'pressed');
-          setStatus('Button PRESSED' + pinDesc(comp, 'pressed'));
-        }
-        function release() {
-          applyState(comp.id, 'released');
-          setStatus('Button RELEASED' + pinDesc(comp, 'released'));
-        }
-        el.addEventListener('mousedown',  press);
-        el.addEventListener('mouseup',    release);
-        el.addEventListener('mouseleave', function () {
-          if (state[comp.id] === 'pressed') release();
-        });
-        el.addEventListener('touchstart', press,   { passive: false });
-        el.addEventListener('touchend',   release, { passive: false });
-      }
-
-      if (comp.type === 'switch') {
-        el.addEventListener('click', function () {
-          var next = state[comp.id] === 'on' ? 'off' : 'on';
-          applyState(comp.id, next);
-          setStatus('Switch ' + (next === 'on' ? 'ON' : 'OFF') + pinDesc(comp, next));
-        });
-      }
-
-      if (comp.type === 'sonar') {
-        var sliderEl = document.getElementById(comp.id + '-slider');
-        if (sliderEl) {
-          sliderEl.addEventListener('input', function () {
-            var dist = parseInt(sliderEl.value, 10);
-            var zone = dist > 50 ? 'safe' : dist > 20 ? 'warning' : 'danger';
-            var readout = document.getElementById(comp.id + '-readout');
-            if (readout) readout.textContent = dist + ' cm';
-            sonarPingFlash(comp.id);
-            applyState(comp.id, zone);
-            var labels = comp.labels || SONAR_ZONE_LABELS;
-            setStatus('Distance: ' + dist + ' cm  ·  ' + (labels[zone] || zone));
-          });
-        }
-      }
-    });
-
-    /* ── Apply initial visual state + fire initial behaviors ─────────────── */
-    components.forEach(function (c) { applyState(c.id, state[c.id], false); });
-    evalBehaviors();
-
-    /* ── Register cleanup for re-init ────────────────────────────────────── */
-    container._simCleanup = function () {
-      stopSequence();
-      stopBeep();
-      if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-    };
+    box.scrollTop = box.scrollHeight;
   }
 
   /* ── Timeline playback (code-driven sim) ────────────────────────────────── */
@@ -550,21 +474,21 @@ window.SimEngine = (function () {
     /* Build UI — same chrome as the interactive sim */
     container.innerHTML = '';
     container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:24px 16px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:14px;';
+      'background:#1a1a2e;border-radius:10px;padding:14px 12px 10px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
 
     var canvas = document.createElement('div');
     canvas.style.cssText =
-      'display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:center;';
+      'display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:center;';
     components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
     container.appendChild(canvas);
 
     var statusBar = document.createElement('div');
     statusBar.style.cssText =
-      'padding:7px 20px;background:rgba(255,255,255,0.04);' +
+      'padding:5px 14px;background:rgba(255,255,255,0.04);' +
       'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
-      'color:#7ab;font-size:11px;font-family:"Courier New",monospace;' +
-      'text-align:center;min-width:220px;max-width:100%;';
+      'color:#7ab;font-size:10px;font-family:"Courier New",monospace;' +
+      'text-align:center;min-width:160px;max-width:100%;';
     statusBar.textContent = 'Simulating…';
     container.appendChild(statusBar);
 
@@ -659,19 +583,20 @@ window.SimEngine = (function () {
     /* Show a loading state while we wait for the server */
     container.innerHTML = '';
     container.style.cssText =
-      'background:#1a1a2e;border-radius:12px;padding:32px 16px;' +
-      'display:flex;flex-direction:column;align-items:center;gap:10px;';
+      'background:#1a1a2e;border-radius:10px;padding:18px 14px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
     var loading = document.createElement('div');
     loading.style.cssText =
       'color:#7ab;font-size:12px;font-family:"Courier New",monospace;letter-spacing:0.5px;';
     loading.textContent = 'Analysing your code\u2026';
     container.appendChild(loading);
 
-    var sketch = (window.getGeneratedCode ? window.getGeneratedCode() : '') || '';
+    var sketch = (window.getCurrentSketch ? window.getCurrentSketch() :
+      (window.getGeneratedCode ? window.getGeneratedCode() : '')) || '';
     activeRequestId++;
     var thisRequestId = activeRequestId;
 
-    fetch('/sim/run', {
+    fetch(simConfig.endpoint || '/sim/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sketch: sketch, sim_config: simConfig }),
@@ -682,43 +607,548 @@ window.SimEngine = (function () {
         if (result.error) {
           container.innerHTML = '';
           container.style.cssText =
-            'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
-            'display:flex;flex-direction:column;align-items:center;gap:10px;';
+            'background:#1a1a2e;border-radius:10px;padding:16px 14px;' +
+            'display:flex;flex-direction:column;align-items:center;gap:8px;';
           var errMsg = document.createElement('div');
           errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
           errMsg.textContent = 'Could not run simulation: ' + result.error;
           container.appendChild(errMsg);
-          _appendRerunButton(container, simConfig);
+          _appendRerunButton(container, function () { initCodeDriven(container, simConfig); });
           return;
         }
         initTimeline(container, result);
-        _appendRerunButton(container, simConfig);
+        _appendRerunButton(container, function () { initCodeDriven(container, simConfig); });
       })
       .catch(function () {
         container.innerHTML = '';
         container.style.cssText =
-          'background:#1a1a2e;border-radius:12px;padding:24px 16px;' +
-          'display:flex;flex-direction:column;align-items:center;gap:10px;';
+          'background:#1a1a2e;border-radius:10px;padding:16px 14px;' +
+          'display:flex;flex-direction:column;align-items:center;gap:8px;';
         var errMsg = document.createElement('div');
         errMsg.style.cssText = 'color:#f87171;font-size:12px;padding:12px;text-align:center;';
         errMsg.textContent = 'Simulation error — check your code and try again.';
         container.appendChild(errMsg);
-        _appendRerunButton(container, simConfig);
+        _appendRerunButton(container, function () { initCodeDriven(container, simConfig); });
       });
   }
 
-  function _appendRerunButton(container, simConfig) {
+  /**
+   * initInterpreted(container, simConfig)
+   *
+   * Interactive sim, but "interactive" here means every click/toggle POSTs
+   * the current input component state to /sim/run (mode: "interpreted"),
+   * which runs the real Phase 0 interpreter (utils/sim_engine.py::interpret)
+   * against the student's live sketch and returns the resulting output pin
+   * states. Unlike initCodeDriven's timeline, this is a discrete
+   * request/response per interaction — see SIM_ENGINE_ROLLOUT_SPEC.md's
+   * "Target architecture" section. Unlike init()'s `behaviors` DSL, nothing
+   * here is hand-authored — output state always reflects whatever the
+   * sketch's if/else actually does, including edits the student just made.
+   *
+   * simConfig shape: same `components` array as init() (button/switch inputs
+   * need a `pin`; led/buzzer outputs need a `pin`). No `behaviors` key is
+   * read — the sketch is the only source of truth.
+   *
+   * Input pin values are derived from each pin's pinMode as reported by the
+   * server (INPUT_PULLUP: idle=HIGH/1, active=LOW/0; otherwise idle=LOW/0,
+   * active=HIGH/1), not hardcoded — a seed request with an empty input_state
+   * runs first to learn pin_modes from the sketch before any click is sent.
+   *
+   * If a result includes `pin_sequences` (a branch paced itself with its own
+   * delay() calls — e.g. an LED chase), those pins are looped client-side
+   * (setTimeout chain, same shared-restart pattern initTimeline uses for
+   * code_driven tabs) instead of set once, repeating every
+   * `sequence_duration` ms until the next real input event tears the loop
+   * down and applies whatever the new result says instead.
+   *
+   * Phase 1 (SIM_ENGINE_ROLLOUT_SPEC.md item 4) — persistent state & a real
+   * clock: the server's `_state` (globals + pin_modes + clock epoch) is
+   * cached here in `persistState` and sent back as `state` on every
+   * following call, so a sketch's own `running`/`startTime`-style globals
+   * and millis()/micros() survive across separate button presses instead of
+   * resetting every request — see utils/sim_engine.py's module docstring.
+   * `persistState` is reset to null (a fresh "power-on") whenever the
+   * sketch text itself changes between calls, mirroring a real re-upload;
+   * without that, editing in a *new* global after state has already been
+   * captured would hit "Unknown identifier" (globals only initialise on the
+   * first call for a given state) — same failure mode `interpret()` already
+   * reports clearly for any other unsupported edit.
+   *
+   * `console_lines`, if present, is a list of this pass's Serial.print/
+   * println args (str()'d). A sim tab wired with a `console`-type component
+   * gets them appended to that component's scrolling monospace transcript
+   * via `applyConsole()` (rollout plan Step 2a) — that's the real serial
+   * monitor `five`/`six` need. A tab with no `console` component (e.g.
+   * `thirteen`, which only wants a computed reaction time visible
+   * somewhere) falls back to tacking the last line onto the status bar
+   * instead, so there's exactly one console pattern active per tab, never
+   * both (Step 2b).
+   *
+   * Phase 2 (SIM_ENGINE_ROLLOUT_SPEC.md item 5) — continuous mapping: a
+   * `sonar` component (`pin_trig`/`pin_echo`, same shape `project_seventeen`
+   * already shipped for the now-removed hand-authored `behaviors`) sends its
+   * slider distance as a raw pulse duration on `pin_echo` — debounced 150ms
+   * after the last drag movement, not one request per pixel — and a
+   * `pin_frequencies` key in the result (a `tone()` call's actual Hz
+   * argument, not collapsed to on/off) paints a live Hz readout under any
+   * `buzzer` component via `applyBuzzerFreq()`. There are no discrete zones
+   * here on either end — whatever the sketch's own map()/if-chain computes
+   * is what's shown, continuously.
+   */
+  function initInterpreted(container, config) {
+    if (container._simCleanup) container._simCleanup();
+
+    var components  = config.components || [];
+    var consoleComponents = components.filter(function (c) { return c.type === 'console'; });
+    var inputState   = {};   // per-component raw UI state: 'pressed'/'released'/'on'/'off'
+    var pinModes    = {};   // filled in from the server's reading of the sketch's pinMode() calls
+    var colorMap    = {};
+    var activeId    = 0;
+    var seqHandles  = [];   // pending setTimeout ids for the current pin_sequences playback
+    var seqLoopHandle = null;
+    var persistState = null;   // Phase 1: opaque server _state, round-tripped between calls
+    var lastSketch   = null;   // sketch text as of the last call — a change means "re-upload"
+    var pollHandle   = null;   // pending setTimeout id for the next continuous-poll tick (Step 6a)
+    var pinModesReady = false; // true once the seed response has populated pinModes (see pinValueFor)
+
+    components.forEach(function (c) {
+      inputState[c.id] = (c.type === 'switch') ? 'off'
+                        : (c.type === 'button') ? 'released'
+                        : (c.type === 'sonar')  ? 80   /* cm, matches buildCol's default slider value */
+                        : (c.type === 'ldr')    ? 50   /* %, matches buildCol's default slider value */
+                        : 'off';
+      if (c.type === 'led') colorMap[c.id] = c.color || 'red';
+    });
+
+    container.innerHTML = '';
+    container.style.cssText =
+      'background:#1a1a2e;border-radius:10px;padding:14px 12px 10px;' +
+      'display:flex;flex-direction:column;align-items:center;gap:8px;';
+
+    var canvas = document.createElement('div');
+    canvas.style.cssText =
+      'display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:center;';
+    components.forEach(function (c) { canvas.appendChild(buildCol(c)); });
+    container.appendChild(canvas);
+
+    /* The zone badge under a sonar component (buildCol's `-zone` element,
+       "🟢 SAFE" etc.) belongs to the retired hand-authored 3-zone model.
+       There are no zones here — the sketch's own map()/if-chain is
+       the only source of truth for what a given distance means (see
+       SIM_ENGINE_ROLLOUT_SPEC.md item 5) — so it's hidden rather than left
+       showing a label nothing here ever updates. */
+    components.forEach(function (c) {
+      if (c.type !== 'sonar') return;
+      var zoneTag = document.getElementById(c.id + '-zone');
+      if (zoneTag) zoneTag.style.display = 'none';
+    });
+
+    var statusBar = document.createElement('div');
+    statusBar.style.cssText =
+      'padding:5px 14px;background:rgba(255,255,255,0.04);' +
+      'border:1px solid rgba(255,255,255,0.08);border-radius:6px;' +
+      'color:#7ab;font-size:10px;font-family:"Courier New",monospace;' +
+      'text-align:center;min-width:160px;max-width:100%;';
+    statusBar.textContent = 'Loading…';
+    container.appendChild(statusBar);
+
+    function setStatus(msg) { statusBar.textContent = msg; }
+
+    /* pin value an INPUT-type component should report, given what the
+       sketch's own pinMode() declared for that pin (learned from the seed
+       request — see module-level doc comment above). */
+    function pinValueFor(comp) {
+      var active = (inputState[comp.id] === 'pressed' || inputState[comp.id] === 'on');
+      var isPullup = pinModes[comp.pin] === 'INPUT_PULLUP';
+      if (isPullup) return active ? 0 : 1;
+      return active ? 1 : 0;
+    }
+
+    /* HC-SR04 sonar reports distance as a round-trip pulse *duration*
+       (microseconds), not a distance — same physical signal a real sensor
+       puts on its echo pin, which the sketch's own pulseIn()/math (e.g.
+       `distance = duration * 0.034 / 2`) turns back into cm. 0.034 cm/us is
+       the same speed-of-sound constant every sonar sketch in this repo
+       uses, so this is the sensor's own physics, not a copy of any one
+       sketch's logic — mirrors how pinValueFor() supplies a raw HIGH/LOW
+       level rather than a pre-interpreted "pressed" state. */
+    function sonarDurationUs(distanceCm) {
+      return Math.round(distanceCm * 2 / 0.034);
+    }
+
+    /* analogRead() returns 0-1023 on real hardware; the LDR slider's 0
+       (dark) - 100 (bright) UI range maps linearly onto that, same shape as
+       sonarDurationUs() above converting a friendlier UI unit into the raw
+       value the sketch's own analogRead()/if-chain actually reads. */
+    function ldrRawValue(level) {
+      return Math.round(level * 1023 / 100);
+    }
+
+    function buildInputPayload() {
+      var payload = {};
+      components.forEach(function (c) {
+        if ((c.type === 'button' || c.type === 'switch') && c.pin !== undefined && c.pin !== '') {
+          payload[c.pin] = pinValueFor(c);
+        }
+        if (c.type === 'sonar' && c.pin_echo !== undefined && c.pin_echo !== '') {
+          payload[c.pin_echo] = sonarDurationUs(inputState[c.id]);
+        }
+        if (c.type === 'ldr' && c.pin !== undefined && c.pin !== '') {
+          payload[c.pin] = ldrRawValue(inputState[c.id]);
+        }
+      });
+      return payload;
+    }
+
+    /* Sonar/LDR entries only, no pinModes needed — sonarDurationUs()/
+       ldrRawValue() are plain unit conversions from the slider's own
+       default UI value, unlike pinValueFor() which needs to know
+       INPUT_PULLUP first. Used for the seed request: analogRead() on the
+       server defaults an absent pin's raw value to 0 ("total darkness" for
+       an LDR, not the slider's actual 50%-bright resting position), so
+       omitting these here — as the seed call used to — painted the wrong
+       idle output until the first real drag corrected it. Button/switch
+       stay omitted from the seed on purpose: the server's own digitalRead()
+       default is already pin-mode-aware (see run()'s doc comment), and
+       computing them here would need pinModes before the seed response
+       that's about to teach us pinModes. */
+    function buildIdleAnalogPayload() {
+      var payload = {};
+      components.forEach(function (c) {
+        if (c.type === 'sonar' && c.pin_echo !== undefined && c.pin_echo !== '') {
+          payload[c.pin_echo] = sonarDurationUs(inputState[c.id]);
+        }
+        if (c.type === 'ldr' && c.pin !== undefined && c.pin !== '') {
+          payload[c.pin] = ldrRawValue(inputState[c.id]);
+        }
+      });
+      return payload;
+    }
+
+    /* Cancels any currently-looping pin_sequences playback — called before
+       applying a fresh result (new input event) and on cleanup. */
+    function clearSequencePlayback() {
+      seqHandles.forEach(clearTimeout);
+      seqHandles = [];
+      if (seqLoopHandle) { clearTimeout(seqLoopHandle); seqLoopHandle = null; }
+    }
+
+    /* Continuous-polling mode (rollout plan Step 6a) — opt-in via
+       `config.polling`, for sketches like eighteen's dual-sonar speed trap
+       whose loop() polls its inputs every pass with no click to wait for.
+       Self-rescheduling setTimeout (same shape clearSequencePlayback/
+       playSequences already use for the click-driven sequence-replay case)
+       rather than setInterval, so a slow round trip can't pile up overlapping
+       requests — the next tick is only queued once the current one finishes
+       (success or failure). 150ms matches the sonar/LDR slider debounce
+       already in use elsewhere in this file and sits inside the ~100-200ms
+       comfort zone SIM_ENGINE_ROLLOUT_SPEC.md calls out for discrete-request
+       latency, so click-driven and polling traffic share one cadence rather
+       than needing two tuned constants. Any manually-triggered run() (a
+       button press, a slider drag) also reschedules from here, so there's
+       only ever one pending poll tick, never a duplicate chain layered on
+       top of it. */
+    var POLL_INTERVAL_MS = config.poll_interval_ms || 150;
+    function schedulePoll() {
+      if (!config.polling) return;
+      if (pollHandle) { clearTimeout(pollHandle); }
+      pollHandle = setTimeout(function () {
+        run(buildInputPayload(), null);
+      }, POLL_INTERVAL_MS);
+    }
+
+    /* Loops a {pin: [{t, state}, ...]} timeline (LED/buzzer) and/or a
+       {pin: [{t, angle}, ...]} timeline (servo) client-side — same
+       setTimeout-chain / self-rescheduling pattern initTimeline uses for
+       code_driven tabs — until clearSequencePlayback() cancels it (the next
+       real input event replaces the whole result, sequence or not). Servo
+       sequences are a separate angle-valued channel from pin_sequences'
+       binary HIGH/LOW one (see SIM_ENGINE_ROLLOUT_SPEC.md item 6), so both
+       are looped on the same schedule but read from different result keys. */
+    function playSequences(sequences, servoSequences, duration) {
+      var loopDelay = Math.max(duration, 300);
+      function apply(comp, state) {
+        if (comp.type === 'led')    applyLED(comp.id, state === 'HIGH', colorMap[comp.id]);
+        if (comp.type === 'buzzer') applyBuzzer(comp.id, state === 'HIGH');
+      }
+      function playOnce() {
+        components.forEach(function (c) {
+          if (c.pin === undefined || c.pin === '') return;
+          var tl = sequences[c.pin];
+          if (tl) {
+            tl.forEach(function (ev) {
+              if (ev.t === 0) {
+                apply(c, ev.state);
+              } else {
+                seqHandles.push(setTimeout(function () { apply(c, ev.state); }, ev.t));
+              }
+            });
+          }
+          var stl = servoSequences[c.pin];
+          if (stl) {
+            stl.forEach(function (ev) {
+              if (ev.t === 0) {
+                applyServo(c.id, ev.angle);
+              } else {
+                seqHandles.push(setTimeout(function () { applyServo(c.id, ev.angle); }, ev.t));
+              }
+            });
+          }
+        });
+        seqLoopHandle = setTimeout(playOnce, loopDelay);
+      }
+      playOnce();
+    }
+
+    function applyOutputs(result) {
+      pinModes = result.pin_modes || pinModes;
+      var states          = result.pin_states       || {};
+      var sequences       = result.pin_sequences     || {};
+      var frequencies     = result.pin_frequencies   || {};
+      var servoAngles     = result.servo_angles      || {};
+      var servoSequences  = result.servo_sequences   || {};
+      clearSequencePlayback();
+      components.forEach(function (c) {
+        if (c.pin === undefined || c.pin === '') return;
+        if (sequences[c.pin] || servoSequences[c.pin]) return; /* driven by playSequences below instead */
+        if (c.type === 'led')    applyLED(c.id, states[c.pin] === 'HIGH', colorMap[c.id]);
+        if (c.type === 'buzzer') {
+          applyBuzzer(c.id, states[c.pin] === 'HIGH');
+          applyBuzzerFreq(c.id, frequencies[c.pin]);
+        }
+        /* Absent (no .write() call happened this pass — e.g. the button's
+           if-branch didn't run) means "leave the dial where it already is",
+           not "reset to some default" — same as an LED with no pin_states
+           entry implicitly staying at its last-painted state. */
+        if (c.type === 'servo' && servoAngles[c.pin] !== undefined) {
+          applyServo(c.id, servoAngles[c.pin]);
+        }
+      });
+      if (Object.keys(sequences).length || Object.keys(servoSequences).length) {
+        playSequences(sequences, servoSequences, result.sequence_duration || 0);
+      }
+    }
+
+    /* The seed call (see seedWhenSketchReady()) omits button/switch pins
+       (before pin_modes are known) so the interpreter's own pin-mode-aware
+       idle default applies, but includes sonar/LDR pins via
+       buildIdleAnalogPayload() since those don't need pin_modes and the
+       interpreter's own analogRead() default (a flat 0) doesn't match any
+       particular slider's resting position. Every call after the seed sends
+       every input pin's live value, which — now that pin_modes are known —
+       agrees with those same idle defaults when nothing is pressed, so
+       there's no state jump once real payloads take over. */
+    function run(inputPayload, statusMsg) {
+      var sketch = (window.getCurrentSketch ? window.getCurrentSketch() :
+        (window.getGeneratedCode ? window.getGeneratedCode() : '')) || '';
+      if (sketch !== lastSketch) persistState = null;  // edited code = a fresh power-on
+      lastSketch = sketch;
+      activeId++;
+      var thisId = activeId;
+
+      fetch(config.endpoint || '/sim/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sketch: sketch, sim_config: config, input_state: inputPayload, state: persistState,
+        }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (result) {
+          if (thisId !== activeId) return;
+          if (result.error) { setStatus('Could not run: ' + result.error); return; }
+          persistState = result._state || null;
+          pinModesReady = true;
+          applyOutputs(result);
+          var msg = statusMsg || 'Ready';
+          if (result.console_lines && result.console_lines.length) {
+            /* One console pattern at a time (rollout plan Step 2b): a sim
+               tab with a dedicated `console` component gets the full
+               scrolling transcript there; only a tab with no such
+               component (e.g. `thirteen`, which just wants the computed
+               reaction time visible somewhere) falls back to the old
+               last-line-on-the-status-bar stopgap. */
+            if (consoleComponents.length) {
+              consoleComponents.forEach(function (c) { applyConsole(c.id, result.console_lines); });
+            } else {
+              msg += '  ·  ' + result.console_lines[result.console_lines.length - 1];
+            }
+          }
+          setStatus(msg);
+          schedulePoll();
+        })
+        .catch(function () {
+          if (thisId !== activeId) return;
+          setStatus('Simulation error — check your code and try again.');
+          schedulePoll();
+        });
+    }
+
+    /* ── Event binding — same physical interactions as init(), but every
+       one triggers a live server re-evaluation instead of local rule
+       matching ─────────────────────────────────────────────────────────── */
+    components.forEach(function (comp) {
+      var el = container.querySelector('[data-id="' + comp.id + '"]');
+      if (!el) return;
+
+      if (comp.type === 'button') {
+        function press(e) {
+          if (e && e.preventDefault) e.preventDefault();
+          /* pinValueFor() needs pinModes (learned from the seed response)
+             to know whether this pin is INPUT_PULLUP — pressed/released
+             map to opposite HIGH/LOW depending on that. A press that lands
+             before the seed response resolves would compute the wrong
+             level and, on a pullup pin, either never register or latch. */
+          if (!pinModesReady) return;
+          inputState[comp.id] = 'pressed';
+          applyButton(comp.id, true);
+          run(buildInputPayload(), 'Button PRESSED');
+        }
+        function release() {
+          if (!pinModesReady) return;
+          inputState[comp.id] = 'released';
+          applyButton(comp.id, false);
+          run(buildInputPayload(), 'Button RELEASED');
+        }
+        el.addEventListener('mousedown',  press);
+        el.addEventListener('mouseup',    release);
+        el.addEventListener('mouseleave', function () {
+          if (inputState[comp.id] === 'pressed') release();
+        });
+        el.addEventListener('touchstart', press,   { passive: false });
+        el.addEventListener('touchend',   release, { passive: false });
+      }
+
+      if (comp.type === 'switch') {
+        el.addEventListener('click', function () {
+          if (!pinModesReady) return;   // see press()'s comment above
+          var next = inputState[comp.id] === 'on' ? 'off' : 'on';
+          inputState[comp.id] = next;
+          applySwitch(comp.id, next === 'on');
+          run(buildInputPayload(), 'Switch ' + (next === 'on' ? 'ON' : 'OFF'));
+        });
+      }
+
+      if (comp.type === 'sonar') {
+        var sliderEl = document.getElementById(comp.id + '-slider');
+        var debounceHandle = null;
+        if (sliderEl) {
+          sliderEl.addEventListener('input', function () {
+            var dist = parseInt(sliderEl.value, 10);
+            inputState[comp.id] = dist;
+            var readout = document.getElementById(comp.id + '-readout');
+            if (readout) readout.textContent = dist + ' cm';
+            sonarPingFlash(comp.id);
+            /* Debounced, not per-pixel-of-drag — see the "Target
+               architecture" section of SIM_ENGINE_ROLLOUT_SPEC.md: a
+               discrete-request server round trip per drag pixel would flood
+               /sim/run, unlike button/switch clicks which are naturally
+               low-frequency. */
+            if (debounceHandle) clearTimeout(debounceHandle);
+            debounceHandle = setTimeout(function () {
+              run(buildInputPayload(), 'Distance: ' + dist + ' cm');
+            }, 150);
+          });
+        }
+      }
+
+      if (comp.type === 'ldr') {
+        var ldrSliderEl = document.getElementById(comp.id + '-slider');
+        var ldrDebounceHandle = null;
+        if (ldrSliderEl) {
+          ldrSliderEl.addEventListener('input', function () {
+            var level = parseInt(ldrSliderEl.value, 10);
+            inputState[comp.id] = level;
+            var readout = document.getElementById(comp.id + '-readout');
+            if (readout) readout.textContent = level + '%';
+            applyLdr(comp.id, level);
+            /* Debounced, same rationale as the sonar slider above. */
+            if (ldrDebounceHandle) clearTimeout(ldrDebounceHandle);
+            ldrDebounceHandle = setTimeout(function () {
+              run(buildInputPayload(), 'Light: ' + level + '%');
+            }, 150);
+          });
+        }
+      }
+    });
+
+    /* A button/switch/sonar/ldr click naturally re-POSTs the live sketch
+       (run() always reads window.getCurrentSketch() fresh), so an edit
+       shows up the next time the student interacts with one. A tab with
+       none of those (e.g. `five`: console-only, no inputs at all) has no
+       such trigger — nothing would ever call run() again after the seed,
+       so a code edit would sit invisible until the student navigated away
+       and back. Same rerun affordance initCodeDriven already offers. */
+    var hasInteractiveInput = components.some(function (c) {
+      return c.type === 'button' || c.type === 'switch' || c.type === 'sonar' || c.type === 'ldr';
+    });
+    if (!hasInteractiveInput) {
+      _appendRerunButton(container, function () { run(buildInputPayload(), 'Ready'); });
+    }
+
+    /* Initial idle visuals for inputs, then the seed request (see run()'s
+       doc comment) to learn pin_modes and paint the sketch's real idle
+       output state. */
+    components.forEach(function (c) {
+      if (c.type === 'button') applyButton(c.id, false);
+      if (c.type === 'switch') applySwitch(c.id, false);
+      if (c.type === 'ldr')    applyLdr(c.id, 50);   /* matches inputState's default level */
+    });
+
+    /* window.getCurrentSketch()/getGeneratedCode() can legitimately return
+       '' for a few hundred ms after this tab renders — the page's own
+       block-builder script loads and syncs asynchronously (loadBlockBuilder()
+       in arduino_interface.html: fetch + sequential <script> loads, only
+       then setMode()), fully independent of the drawer's sim tab. A seed
+       request fired against that transient '' teaches pinValueFor() the
+       sketch has no pinMode() declarations at all, which then silently
+       inverts every press/release level on a pullup pin until some later
+       response happens to correct it. Poll briefly for real content before
+       seeding rather than trusting whatever's there on the very first tick;
+       giving up after ~2s and seeding anyway preserves today's behavior for
+       a project whose sketch is genuinely empty. */
+    var seedPollHandle = null;
+    function seedWhenSketchReady(attemptsLeft) {
+      var sketch = (window.getCurrentSketch ? window.getCurrentSketch() :
+        (window.getGeneratedCode ? window.getGeneratedCode() : '')) || '';
+      if (sketch || attemptsLeft <= 0) { run(buildIdleAnalogPayload(), 'Ready'); return; }
+      seedPollHandle = setTimeout(function () { seedWhenSketchReady(attemptsLeft - 1); }, 100);
+    }
+    seedWhenSketchReady(20);
+
+    container._simCleanup = function () {
+      activeId++;
+      clearSequencePlayback();
+      if (pollHandle) { clearTimeout(pollHandle); pollHandle = null; }
+      if (seedPollHandle) { clearTimeout(seedPollHandle); seedPollHandle = null; }
+    };
+  }
+
+  function _appendRerunButton(container, onRun) {
+    var blurb = document.createElement('div');
+    blurb.textContent = 'Changed your code? Click the button to run it and see what happens.';
+    blurb.style.cssText =
+      'margin-top:6px;color:#9db4d1;font-size:11px;text-align:center;' +
+      'font-family:"Courier New",monospace;letter-spacing:0.2px;max-width:260px;';
+    container.appendChild(blurb);
+
     var btn = document.createElement('button');
-    btn.textContent = '\u25b6 Re-run with current code';
+    btn.textContent = '\u25b6 RUN YOUR CODE';
     btn.style.cssText =
-      'margin-top:4px;padding:6px 18px;background:#1e3a5f;color:#7ab;' +
-      'border:1px solid #2d5a8e;border-radius:6px;font-size:11px;' +
-      'cursor:pointer;font-family:"Courier New",monospace;letter-spacing:0.3px;';
-    btn.onmouseover = function () { btn.style.background = '#264d7a'; };
-    btn.onmouseout  = function () { btn.style.background = '#1e3a5f'; };
-    btn.onclick = function () { initCodeDriven(container, simConfig); };
+      'margin-top:8px;padding:12px 28px;background:#22c55e;color:#052e13;' +
+      'border:none;border-radius:8px;font-size:14px;font-weight:800;' +
+      'letter-spacing:0.5px;cursor:pointer;font-family:"Courier New",monospace;' +
+      'box-shadow:0 3px 0 #15803d,0 4px 12px rgba(34,197,94,0.4);transition:transform 0.1s;';
+    btn.onmouseover = function () { btn.style.background = '#34d465'; };
+    btn.onmouseout  = function () { btn.style.background = '#22c55e'; };
+    btn.onmousedown = function () { btn.style.transform = 'translateY(2px)'; btn.style.boxShadow = '0 1px 0 #15803d,0 2px 6px rgba(34,197,94,0.4)'; };
+    btn.onmouseup   = function () { btn.style.transform = 'translateY(0)'; btn.style.boxShadow = '0 3px 0 #15803d,0 4px 12px rgba(34,197,94,0.4)'; };
+    btn.onclick = onRun;
     container.appendChild(btn);
   }
 
-  return { init: init, initTimeline: initTimeline, initCodeDriven: initCodeDriven };
+  return {
+    initCodeDriven: initCodeDriven,
+    initInterpreted: initInterpreted,
+  };
 }());

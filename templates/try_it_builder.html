@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Arduino Web IDE</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/drawer.css">
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* TOP BAR */
+  #top-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  select, button {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  #top-bar select {
+  min-width: 200px;
+}
+
+  button {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  /* WORKSPACE — fills all space between top-bar and serial monitor */
+  #workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* BLOCKS VIEW — fills workspace */
+  #blocks-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    background: #f8fafc;
+  }
+
+  /* Stretch whatever the block builder injects (iframe, div, etc.) */
+  #blocks-view > * {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  /* EDITOR VIEW — fills workspace */
+  #editor-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* EDITOR — fills editor-view */
+  #editor {
+    flex: 1;
+    min-height: 0;
+  }
+
+  #mode-toggle-btn.has-error {
+    border: 2px solid #ef4444;
+    position: relative;
+  }
+  #mode-toggle-btn.has-error::after {
+    content: '!';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #020617;
+  }
+
+  /* STATUS / ERROR */
+  .error {
+    color: #f97316;
+  }
+
+  #step-nav {
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes bb-feedback-pop {
+    0%   { transform: scale(0.7); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #bb-feedback.success {
+    background: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 3px #bbf7d0, 0 2px 12px rgba(34,197,94,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  #bb-feedback.error {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 3px #fecaca, 0 2px 12px rgba(239,68,68,0.5);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+</style>
+
+<!-- Monaco -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+<!-- Sim Engine -->
+<script src="/static/js/sim-engine.js"></script>
+<!-- Circuit Renderer (static illustrative diagram in the drawer only) -->
+<script src="/static/js/circuit_renderer.js"></script>
+</head>
+
+<body>
+
+<div id="top-bar">
+  <button id="copy-btn">Copy</button>
+  {% if preset != 'open_coding' %}
+  <button id="reset-btn">Reset</button>
+  {% endif %}
+  <button id="mode-toggle-btn" onclick="toggleMode()">Switch to Editor</button>
+</div>
+
+<div id="main-content-wrapper" style="flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="step-nav" style="display:none; align-items:center; gap:10px; padding:6px 15px; background:#0969da; color:white; flex-shrink:0;">
+    <span id="step-label" style="flex:1; font-weight:700; font-size:12px;"></span>
+    <span id="step-progress" style="font-size:11px; opacity:0.8;"></span>
+    <span id="bb-feedback" style="display:none; font-size:16px; font-weight:900; padding:5px 18px; border-radius:8px; letter-spacing:0.5px; animation:bb-feedback-pop 0.3s ease;"></span>
+    <button id="prev-step-btn" style="display:none">← Prev</button>
+    <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
+  </div>
+
+  <div id="workspace">
+    <div id="blocks-view"></div>
+    <div id="editor-view" style="display: none;">
+      <div id="editor"></div>
+    </div>
+  </div>
+
+  <!-- GLOBAL DRAWER -->
+  <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
+    <div id="drawer-inner">
+      <div class="drawer-title">Info</div>
+      <div class="drawer-tabs"></div>
+      <div class="drawer-tab-panels"></div>
+    </div>
+  </div>
+  <div id="drawer-tab"><span>📖 Info</span></div>
+</div>
+
+<script>
+let editor;
+let currentMode = 'blocks';
+
+window.getCurrentSketch = function () {
+  if (currentMode === 'editor' && editor) return editor.getValue();
+  return window.getGeneratedCode ? window.getGeneratedCode() : '';
+};
+const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
+let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
+
+function switchTab(btn, panelId) {
+  const inner = document.getElementById('drawer-inner');
+  inner.querySelectorAll('.drawer-tab-btn').forEach(b => b.classList.remove('active'));
+  inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  if (pansC) pansC.scrollTop = 0;
+}
+
+window.flash = function(txt) {
+  const mEl = document.getElementById('msg');
+  if (mEl) {
+     mEl.textContent = txt; mEl.classList.add('show');
+     setTimeout(() => mEl.classList.remove('show'), 2500);
+  }
+  logToSerial(txt);
+};
+
+// Handle view changes from the block builder (e.g. on step change)
+window.addEventListener('stepchange', function(e) {
+  if (e.detail && e.detail.view) {
+    setMode(e.detail.view);
+  }
+  if (e.detail && e.detail.readOnly !== undefined && editor) {
+    editor.updateOptions({ readOnly: e.detail.readOnly });
+  }
+});
+
+// On the "Turn it ON" step (BB.STEPS index 1 — same numbering the email
+// gate below relies on), the editor step opens with an empty loop() and no
+// visual cue for where to type. Comments in the sketch source aren't
+// rendered by the block builder at all (they're stripped during parsing,
+// same as the header "// Arduino Sketch" lines already are), so a
+// placeholder can't be baked into utils/project_try_it.py's SKETCH — it has
+// to be inserted into the live editor content instead, pre-selected so the
+// student's first keystroke replaces it.
+var TYPE_HERE_STEP_INDEX = 1;
+var TYPE_HERE_COMMENT = '  // Type your code below this line:';
+window.addEventListener('stepchange', function (e) {
+  if (!e.detail || e.detail.view !== 'editor') return;
+  if (!(window._BB && window._BB.CURRENT_STEP === TYPE_HERE_STEP_INDEX)) return;
+  if (!editor) return;
+  var text = editor.getValue();
+  if (text.indexOf('void loop() {\n}') === -1) return; // already has real content — don't clobber it
+  // Comment marks the spot; a blank line below it is where the student
+  // actually types, so the cursor lands on empty space, not selected text.
+  var newText = text.replace('void loop() {\n}', 'void loop() {\n' + TYPE_HERE_COMMENT + '\n\n}');
+  editor.setValue(newText);
+  var commentLine = newText.substr(0, newText.indexOf(TYPE_HERE_COMMENT)).split('\n').length;
+  var blankLine = commentLine + 1;
+  editor.setPosition({ lineNumber: blankLine, column: 1 });
+  editor.focus();
+  // setMode() (triggered by this same stepchange event, just above this
+  // listener) schedules editor.layout() at 10/50/150/300ms to catch the
+  // editor container's final size after the blocks<->editor flexbox
+  // transition settles. A reveal call made synchronously here runs against
+  // a still-reflowing container and scrolls to the wrong position once
+  // layout catches up — so re-issue it on the same schedule, same reason.
+  [0, 10, 50, 150, 300].forEach(function (delay) {
+    setTimeout(function () {
+      if (editor) editor.revealLineInCenter(blankLine);
+    }, delay);
+  });
+});
+
+function syncStepNavPadding() {
+  const stepNav = document.getElementById('step-nav');
+  if (!stepNav) return;
+  // Panel width (600) + Tab width (32) + original padding (15) = 647px
+  stepNav.style.paddingRight = drawerOpen ? '647px' : '47px';
+}
+
+window.openDrawer = function() {
+  drawerOpen = true;
+  document.getElementById('drawer-panel').classList.add('open');
+  syncStepNavPadding();
+};
+
+window.updateDrawer = function(stepIdx) {
+  if (!DRAWER_STEPS || !DRAWER_STEPS[stepIdx]) return;
+  const c = DRAWER_STEPS[stepIdx];
+  const inner = document.getElementById('drawer-inner');
+  
+  inner.querySelector('.drawer-title').textContent = c.title || 'Info';
+  
+  let tipEl = inner.querySelector('.drawer-tip');
+  if (c.tip) {
+    if (!tipEl) {
+      tipEl = document.createElement('div'); tipEl.className = 'drawer-tip';
+      inner.querySelector('.drawer-title').after(tipEl);
+    }
+    tipEl.innerHTML = c.tip;
+  } else if (tipEl) tipEl.remove();
+
+  const tabsC = inner.querySelector('.drawer-tabs');
+  const pansC = inner.querySelector('.drawer-tab-panels');
+  
+  // Cleanup old simulations before clearing the UI.
+  // _simCleanup is stored on the inner simDiv, not the panel element,
+  // so traverse into each panel's direct children to find it.
+  Array.from(pansC.children).forEach(child => {
+    [child, ...Array.from(child.children || [])].forEach(el => {
+      if (el._simCleanup) {
+        try { el._simCleanup(); } catch(e) { console.error('Sim cleanup error:', e); }
+      }
+    });
+  });
+
+  tabsC.innerHTML = ''; pansC.innerHTML = '';
+
+  const tabsRaw = c.tabs || [];
+  const tabs = Array.isArray(tabsRaw)
+    ? tabsRaw
+    : Object.entries(tabsRaw).map(([id, v]) => ({ id, ...v }));
+  tabs.forEach((tab, i) => {
+    const k = tab.id || tab.label || i;
+    const btn = document.createElement('button');
+    btn.className = 'drawer-tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = tab.label || k;
+    btn.onclick = () => switchTab(btn, `dtab-${k}`);
+    tabsC.appendChild(btn);
+
+    const p = document.createElement('div');
+    p.className = 'drawer-tab-panel' + (i === 0 ? ' active' : '');
+    p.id = `dtab-${k}`;
+
+    if (tab.type === 'sim' && tab.sim_config) {
+      const simDiv = document.createElement('div');
+      simDiv.style.padding = '8px 0';
+      p.appendChild(simDiv);
+      pansC.appendChild(p);
+      const cfg = tab.sim_config;
+      setTimeout(() => {
+        if (!window.SimEngine) return;
+        if (cfg.mode === 'code_driven') {
+          SimEngine.initCodeDriven(simDiv, cfg);
+        } else if (cfg.mode === 'interpreted') {
+          SimEngine.initInterpreted(simDiv, cfg);
+        }
+      }, 0);
+    } else if (tab.type === 'circuit' && tab.circuit_def) {
+      if (tab.content) {
+        const blurb = document.createElement('div');
+        blurb.innerHTML = `<p>${tab.content}</p>`;
+        p.appendChild(blurb);
+      }
+      const circuitDiv = document.createElement('div');
+      circuitDiv.id = `dtab-circuit-canvas-${k}`;
+      circuitDiv.style.cssText = 'max-width:100%; margin:0 auto; background:#f8f5e8; border-radius:8px; padding:12px;';
+      p.appendChild(circuitDiv);
+      pansC.appendChild(p);
+      setTimeout(() => {
+        if (typeof CircuitRenderer === 'undefined') return;
+        try {
+          new CircuitRenderer(tab.circuit_def, circuitDiv.id).render();
+        } catch (e) {
+          console.warn('[Try] Circuit render error:', e);
+          circuitDiv.textContent = 'Circuit preview unavailable';
+        }
+      }, 0);
+    } else {
+      p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
+      pansC.appendChild(p);
+    }
+  });
+};
+
+document.getElementById('drawer-tab').onclick = () => {
+  drawerOpen = !drawerOpen;
+  document.getElementById('drawer-panel').classList.toggle('open', drawerOpen);
+  syncStepNavPadding();
+};
+
+// Forward step changes to the parent page
+window.addEventListener('bb_step_update', function(e) {
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'bb_step_update', label: e.detail && e.detail.label }, '*');
+  }
+});
+
+// Listen for FAB save requests
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'bb_save_request') {
+    if (window.saveBlocks) window.saveBlocks();
+    // Give it a moment to complete the fetch then tell parent to close
+    setTimeout(() => window.parent.postMessage({type: 'bb_close'}, '*'), 500);
+  }
+});
+
+// Monaco
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+  editor = monaco.editor.create(document.getElementById('editor'), {
+    value: "",
+    language: 'cpp',
+    theme: 'vs',
+    fontSize: 14,
+    minimap: { enabled: false },
+    automaticLayout: true
+  });
+
+  // If the editor finishes loading after the block builder, 
+  // and we are in editor mode, sync the code now.
+  if (currentMode === 'editor' && window.getGeneratedCode) {
+    editor.setValue(window.getGeneratedCode());
+  }
+
+  // Clear markers whenever the user types in the editor
+  editor.onDidChangeModelContent(() => {
+    if (typeof monaco !== 'undefined') monaco.editor.setModelMarkers(editor.getModel(), 'arduino', []);
+  });
+});
+
+async function toggleMode() {
+  setMode(currentMode === 'blocks' ? 'editor' : 'blocks');
+};
+
+// Parses the current editor text into blocks and applies it to BB.SECTIONS.
+// Used both by setMode('blocks') (switching views) and by the bbNext
+// wrapper below (clicking Check Code/Complete Step while still in editor
+// view — without this, that click validated whatever was last synced,
+// which on a step that opens in editor view is nothing).
+window.syncEditorToBlocks = async function () {
+  const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+  if (meta.readOnly || !editor) return;
+  const code = editor.getValue();
+  try {
+    const res = await fetch('/try/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (window.setBlockData) window.setBlockData(data);
+  } catch (e) {
+    console.error("Failed to parse code into blocks:", e);
+  }
+};
+
+async function setMode(mode) {
+  if (mode === currentMode) return;
+  
+  const blocksEl = document.getElementById('blocks-view');
+  const editorEl = document.getElementById('editor-view');
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+  const workspaceWrapper = document.getElementById('workspace');
+
+  // Update UI and state immediately for responsiveness
+  currentMode = mode;
+
+  var bbUI = document.getElementById('block-builder-ui');
+  if(bbUI){
+    var palette = bbUI.querySelector('#palette');
+    var workspace = bbUI.querySelector('#workspace');
+    var codepanel = bbUI.querySelector('#codepanel');
+    var statusbar = bbUI.querySelector('#statusbar');
+    if(palette) palette.style.display = mode === 'editor' ? 'none' : '';
+    if(workspace) workspace.style.display = mode === 'editor' ? 'none' : '';
+    if(codepanel) codepanel.style.display = mode === 'editor' ? 'none' : '';
+    if(statusbar) statusbar.style.display = mode === 'editor' ? 'none' : '';
+  }
+  editorEl.style.display = mode === 'editor' ? 'flex' : 'none';
+
+  if (mode === 'editor') {
+    workspaceWrapper.style.flexDirection = 'row-reverse';
+    blocksEl.style.flex = '0 0 252px';
+    editorEl.style.flex = '1';
+  } else {
+    workspaceWrapper.style.flexDirection = 'column';
+    blocksEl.style.flex = '1';
+    editorEl.style.flex = '1';
+  }
+
+  if (mode === 'blocks') {
+    if (toggleBtn) {
+      toggleBtn.textContent = 'Switch to Editor';
+      toggleBtn.classList.remove('has-error');
+    }
+  } else {
+    if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
+    if (editor) {
+      const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+      editor.updateOptions({ readOnly: !!meta.readOnly });
+      // Trigger layout multiple times to ensure we catch the final container size 
+      // after the browser finishes the flexbox reflow.
+      [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
+    }
+  }
+
+  if (mode === 'blocks') {
+    // Sync Editor -> Blocks
+    await window.syncEditorToBlocks();
+  } else {
+    // Sync Blocks -> Editor
+    if (window.getGeneratedCode && editor) {
+      const code = window.getGeneratedCode();
+      editor.setValue(code);
+    }
+  }
+}
+
+// UI helpers
+function logToSerial(msg, isError = false) {
+  if (isError) console.error(msg); else console.log(msg);
+}
+
+async function loadBlockBuilder() {
+  const blocksView = document.getElementById('blocks-view');
+
+  // Cancel any previous init poll that may still be running
+  if (window._bbCheckInterval) {
+    clearInterval(window._bbCheckInterval);
+    window._bbCheckInterval = null;
+  }
+
+  // Wipe stale globals so nothing downstream uses leftover state
+  window.BB_CONFIG = null;
+  window.getGeneratedCode = null;
+
+  try {
+    const response = await fetch('/try/builder');
+    if (!response.ok) throw new Error('Failed to fetch block builder');
+    const html = await response.text();
+
+    // Parse into a temp element using innerHTML — this does NOT execute scripts,
+    // which is exactly what we want so we can control the load order ourselves.
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Read the config from the JSON data script tag (no eval needed).
+    const configEl = temp.querySelector('script[type="application/json"]#bb-config-json');
+    if (configEl) {
+      try { window.BB_CONFIG = JSON.parse(configEl.textContent); }
+      catch (e) { console.error('[BB] config parse error:', e); }
+      configEl.remove();
+    }
+
+    // Pull remaining script elements out before injecting (external src scripts only).
+    const scripts = [...temp.querySelectorAll('script')];
+    scripts.forEach(s => s.remove());
+
+    // Inject the script-free HTML (link stylesheet + block builder markup)
+    blocksView.innerHTML = temp.innerHTML;
+
+    // Load each external script sequentially, awaiting onload before the next.
+    // This guarantees bb-blocks → bb-render → bb-validation → block_builder
+    // always executes in the correct dependency order.
+    for (const s of scripts) {
+      const rawSrc = s.getAttribute('src');
+      if (!rawSrc) continue;
+      const src = new URL(rawSrc, window.location.href).href;
+
+      // Remove any previously injected copy so the browser re-executes the
+      // script rather than silently skipping it as a duplicate URL.
+      const prev = document.head.querySelector(`script[data-bb-src="${src}"]`);
+      if (prev) prev.parentNode.removeChild(prev);
+
+      await new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.setAttribute('data-bb-src', src);
+        el.src = src;
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('[BB] failed to load: ' + src));
+        document.head.appendChild(el);
+      });
+    }
+
+    // All scripts have now run in the correct order — configure the UI
+    const cfg = window.BB_CONFIG;
+    if (!cfg) throw new Error('[BB] BB_CONFIG missing after script load');
+
+    setMode(cfg.default_view || 'blocks');
+    const isProg = window.isProgressionMode && window.isProgressionMode();
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    if (toggleBtn) toggleBtn.style.display = cfg.lock_view ? 'none' : 'inline-block';
+    const stepNav = document.getElementById('step-nav');
+    if (stepNav) stepNav.style.display = isProg ? 'flex' : 'none';
+    if (cfg.readonly_mode && editor) editor.updateOptions({ readOnly: true });
+
+  } catch (err) {
+    console.error('Block Builder Load Error:', err);
+    blocksView.innerHTML = '<div style="color:#f97316;padding:20px;">Failed to load Block Builder components.</div>';
+  }
+}
+
+// Events
+document.getElementById('copy-btn').onclick = function() {
+  if (window.copyCode) window.copyCode();
+  else {
+    const code = window.getGeneratedCode ? window.getGeneratedCode() : editor.getValue();
+    navigator.clipboard.writeText(code).then(() => logToSerial('Copied!'));
+  }
+};
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+  resetBtn.onclick = function() {
+    if (window.resetBlocks) {
+      window.resetBlocks();
+      if (typeof drawerOpen !== 'undefined' && !drawerOpen) {
+         if (window.openDrawer) window.openDrawer();
+      }
+    }
+  };
+}
+// Init
+loadBlockBuilder();
+if (DRAWER_STEPS) updateDrawer(0);
+
+document.getElementById('next-step-btn').onclick = function(){
+  if(window.bbNext) window.bbNext();
+};
+document.getElementById('prev-step-btn').onclick = function(){
+  if(window.bbPrev) window.bbPrev();
+};
+
+window.addEventListener('bb_next_state', function(e){
+  var btn = document.getElementById('next-step-btn');
+  var prevBtn = document.getElementById('prev-step-btn');
+  var nav = document.getElementById('step-nav');
+  var fbEl = document.getElementById('bb-feedback');
+  var d = e.detail.state; // Accessing the state object from the detail
+
+  // Ensure the navigation bar is visible if we are receiving state updates
+  nav.style.display = 'flex';
+
+  btn.textContent = d.text || 'Complete Step';
+  btn.style.opacity = d.ready ? '1' : '0.5';
+  btn.style.pointerEvents = d.ready ? 'auto' : 'none';
+
+  if(d.hidden) btn.style.display = 'none';
+  else btn.style.display = '';
+
+  if(d.prevVisible) prevBtn.style.display = '';
+  else prevBtn.style.display = 'none';
+
+  // Show feedback message to the left of the nav buttons
+  if (d.feedback) {
+    fbEl.textContent = d.feedback.text;
+    fbEl.className = d.feedback.type; // 'success' or 'error'
+    fbEl.style.display = '';
+    // Re-trigger animation by forcing reflow
+    fbEl.style.animation = 'none';
+    fbEl.offsetHeight;
+    fbEl.style.animation = '';
+  } else if (d.hasOwnProperty('feedback')) {
+    // feedback: null means clear it
+    fbEl.style.display = 'none';
+    fbEl.textContent = '';
+    fbEl.className = '';
+  }
+});
+
+window.addEventListener('bb_step_update', function(e){
+  document.getElementById('step-nav').style.display = 'flex';
+  document.getElementById('step-label').textContent = e.detail.label || '';
+  document.getElementById('step-progress').textContent = e.detail.progress || '';
+});
+
+// Initial sync for step nav padding based on default drawer state
+syncStepNavPadding();
+</script>
+
+<div id="try-welcome-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);text-align:center;">
+    <h2 style="margin:0 0 8px;font-size:18px;color:#1e293b;">Welcome to KidsCode! 👋</h2>
+    <p style="margin:0 0 16px;font-size:13px;color:#475569;line-height:1.6;">Thanks for checking us out! This is a real Arduino coding lesson — no signup needed to try it. Build it, break it, have fun. Got questions? We'd love to hear from you.</p>
+    <button id="try-welcome-dismiss-btn" type="button" style="width:100%;padding:10px;background:#22c55e;color:#020617;font-weight:600;border:none;border-radius:6px;">Let's build! 🚀</button>
+  </div>
+</div>
+<script>
+(function () {
+  if (sessionStorage.getItem('try_welcome_dismissed')) return;
+  var overlay = document.getElementById('try-welcome-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('try-welcome-dismiss-btn').onclick = function () {
+    sessionStorage.setItem('try_welcome_dismissed', '1');
+    overlay.style.display = 'none';
+  };
+})();
+</script>
+
+<script>
+(function () {
+  // window.bbNext (static/js/bb-validation.js) is the actual step-advance
+  // handler wired to the Next-step button's onclick. It's defined inside
+  // the block-builder scripts that loadBlockBuilder() injects asynchronously
+  // (see /try/builder), so poll until it exists before wrapping it — same
+  // defensive pattern the copied template already uses for window._bbCheckInterval.
+  var installPoll = setInterval(function () {
+    if (typeof window.bbNext !== 'function') return;
+    clearInterval(installPoll);
+    var originalBbNext = window.bbNext;
+    window.bbNext = function () {
+      // Clicking "Check Code" while still in editor view (never having
+      // tapped "Switch to Blocks") would otherwise validate whatever was
+      // last synced into BB.SECTIONS — nothing, on a step that opens in
+      // editor view. Sync first, same as switching modes does, but only
+      // when we're about to actually check (not on the second "Next Step"
+      // click, which doesn't re-validate). syncEditorToBlocks() itself
+      // no-ops on a readonly editor, so this is safe on any step.
+      var aboutToCheck = typeof currentMode !== 'undefined' && currentMode === 'editor'
+        && window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'check-mode';
+      if (aboutToCheck) {
+        window.syncEditorToBlocks().then(originalBbNext);
+      } else {
+        originalBbNext();
+      }
+    };
+  }, 100);
+})();
+</script>
+
+<div id="try-subscribe-prompt-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.4);text-align:center;">
+    <h2 style="margin:0 0 8px;font-size:18px;">Thanks for trying the project! 🎉</h2>
+    <p style="margin:0 0 14px;font-size:13px;color:#475569;">You just wrote and ran real Arduino code — in blocks and in code. Ready to build more projects?</p>
+    <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding:10px 8px;background:#f4f8ff;border-radius:8px;font-size:11px;color:#334155;font-weight:600;">
+      <span>🔒 No social features</span>
+      <span>📊 Parent dashboard</span>
+      <span>🔌 Real hardware skills</span>
+    </div>
+    <a href="{{ url_for('auth.register_invite') }}" style="display:block;padding:10px;background:#22c55e;color:#020617;font-weight:600;border-radius:6px;text-decoration:none;">Subscribe & Start →</a>
+    <p style="margin:6px 0 16px;font-size:11px;color:#94a3b8;">$5.99 CAD/mo · cancel anytime</p>
+    <div style="display:flex;justify-content:center;gap:18px;">
+      <a href="{{ url_for('main.feedback') }}" style="color:#0969da;font-weight:600;font-size:12px;text-decoration:none;">Contact us</a>
+      <button id="try-subscribe-dismiss" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer;">Keep exploring</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  // Index 3, "Mission Complete", is the last of the 4 steps parsed from
+  // utils/project_try_it.py's SKETCH (0 Ready!, 1 Turn it ON, 2 Make it
+  // blink!, 3 Mission Complete). window._BB (not window.BB — BB is only a
+  // local alias inside block_builder.js/bb-validation.js) is populated
+  // asynchronously once /try/builder's scripts load.
+  var FINAL_STEP_INDEX = 3;
+  // Non-blocking: the visitor keeps exploring the finished project while
+  // this timer runs. Shown once per session, a few seconds after they
+  // reach the last step — not the instant they arrive there — so it reads
+  // as a friendly follow-up rather than a wall stopping them.
+  var SHOW_DELAY_MS = 8000;
+  var overlay = document.getElementById('try-subscribe-prompt-overlay');
+  var dismissBtn = document.getElementById('try-subscribe-dismiss');
+  dismissBtn.addEventListener('click', function () { overlay.style.display = 'none'; });
+
+  var shown = sessionStorage.getItem('try_subscribe_prompt_shown') === 'true';
+  var scheduled = shown;
+  var checkInterval = setInterval(function () {
+    if (scheduled || !window._BB || typeof window._BB.CURRENT_STEP !== 'number') return;
+    if (window._BB.CURRENT_STEP >= FINAL_STEP_INDEX) {
+      scheduled = true;
+      clearInterval(checkInterval);
+      setTimeout(function () {
+        sessionStorage.setItem('try_subscribe_prompt_shown', 'true');
+        overlay.style.display = 'flex';
+      }, SHOW_DELAY_MS);
+    }
+  }, 300);
+})();
+</script>
+
+</body>
+</html>

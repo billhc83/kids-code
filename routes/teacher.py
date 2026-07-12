@@ -48,7 +48,10 @@ def teacher_dashboard():
         elif action == "reset_password":
             student_id = request.form.get("student_id")
             new_password = request.form.get("new_password", "")
-            if reset_student_password(student_id, new_password):
+            linked = [s for s in students if s["id"] == student_id]
+            if not linked:
+                error = "Student not found."
+            elif reset_student_password(student_id, new_password):
                 success = "Password reset successfully."
             else:
                 error = "Failed to reset password."

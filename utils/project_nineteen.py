@@ -353,7 +353,14 @@ DRAWER_CONTENT = {
                     "sim": {
                         "label": "\U0001f3ae Try It",
                         "type": "sim",
-                        "sim_config": {}
+                        "sim_config": {
+                            "mode": "interpreted",
+                            "components": [
+                                {"id": "servo1", "type": "servo", "pin": 9, "label": "Gate Servo"},
+                                {"id": "button1", "type": "button", "pin": 4, "label": "Access Button"},
+                                {"id": "led1", "type": "led", "color": "green", "pin": 7, "label": "Status Light"}
+                            ]
+                        }
                     }
                 }
             }

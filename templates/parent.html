@@ -179,6 +179,33 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
     <div class="flash-msg success">{{ success }}</div>
     {% endif %}
 
+    <!-- Referral code -->
+    {% if referral_code %}
+    <div class="dash-card">
+        <div class="dash-card-label">🎁 Give a Free Month, Get a Free Month</div>
+        <p style="font-size:13px;color:#57606a;margin:0 0 12px;">
+            Share your code with another family. When they sign up and complete their
+            first payment, you both get {{ referral_reward_months }} free month{{ 's' if referral_reward_months != 1 else '' }}.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <code id="referral-code-value"
+                  style="font-size:18px;font-weight:700;letter-spacing:1px;padding:10px 16px;
+                         background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;">
+                {{ referral_code }}
+            </code>
+            <button type="button" class="next-btn" style="margin-bottom:0;" onclick="copyReferralCode()">
+                📋 Copy Code
+            </button>
+        </div>
+    </div>
+    <script>
+    function copyReferralCode() {
+        const code = document.getElementById('referral-code-value').textContent.trim();
+        navigator.clipboard.writeText(code);
+    }
+    </script>
+    {% endif %}
+
     <!-- Student accounts -->
     <div class="dash-card">
         <div class="dash-card-label">

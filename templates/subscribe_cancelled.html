@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Checkout Cancelled — KidsCode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .auth-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-card {
+            background: #fff;
+            border: 2px solid #dbeafe;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 24px rgba(9,105,218,0.08);
+            text-align: center;
+        }
+        .auth-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0969da;
+            margin-bottom: 12px;
+        }
+        .auth-card p {
+            color: #57606a;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .auth-card a {
+            color: #0969da;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .auth-card a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h2>No worries!</h2>
+        <p>You can finish subscribing any time.</p>
+        <p><a href="{{ url_for('billing.subscribe_checkout') }}">Resume Checkout</a> — or <a href="{{ url_for('try_it.try_page') }}">try it free first</a>.</p>
+    </div>
+</div>
+</body>
+</html>

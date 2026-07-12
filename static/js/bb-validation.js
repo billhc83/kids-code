@@ -483,6 +483,16 @@
     }
     BB.PALETTE_ALLOWED = (step.palette !== undefined && step.palette !== null) ? step.palette : null;
     BB.stepLabel = step.label;
+    // Refresh #codeout for the *new* step's SECTIONS before dispatching
+    // 'stepchange' below — that event synchronously triggers setMode(),
+    // and entering editor view reads getGeneratedCode() (backed by
+    // #codeout) to populate the Monaco editor. Without this, editor view
+    // shows the PREVIOUS step's generated code for one tick (no existing
+    // lesson previously opened directly into editor view on step entry,
+    // which is why this went unnoticed). The full
+    // checkStepComplete/render/genCode grouping still runs again below,
+    // unchanged — this call is purely to make #codeout fresh in time.
+    BB.genCode();
     window.dispatchEvent(new CustomEvent('bb_step_update', { detail: { label: BB.stepLabel, progress: '' } }));
     var curGuidance = step && step.config && step.config.guidance ? step.config.guidance : (step.config.structure === 'none' ? 'open' : 'guided');
     window.CURRENT_STEP_META = { guidance: curGuidance, view: step.config.interface, readOnly: !!step.config.readonly };

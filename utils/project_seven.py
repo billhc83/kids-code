@@ -248,6 +248,17 @@ Sensor = input 👁️<br>
 Light = output 💡
 </p>
 """
+        },
+        "sim": {
+            "label": "🎮 Try It",
+            "type": "sim",
+            "sim_config": {
+                "mode": "interpreted",
+                "components": [
+                    {"type": "ldr", "id": "ldr1", "pin": 14, "label": "Light Sensor"},
+                    {"type": "led", "id": "led1", "color": "red", "pin": 13, "label": "Night Light"},
+                ],
+            }
         }
     }
     }

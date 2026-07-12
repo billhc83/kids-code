@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Subscription Pending — KidsCode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .auth-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-card {
+            background: #fff;
+            border: 2px solid #dbeafe;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 24px rgba(9,105,218,0.08);
+            text-align: center;
+        }
+        .auth-card h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0969da;
+            margin-bottom: 12px;
+        }
+        .auth-card p {
+            color: #57606a;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .auth-card a {
+            color: #0969da;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .auth-card a:hover { text-decoration: underline; }
+        .auth-card button {
+            width: 100%;
+            padding: 12px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 16px;
+        }
+        .auth-card button:hover { background: #0550ae; }
+    </style>
+</head>
+<body>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h2>Your subscription isn't active yet</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+          {% endif %}
+        {% endwith %}
+        <p>If you just paid, give it a moment and <a href="{{ url_for('auth.login') }}">try logging in again</a>.</p>
+        <form method="GET" action="{{ url_for('billing.subscribe_checkout') }}">
+            <button type="submit">Resume Checkout</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
