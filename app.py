@@ -1,6 +1,6 @@
 from flask import Flask, render_template, session, request, redirect, url_for, flash, abort
 import json
-from config import SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, SUPABASE_ANON_KEY
+from config import SECRET_KEY, SUPABASE_URL, SUPABASE_KEY
 from datetime import timedelta
 import os
 from dotenv import load_dotenv

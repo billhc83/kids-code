@@ -39,7 +39,7 @@ def test_admin_dashboard_renders(client, mock_supabase):
     add_mock("/rest/v1/feedback_messages")
     add_mock("/rest/v1/challenge_submissions")
     add_mock("/rest/v1/activity_logs")
-    add_mock("/rest/v1/users", [{"id": "user-1", "username": "user1", "email": "user1@example.com", "created_at": "2024-01-01"}])
+    add_mock("/rest/v1/users", [{"id": "user-1", "username": "user1", "email": "user1@example.com", "cohort": "test-cohort", "is_teacher": False, "created_at": "2024-01-01", "deletion_requested_at": "2026-07-01T00:00:00Z"}])
     
     # 7. get_completed_lessons & get_user_progression -> progression
     def progression_mock(request):
