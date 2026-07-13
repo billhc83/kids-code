@@ -2,7 +2,7 @@ from flask import Blueprint, request, session, render_template, redirect, url_fo
 from extensions import limiter
 import datetime
 from utils.auth import (
-    get_user_by_username, check_password, create_user,
+    get_user_by_username, get_user_by_email, check_password, create_user,
     hash_password, verify_token,
     resend_verification_email, create_reset_token, send_reset_email,
     verify_reset_token, reset_password_with_token, mark_first_login_complete,
@@ -117,6 +117,18 @@ def register():
         # Email comes from the invite row, not the (read-only) form field — the token
         # was issued for this specific address, don't trust a client-editable copy of it.
         email = invite["email"]
+
+        # /register/invite deliberately issues a token for any email, registered or not
+        # (anti-enumeration — see its comment). This is the first point where we've
+        # confirmed the requester actually controls that inbox, so telling them here
+        # that an account already exists isn't an enumeration leak. Without this check,
+        # create_user's insert hits the DB's unique constraint on email and raises an
+        # unhandled APIError (500) instead of a friendly redirect.
+        if get_user_by_email(email):
+            mark_registration_invite_used(token)
+            flash("An account with this email already exists. Please log in instead.")
+            return redirect(url_for("auth.login"))
+
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         is_parent_val = request.form.get("is_parent", "")
