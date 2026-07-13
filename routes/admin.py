@@ -190,7 +190,9 @@ def admin_provision():
 
     if action == "create_cohort":
         cohort = request.form.get("cohort", "").strip()
-        username = request.form.get("username", "").strip()
+        # Lowercased — same case-insensitive username space as every other
+        # account-creation entry point (see routes/teacher.py's comment).
+        username = request.form.get("username", "").strip().lower()
         if not cohort or not username:
             flash("Cohort name and teacher username are both required.")
             return redirect(url_for("admin.admin_dashboard"))
@@ -204,7 +206,7 @@ def admin_provision():
             flash(f"Cohort \"{cohort}\" created — teacher: {username}  password: {temp_pw}")
 
     elif action == "create_test":
-        username = request.form.get("username", "").strip()
+        username = request.form.get("username", "").strip().lower()
         cohort = request.form.get("cohort", "").strip() or None
         if not username:
             flash("Username is required.")

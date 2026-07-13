@@ -3,7 +3,7 @@ from extensions import limiter
 import datetime
 from utils.auth import (
     get_user_by_username, get_user_by_email, check_password, create_user,
-    hash_password, verify_token,
+    hash_password, verify_token, is_password_too_long, MAX_PASSWORD_BYTES,
     resend_verification_email, create_reset_token, send_reset_email,
     verify_reset_token, reset_password_with_token, mark_first_login_complete,
     is_legacy_hash, upgrade_password_hash, get_linking_parent,
@@ -19,7 +19,9 @@ auth_bp = Blueprint('auth', __name__)
 @limiter.limit("10 per minute")
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        # Lowercased to match the normalization applied at registration — see
+        # the comment on register()'s username assignment below.
+        username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
         user = get_user_by_username(username)
         if not user:
@@ -126,10 +128,19 @@ def register():
         # unhandled APIError (500) instead of a friendly redirect.
         if get_user_by_email(email):
             mark_registration_invite_used(token)
-            flash("An account with this email already exists. Please log in instead.")
+            # Covers both "already a full member" and "started registering before,
+            # abandoned Stripe Checkout, never got a verification email" (that
+            # account still has the password set on the original attempt) — login
+            # already routes an unpaid account back into Checkout, and forgot-password
+            # is the way out if they don't remember that first attempt's password.
+            flash("An account with this email already exists. Log in — if you don't "
+                  "remember your password, use \"Forgot password\" to set a new one.")
             return redirect(url_for("auth.login"))
 
-        username = request.form.get("username", "").strip()
+        # Lowercased so "Bob" and "bob" can't become two different accounts, and so
+        # a user who registered as "Bob" doesn't get "Username not found" for typing
+        # "bob" at login — matches the login lookup normalization above.
+        username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
         is_parent_val = request.form.get("is_parent", "")
 
@@ -145,6 +156,10 @@ def register():
 
         if len(password) < 8:
             flash("Password must be at least 8 characters")
+            return render_template("register.html", token=token, invite_email=email)
+
+        if is_password_too_long(password):
+            flash(f"Password must be at most {MAX_PASSWORD_BYTES} characters")
             return render_template("register.html", token=token, invite_email=email)
 
         if get_user_by_username(username):
@@ -193,14 +208,14 @@ def check_email():
 @limiter.limit("3 per hour")
 def resend_verification():
     email = request.form.get("email", "").strip().lower()
-    if not email:
-        flash("Email address is required")
-        return redirect(url_for("auth.check_email"))
-    success, err = resend_verification_email(email)
-    if err:
-        flash(err)
-    else:
-        flash("Verification email sent! Check your inbox.")
+    if email:
+        resend_verification_email(email)
+    # Same response whether the account doesn't exist, is already verified, or a
+    # new link was actually sent — resend_verification_email's three-way distinct
+    # return used to leak account existence/verification status to anyone who
+    # submitted an email here, unlike every other auth flow in this file (see
+    # /register/invite's and /forgot-password's anti-enumeration comments).
+    flash("If that account is pending verification, we've sent a new link. Check your inbox.")
     return redirect(url_for("auth.check_email"))
 
 @auth_bp.route("/logout")
@@ -214,12 +229,15 @@ def logout():
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        token, err = create_reset_token(email)
-        if err:
-            flash(err)
-            return render_template("forgot_password.html")
-        send_reset_email(email, token)
-        flash("Reset link sent! Check your email.")
+        if email:
+            token, err = create_reset_token(email)
+            if not err:
+                send_reset_email(email, token)
+        # Same response regardless of whether the account exists, is an internal
+        # student address, or a link was actually sent — create_reset_token's
+        # distinct error strings used to leak account existence to anyone who
+        # submitted an email here. See /register/invite's anti-enumeration comment.
+        flash("If an account exists for that email, a reset link has been sent.")
         return redirect(url_for("auth.login"))
     return render_template("forgot_password.html")
 
@@ -236,6 +254,9 @@ def reset_password(token):
         confirm = request.form.get("confirm_password", "")
         if len(new_password) < 8:
             flash("Password must be at least 8 characters")
+            return render_template("reset_password.html", token=token)
+        if is_password_too_long(new_password):
+            flash(f"Password must be at most {MAX_PASSWORD_BYTES} characters")
             return render_template("reset_password.html", token=token)
         if new_password != confirm:
             flash("Passwords do not match")

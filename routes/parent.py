@@ -33,7 +33,10 @@ def parent_dashboard():
         action = request.form.get("action")
 
         if action == "create":
-            username = request.form.get("username", "").strip()
+            # Lowercased — see routes/teacher.py's identical comment: keeps this in
+            # the same case-insensitive username space as self-registration and
+            # teacher-created accounts.
+            username = request.form.get("username", "").strip().lower()
             password = request.form.get("password", "")
             if not request.form.get("parent_consent"):
                 error = "You must confirm parental consent before creating a student account."

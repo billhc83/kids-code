@@ -9,6 +9,15 @@ import hashlib, secrets
 from postgrest.exceptions import APIError
 from utils.db_client import supabase
 
+# bcrypt hard-caps its input at 72 bytes and raises ValueError past that (unlike
+# older bcrypt releases, which silently truncated) — every password a user can
+# set must be checked against this before hash_password() or it 500s instead of
+# showing a normal validation message.
+MAX_PASSWORD_BYTES = 72
+
+def is_password_too_long(password):
+    return len(password.encode("utf-8")) > MAX_PASSWORD_BYTES
+
 def hash_password(password):
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
@@ -249,6 +258,9 @@ def create_student_for_parent(parent_id, username, password, email=None, consent
     if len(password) < 8:
         return None, "Password must be at least 8 characters"
 
+    if is_password_too_long(password):
+        return None, f"Password must be at most {MAX_PASSWORD_BYTES} characters"
+
     if get_user_by_username(username):
         return None, "Username already taken"
 
@@ -258,16 +270,24 @@ def create_student_for_parent(parent_id, username, password, email=None, consent
         email = f"{username}.{str(uuid.uuid4())[:8]}@kidscode.internal"
 
     password_hash = hash_password(password)
-    resp = supabase.table("users").insert({
-        "email": email,
-        "username": username,
-        "password_hash": password_hash,
-        "is_parent": False,
-        "is_verified": True,
-        "is_admin": False,
-        "verification_token": None
-    }).execute()
-    
+    try:
+        resp = supabase.table("users").insert({
+            "email": email,
+            "username": username,
+            "password_hash": password_hash,
+            "is_parent": False,
+            "is_verified": True,
+            "is_admin": False,
+            "verification_token": None
+        }).execute()
+    except APIError as e:
+        # Same check-then-insert race as create_user — a concurrent request
+        # (e.g. a double-submitted "create student" form) can slip past the
+        # get_user_by_username check above before either insert lands.
+        if e.code == "23505":
+            return None, "Username already taken"
+        raise
+
     if not resp.data:
         return None, "Failed to create account"
     
@@ -356,21 +376,26 @@ def create_cohort_teacher(username, cohort):
         return None, None, "Username already taken"
     temp_password = _gen_temp_password()
     password_hash = hash_password(temp_password)
-    resp = supabase.table("users").insert({
-        "email": _internal_email(username),
-        "username": username,
-        "password_hash": password_hash,
-        "is_parent": False,
-        "is_teacher": True,
-        "is_verified": True,
-        "is_admin": False,
-        "is_test": False,
-        "user_type": "class",
-        "cohort": cohort,
-        "verification_token": None,
-        "first_login_completed": False,
-        "agreed_at": None,
-    }).execute()
+    try:
+        resp = supabase.table("users").insert({
+            "email": _internal_email(username),
+            "username": username,
+            "password_hash": password_hash,
+            "is_parent": False,
+            "is_teacher": True,
+            "is_verified": True,
+            "is_admin": False,
+            "is_test": False,
+            "user_type": "class",
+            "cohort": cohort,
+            "verification_token": None,
+            "first_login_completed": False,
+            "agreed_at": None,
+        }).execute()
+    except APIError as e:
+        if e.code == "23505":
+            return None, None, "Username already taken"
+        raise
     if not resp.data:
         return None, None, "Failed to create teacher account"
     user = resp.data[0]
@@ -385,26 +410,33 @@ def create_student_for_teacher(teacher_id, username, password=None):
     temp_password = password or _gen_temp_password()
     if len(temp_password) < 8:
         return None, None, "Password must be at least 8 characters"
+    if is_password_too_long(temp_password):
+        return None, None, f"Password must be at most {MAX_PASSWORD_BYTES} characters"
 
     t_resp = supabase.table("users").select("cohort").eq("id", teacher_id).execute()
     cohort = t_resp.data[0]["cohort"] if t_resp.data else None
 
     password_hash = hash_password(temp_password)
-    resp = supabase.table("users").insert({
-        "email": _internal_email(username),
-        "username": username,
-        "password_hash": password_hash,
-        "is_parent": False,
-        "is_teacher": False,
-        "is_verified": True,
-        "is_admin": False,
-        "is_test": False,
-        "user_type": "class",
-        "cohort": cohort,
-        "verification_token": None,
-        "first_login_completed": False,
-        "agreed_at": None,
-    }).execute()
+    try:
+        resp = supabase.table("users").insert({
+            "email": _internal_email(username),
+            "username": username,
+            "password_hash": password_hash,
+            "is_parent": False,
+            "is_teacher": False,
+            "is_verified": True,
+            "is_admin": False,
+            "is_test": False,
+            "user_type": "class",
+            "cohort": cohort,
+            "verification_token": None,
+            "first_login_completed": False,
+            "agreed_at": None,
+        }).execute()
+    except APIError as e:
+        if e.code == "23505":
+            return None, None, "Username already taken"
+        raise
     if not resp.data:
         return None, None, "Failed to create student account"
     student = resp.data[0]
@@ -437,21 +469,26 @@ def create_test_user(username, cohort=None):
         return None, None, "Username already taken"
     temp_password = _gen_temp_password()
     password_hash = hash_password(temp_password)
-    resp = supabase.table("users").insert({
-        "email": _internal_email(username),
-        "username": username,
-        "password_hash": password_hash,
-        "is_parent": False,
-        "is_teacher": False,
-        "is_verified": True,
-        "is_admin": False,
-        "is_test": True,
-        "user_type": "test",
-        "cohort": cohort,
-        "verification_token": None,
-        "first_login_completed": False,
-        "agreed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    }).execute()
+    try:
+        resp = supabase.table("users").insert({
+            "email": _internal_email(username),
+            "username": username,
+            "password_hash": password_hash,
+            "is_parent": False,
+            "is_teacher": False,
+            "is_verified": True,
+            "is_admin": False,
+            "is_test": True,
+            "user_type": "test",
+            "cohort": cohort,
+            "verification_token": None,
+            "first_login_completed": False,
+            "agreed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }).execute()
+    except APIError as e:
+        if e.code == "23505":
+            return None, None, "Username already taken"
+        raise
     if not resp.data:
         return None, None, "Failed to create test account"
     user = resp.data[0]

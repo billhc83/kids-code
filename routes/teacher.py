@@ -28,7 +28,11 @@ def teacher_dashboard():
         action = request.form.get("action")
 
         if action == "create":
-            username = request.form.get("username", "").strip()
+            # Lowercased so this shares the same case-insensitive username space as
+            # self-registration (routes/auth.py) — otherwise e.g. a teacher-created
+            # "Sam" and a self-registered "sam" could collide only in appearance,
+            # or a family logging in with different casing than was typed at creation.
+            username = request.form.get("username", "").strip().lower()
             password = request.form.get("password", "")
             if not username:
                 error = "Username is required."
