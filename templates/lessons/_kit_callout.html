@@ -1,0 +1,12 @@
+{% macro kit_callout(kits) %}
+{% if kits %}
+<div class="kit-callout">
+    <span class="kit-callout-label">🧰 Requires:</span> {{ kits | map(attribute='name') | join(' + ') }}
+    <div class="kit-callout-links">
+        {% for kit in kits %}
+        <a class="kit-link" href="{{ kit.url }}" target="_blank" rel="sponsored noopener">{{ kit.emoji }} {{ kit.button_label }} →</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}

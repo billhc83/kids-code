@@ -1,10 +1,12 @@
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.affiliate_kits import SERVO_KIT
 
 
 META = {
     'title': 'Project 19: The Robot Gatekeeper',
     'circuit_image': 'static/graphics/project_nineteen_circuit.png',
     'banner_image': 'robot_gatekeeper_banner.png',
+    'required_kits': SERVO_KIT,
     'lesson_type': 'progression',
 }
 

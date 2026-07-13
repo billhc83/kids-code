@@ -1,10 +1,12 @@
 
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 4: Space Station Launch Button',
     'circuit_image': 'static/graphics/project_four_circuit.png',
     'banner_image': 'project_four_banner.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [

@@ -1,4 +1,5 @@
 {% extends "lesson_base.html" %}
+{% from "lessons/_kit_callout.html" import kit_callout %}
 {% block title %}🏁 Drag Race: Build the Speed Trap — KidsCode{% endblock %}
 
 {% block lesson_content %}
@@ -113,6 +114,8 @@ function showTab(name, btn) {
     btn.classList.add('active');
 }
 </script>
+
+{{ kit_callout(required_kits) }}
 
 <hr>
 

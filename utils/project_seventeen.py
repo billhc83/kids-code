@@ -1,10 +1,12 @@
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.affiliate_kits import SONAR_KIT
 
 
 META = {
     'title': 'Project 17: Magical Harp',
     'circuit_image': 'static/graphics/project_seventeen_circuit.png',
     'banner_image': 'project_seventeen_banner.png',
+    'required_kits': SONAR_KIT,
     'lesson_type': 'progression',
 }
 

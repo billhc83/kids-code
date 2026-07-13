@@ -1,11 +1,13 @@
 
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.affiliate_kits import SONAR_KIT
 from utils.image_utils import img_to_b64
 
 META = {
     'title': 'Project 15: Backup Alarm',
     'circuit_image': "static/graphics/project_fifteen_circuit.png",
     'banner_image': 'backup_alarm_banner.png',
+    'required_kits': SONAR_KIT,
 }
 
 STEPS = [

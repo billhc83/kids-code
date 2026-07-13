@@ -1,4 +1,5 @@
 {% extends "lesson_base.html" %}
+{% from "lessons/_kit_callout.html" import kit_callout %}
 {% block title %}Project 13: The Reaction Timer — KidsCode{% endblock %}
 
 {% block lesson_content %}
@@ -111,6 +112,8 @@
 </div>
 
 <hr>
+
+{{ kit_callout(required_kits) }}
 
 <div class="lesson-section">
     <h2>🔎 How Our Timer Works</h2>

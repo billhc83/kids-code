@@ -1,4 +1,5 @@
 {% extends "lesson_base.html" %}
+{% from "lessons/_kit_callout.html" import kit_callout %}
 {% block title %}Project 14 Part 2: Code Cracker — KidsCode{% endblock %}
 
 {% block lesson_content %}
@@ -30,6 +31,8 @@
     </p>
     <p>Right now, your system is incomplete… but each step you build brings it closer to life.</p>
 </div>
+
+{{ kit_callout(required_kits) }}
 
 <hr>
 

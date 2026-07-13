@@ -1,10 +1,12 @@
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.affiliate_kits import BASIC_KITS
 
 
 META = {
     'title': 'Project 16: Broken Blinker',
     'circuit_image': 'static/graphics/project_sixteen_circuit.png',
     'banner_image': 'project_sixteen_banner.png',
+    'required_kits': BASIC_KITS,
     'lesson_type': 'troubleshoot',
 }
 

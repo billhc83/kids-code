@@ -56,6 +56,7 @@ def lesson(lesson_key):
         steps = project_data.get("steps", [])
         title = meta.get("title") or project_data.get("title")
         extra["banner_image"] = meta.get("banner_image")
+        extra["required_kits"] = meta.get("required_kits")
         if img and steps and os.path.exists(img):
             extra["assembly_guide_html"] = render_assembly_guide(img, steps, title)
         circuit_def = project_data.get("circuit_definition")

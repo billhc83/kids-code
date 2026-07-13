@@ -999,6 +999,47 @@ body {
     line-height: 1.6;
 }
 
+/* ── Kit callout ── */
+.kit-callout {
+    background: #eaf7ea;
+    border: 2px solid #b7e4b7;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 8px 0 16px 0;
+    font-size: 15px;
+    color: #24292f;
+}
+
+.kit-callout-label {
+    font-weight: 700;
+    color: #1a7a1a;
+}
+
+.kit-callout-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.kit-link {
+    display: inline-block;
+    background: #fff;
+    border: 2px solid #2a9d2a;
+    color: #1a7a1a;
+    border-radius: 8px;
+    padding: 6px 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.kit-link:hover {
+    background: #2a9d2a;
+    color: #fff;
+}
+
 /* ── Code section ── */
 .code-wrap {
     display: grid;

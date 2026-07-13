@@ -1,10 +1,12 @@
 from utils.step_builder import build_step, intro_step, rect, circle, line, lbl
+from utils.affiliate_kits import SONAR_KIT
 
 
 META = {
     'title': 'Project 18: Drag Race Speed Tracker',
     'circuit_image': 'static/graphics/project_eighteen_circuit.png',
     'banner_image': 'project_eighteen_banner.png',
+    'required_kits': SONAR_KIT,
     'lesson_type': 'progression',
 }
 

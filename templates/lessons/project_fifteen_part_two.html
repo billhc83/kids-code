@@ -1,4 +1,5 @@
 {% extends "lesson_base.html" %}
+{% from "lessons/_kit_callout.html" import kit_callout %}
 {% block title %}Project 15 Part 2: Smart Backup Alarm — KidsCode{% endblock %}
 
 {% block lesson_content %}
@@ -116,6 +117,8 @@
         {{ assembly_guide_html|safe }}
     {% endif %}
 </div>
+
+{{ kit_callout(required_kits) }}
 
 <div class="block-builder-section" style="margin: 30px 0;">
     <h3>🧩 Build Your Code</h3>

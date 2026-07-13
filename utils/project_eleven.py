@@ -1,10 +1,12 @@
 
 from utils.step_builder import build_step, intro_step, rect, circle, line
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 11: Engine System Start',
     'circuit_image': 'static/graphics/project_twelve_circuit.png',
     'banner_image': 'jet_engine_start.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [
