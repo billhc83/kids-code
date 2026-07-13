@@ -6,6 +6,7 @@ import requests
 from config import SUPABASE_URL, SUPABASE_KEY, RESEND_API_KEY
 import bcrypt
 import hashlib, secrets
+from postgrest.exceptions import APIError
 from utils.db_client import supabase
 
 def hash_password(password):
@@ -63,19 +64,27 @@ def get_linking_parent(student_id):
 def create_user(email, username, password_hash, is_parent=False, agreed_at=None, subscription_status="none"):
     token = secrets.token_urlsafe(32)
     expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=48)).isoformat()
-    resp = supabase.table("users").insert({
-        "email": email,
-        "username": username,
-        "password_hash": password_hash,
-        "is_parent": is_parent,
-        "is_verified": False,
-        "is_admin": False,
-        "verification_token": token,
-        "verification_token_expires": expires,
-        "first_login_completed": False,
-        "agreed_at": agreed_at,
-        "subscription_status": subscription_status,
-    }).execute()
+    try:
+        resp = supabase.table("users").insert({
+            "email": email,
+            "username": username,
+            "password_hash": password_hash,
+            "is_parent": is_parent,
+            "is_verified": False,
+            "is_admin": False,
+            "verification_token": token,
+            "verification_token_expires": expires,
+            "first_login_completed": False,
+            "agreed_at": agreed_at,
+            "subscription_status": subscription_status,
+        }).execute()
+    except APIError as e:
+        # Unique violation on email/username — e.g. a double-submitted register form
+        # racing itself before the invite is marked used. Callers already treat a
+        # None return as "registration failed, please try again" (routes/auth.py).
+        if e.code == "23505":
+            return None
+        raise
     return resp.data[0] if resp.data else None
 
 def mark_first_login_complete(user_id):
