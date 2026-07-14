@@ -25,6 +25,55 @@ with open(GRAMMAR_PATH, 'r') as f:
 _EARLEY = dict(parser='earley', maybe_placeholders=False)
 arduino_parser = Lark(_grammar_text, start='block_list', **_EARLEY)
 
+
+def _cond_operand_text(node):
+    """Flatten a parsed expression node into the literal/variable source text a
+    condition's flat vartext field should hold. Real corpus conditions are always
+    a bare literal or variable, but a 0-arg producer call (`Serial.available()`)
+    does occur (project_fourteen) — reconstruct its call syntax rather than
+    crashing or silently dropping it, so regenerated code stays byte-identical.
+    """
+    if not node:
+        return ''
+    t = node.get('type')
+    p = node.get('params') or []
+    if t == 'value':
+        return str(p[0]) if p else ''
+    if t == 'millis':
+        return 'millis()'
+    if t == 'micros':
+        return 'micros()'
+    if t == 'serialavailable':
+        return 'Serial.available()'
+    if t == 'serialreadstring':
+        return 'Serial.readString()'
+    if t == 'analogread':
+        return 'analogRead(' + (str(p[0]) if p else 'A0') + ')'
+    if t == 'digitalread':
+        return 'digitalRead(' + (str(p[0]) if p else '2') + ')'
+    if t == 'pulsein':
+        pin = str(p[0]) if len(p) > 0 else 'echoPin'
+        val = str(p[1]) if len(p) > 1 else 'HIGH'
+        return 'pulseIn(' + pin + ', ' + val + ')'
+    if t == 'random':
+        lo = str(p[0]) if len(p) > 0 else '0'
+        hi = str(p[1]) if len(p) > 1 else '100'
+        return 'random(' + lo + ', ' + hi + ')'
+    if t == 'servoread':
+        return (str(p[0]) if p else 'myServo') + '.read()'
+    if t == 'math':
+        terms = node.get('terms') or []
+        ops = node.get('ops') or []
+        if not terms:
+            return ''
+        acc = terms[0]
+        for i in range(1, len(terms)):
+            op = ops[i - 1] if i - 1 < len(ops) else '+'
+            acc = '(' + acc + ' ' + op + ' ' + terms[i] + ')'
+        return acc
+    return str(p[0]) if p else ''
+
+
 class BlockTransformer(Transformer):
     def __init__(self, fill_conditions=False, fill_values=False):
         super().__init__()
@@ -43,7 +92,7 @@ class BlockTransformer(Transformer):
             'exChildren': tmpl.get('exChildren', []),
             'condition': tmpl.get('condition'),
         }
-        for field in ['expectedExTypes', 'expectedCondTypes', 'ifbody', 'elseifs', 'elsebody', 'body', 'forinit', 'forcond', 'forincr']:
+        for field in ['expectedExTypes', 'ifbody', 'elseifs', 'elsebody', 'body', 'forinit', 'forcond', 'forincr']:
              if field in tmpl:
                  meta[field] = tmpl[field]
              elif field == 'expectedExTypes':
@@ -125,24 +174,25 @@ class BlockTransformer(Transformer):
         }
 
     def condition(self, items):
+        flat = _cond_operand_text
         res = {
-            'leftExpr': items[0], 'op': str(items[1]) if len(items)>1 else '==', 'rightExpr': items[2] if len(items)>2 else None,
-            'joiner': 'none', 'leftExpr2': None, 'op2': '==', 'rightExpr2': None
+            'left': flat(items[0]), 'op': str(items[1]) if len(items)>1 else '==', 'right': flat(items[2]) if len(items)>2 else '',
+            'joiner': 'none', 'left2': '', 'op2': '==', 'right2': ''
         }
         if len(items) > 3:
             res['joiner'] = 'and' if str(items[3]) == '&&' else 'or'
             inner = items[4]
-            if isinstance(inner, dict) and 'leftExpr' in inner:
+            if isinstance(inner, dict) and 'left' in inner:
                 # Recursive parse: condition(A op B && condition(C op D))
-                # Unpack the nested condition into the flat leftExpr2/op2/rightExpr2 fields
-                res['leftExpr2'] = inner.get('leftExpr')
+                # Unpack the nested condition into the flat left2/op2/right2 fields
+                res['left2'] = inner.get('left', '')
                 res['op2'] = inner.get('op', '==')
-                res['rightExpr2'] = inner.get('rightExpr')
+                res['right2'] = inner.get('right', '')
             else:
                 # Flat 7-item parse: [A, op, B, &&, C, op, D]
-                res['leftExpr2'] = items[4]
+                res['left2'] = flat(items[4])
                 res['op2'] = str(items[5]) if len(items) > 5 else '=='
-                res['rightExpr2'] = items[6] if len(items) > 6 else None
+                res['right2'] = flat(items[6]) if len(items) > 6 else ''
         return res
 
     def stmt(self, items):
@@ -183,26 +233,29 @@ class BlockTransformer(Transformer):
         if full_name == "digitalWrite":
             return {'type': 'digitalwrite', 'params': [str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '', str(args[1]['params'][0]) if len(args) > 1 and 'params' in args[1] else '']}
         if full_name == "analogWrite":
-            return {'type': 'analogwrite', 'params': [str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '', ''], 'exChildren': [None, args[1] if len(args)>1 else None]}
+            return {'type': 'analogwrite', 'params': [
+                str(args[0]['params'][0]) if len(args) > 0 and 'params' in args[0] else '',
+                str(args[1]['params'][0]) if len(args) > 1 and 'params' in args[1] else '']}
         if full_name == "tone":
-            p0 = str(args[0]['params'][0]) if args else ''
-            p2 = str(args[2]['params'][0]) if len(args) > 2 else ''
-            return {'type': 'tone', 'params': [p0, '', p2 or None], 'exChildren': [None, args[1] if len(args)>1 else None]}
+            p0 = str(args[0]['params'][0]) if args and 'params' in args[0] else ''
+            p1 = str(args[1]['params'][0]) if len(args) > 1 and 'params' in args[1] else ''
+            p2 = str(args[2]['params'][0]) if len(args) > 2 and 'params' in args[2] else ''
+            return {'type': 'tone', 'params': [p0, p1, p2 or None]}
         if full_name == "noTone":
-            return {'type': 'notone', 'params': [''], 'exChildren': [args[0] if args else None]}
+            return {'type': 'notone', 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '']}
         if full_name == "delay":
-            return {'type': 'delay', 'params': [''], 'exChildren': [args[0] if args else None]}
+            return {'type': 'delay', 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '']}
         if full_name == "delayMicroseconds":
-            return {'type': 'delaymicroseconds', 'params': [''], 'exChildren': [args[0] if args else None]}
+            return {'type': 'delaymicroseconds', 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '']}
         if full_name == "Serial.begin":
              return {'type': 'serialbegin', 'params': [str(args[0]['params'][0]) if args else '']}
         if full_name in ["Serial.print", "Serial.println"]:
-             return {'type': 'serialprint', 'params': ['', name], 'exChildren': [args[0] if args else None]}
+             return {'type': 'serialprint', 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '', name]}
         if name == 'attach' and prefix:
             pin = str(args[0]['params'][0]) if args and 'params' in args[0] else '9'
             return {'type': 'servoattach', 'params': [prefix, pin]}
         if name == 'write' and prefix:
-            return {'type': 'servowrite', 'params': [prefix, ''], 'exChildren': [None, args[0] if args else None]}
+            return {'type': 'servowrite', 'params': [prefix, str(args[0]['params'][0]) if args and 'params' in args[0] else '']}
 
         # Fallback for other func calls
         return {'type': 'codeblock', 'params': [f"{full_name}(...);"], 'locked': True}
@@ -216,11 +269,18 @@ class BlockTransformer(Transformer):
     def mod(self, items): return self._math('%', items)
 
     def _math(self, op, items):
-        return {
-            'type': 'math',
-            'params': ['', op, ''],
-            'children': [items[0], None, items[1]]
-        }
+        # The grammar is left-recursive (`expression "+" term -> add`, same for
+        # term-level mul/div/mod), so a left-to-right chain like `a * b / c` always
+        # arrives here with the already-built math node as the LEFT operand — merge
+        # it into one flat variadic chain rather than nesting. A math node on the
+        # RIGHT (e.g. `a + b*c`) is genuine precedence-driven grouping, not a chain
+        # the student built by repeatedly clicking "+ term", so it's left as-is,
+        # flattened to leaf text like any other non-flat operand.
+        left, right = items[0], items[1]
+        right_text = _cond_operand_text(right)
+        if isinstance(left, dict) and left.get('type') == 'math':
+            return {'type': 'math', 'terms': left['terms'] + [right_text], 'ops': left['ops'] + [op]}
+        return {'type': 'math', 'terms': [_cond_operand_text(left), right_text], 'ops': [op]}
 
     def number(self, tokens): return {'type': 'value', 'params': [str(tokens[0])], 'children': []}
     def string(self, tokens): return {'type': 'value', 'params': [str(tokens[0])], 'children': []}
@@ -247,14 +307,14 @@ class BlockTransformer(Transformer):
         if full_name == "map":
              return {
                  'type': 'map',
-                 'params': ['', *[str(a['params'][0]) if a else '' for a in args[1:]]],
-                 'children': [args[0] if args else None, None, None, None, None]
+                 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '', *[str(a['params'][0]) if a else '' for a in args[1:]]],
+                 'children': [None, None, None, None, None]
              }
         if full_name == "constrain":
              return {
                  'type': 'constrain',
-                 'params': ['', *[str(a['params'][0]) if a else '' for a in args[1:]]],
-                 'children': [args[0] if args else None, None, None]
+                 'params': [str(args[0]['params'][0]) if args and 'params' in args[0] else '', *[str(a['params'][0]) if a else '' for a in args[1:]]],
+                 'children': [None, None, None]
              }
         if name == 'read' and prefix:
             return {'type': 'servoread', 'params': [prefix], 'children': []}
@@ -271,7 +331,7 @@ def parse_condition(cond_str, fill_conditions=False):
             return blocks[0]['condition']
     except:
         pass
-    return {'leftExpr': None, 'op': '==', 'rightExpr': None, 'joiner': 'none'}
+    return {'left': '', 'op': '==', 'right': '', 'joiner': 'none'}
 
 def parse_expr(s):
     if not s: return {'type': 'value', 'params': [''], 'children': []}
@@ -295,19 +355,13 @@ def strip_expr_values(node):
     if t == 'pulsein': return {'type': 'pulsein', 'params': ['', 'HIGH'], 'children': []}
     if t == 'random': return {'type': 'random', 'params': ['', ''], 'children': []}
     if t == 'math':
-        op = node['params'][1] if len(node['params']) > 1 else '+'
-        ch = node.get('children') or [None, None, None]
-        return {
-            'type': 'math',
-            'params': ['', op, ''],
-            'children': [strip_expr_values(ch[0]), None, strip_expr_values(ch[2])]
-        }
+        terms = node.get('terms') or ['', '']
+        ops = node.get('ops') or ['+']
+        return {'type': 'math', 'terms': ['' for _ in terms], 'ops': list(ops)}
     if t == 'map':
-        ch = node.get('children') or [None]
-        return {'type': 'map', 'params': ['', '', '', '', ''], 'children': [strip_expr_values(ch[0]), None, None, None, None]}
+        return {'type': 'map', 'params': ['', '', '', '', ''], 'children': [None, None, None, None, None]}
     if t == 'constrain':
-        ch = node.get('children') or [None]
-        return {'type': 'constrain', 'params': ['', '', ''], 'children': [strip_expr_values(ch[0]), None, None]}
+        return {'type': 'constrain', 'params': ['', '', ''], 'children': [None, None, None]}
     return node
 
 def strip_block_values(block):
@@ -332,10 +386,10 @@ def strip_block_values(block):
     # Recurse into condition
     if res.get('condition'):
         cond = {k: v for k, v in res['condition'].items()}
-        cond['leftExpr'] = strip_expr_values(cond['leftExpr'])
-        cond['rightExpr'] = strip_expr_values(cond['rightExpr'])
-        cond['leftExpr2'] = strip_expr_values(cond['leftExpr2'])
-        cond['rightExpr2'] = strip_expr_values(cond['rightExpr2'])
+        cond['left'] = ''
+        cond['right'] = ''
+        cond['left2'] = ''
+        cond['right2'] = ''
         res['condition'] = cond
     
     # Recurse into bodies
@@ -345,8 +399,8 @@ def strip_block_values(block):
             ei['body'] = [strip_block_values(b) for b in ei['body']]
             if ei.get('condition'):
                 c = {k: v for k, v in ei['condition'].items()}
-                c['leftExpr'] = strip_expr_values(c['leftExpr'])
-                c['rightExpr'] = strip_expr_values(c['rightExpr'])
+                c['left'] = ''
+                c['right'] = ''
                 ei['condition'] = c
     if res.get('elsebody'): res['elsebody'] = [strip_block_values(b) for b in res['elsebody']]
     if res.get('body'): res['body'] = [strip_block_values(b) for b in res['body']]
@@ -356,7 +410,6 @@ def strip_block_values(block):
 def _make_slot(hint, master, initial_fill_content):
     """Build a phantom slot dict from a master block and hint string."""
     tmpl = strip_block_values(master)
-    cond = master.get('condition') if isinstance(master, dict) else None
     return {
         'type': 'slot',
         'id': str(random.random() * 1000000000000000),
@@ -369,12 +422,6 @@ def _make_slot(hint, master, initial_fill_content):
             'exChildren': tmpl.get('exChildren', []) if isinstance(tmpl, dict) else [],
             'condition': tmpl.get('condition') if isinstance(tmpl, dict) else None,
             'expectedExTypes': [e['type'] if e else None for e in master.get('exChildren', [])] if isinstance(master, dict) and 'exChildren' in master else None,
-            'expectedCondTypes': (lambda c: {
-                'left':  c['leftExpr']['type']  if c.get('leftExpr')  else None,
-                'right': c['rightExpr']['type'] if c.get('rightExpr') else None,
-                'left2': c['leftExpr2']['type'] if c.get('leftExpr2') else None,
-                'right2':c['rightExpr2']['type'] if c.get('rightExpr2') else None,
-            })(cond) if cond else None,
             'ifbody': tmpl.get('ifbody', []) if isinstance(tmpl, dict) else [],
             'elseifs': tmpl.get('elseifs', []) if isinstance(tmpl, dict) else [],
             'elsebody': tmpl.get('elsebody') if isinstance(tmpl, dict) else None,
@@ -545,9 +592,6 @@ def collect_types(blocks):
                 has_exprs = bool(collect_expr_types(pm['exChildren']))
             if has_exprs:
                 types.add('value')
-            if pm.get('expectedCondTypes'):
-                for val in pm['expectedCondTypes'].values():
-                    if val: types.add(val)
             if pm.get('ifbody'): types.update(collect_types(pm['ifbody']))
             if pm.get('body'): types.update(collect_types(pm['body']))
             if b['content']:

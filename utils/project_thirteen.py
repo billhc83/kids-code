@@ -146,7 +146,8 @@ First press → start the timer.
 <h4>🔴 Stop Timing</h4>
 <pre>
 else {
-  time = millis() - startTime;
+  long now = millis();
+  time = now - startTime;
   Serial.println(time);
   running = 0;
 }
@@ -211,7 +212,7 @@ Tracks whether the timer is active</p>
 <p><b>millis()</b><br>
 Gives the current time in milliseconds</p>
 
-<p><b>time = millis() - startTime</b><br>
+<p><b>now = millis(); time = now - startTime</b><br>
 Calculates reaction time</p>
 
 <p><b>Serial.println(time)</b><br>
@@ -295,8 +296,10 @@ void loop() {
       running = 1;
     //## }
     //## else {
-      //?? When was the button pressed?
-      time = millis() - startTime;
+      //?? Get the current time
+      long now = millis();
+      //?? Subtract the start time from now
+      time = now - startTime;
       //## Serial.println(time);
       //?? Set running to 0
         running = 0;

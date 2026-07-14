@@ -33,13 +33,13 @@
       if (currentBlock.type === 'ifblock') {
         var c = currentBlock.condition;
         if (c) {
-          if (!c.leftExpr) n++; if (!c.rightExpr) n++;
-          if (c.joiner !== 'none') { if (!c.leftExpr2) n++; if (!c.rightExpr2) n++; }
+          if (!c.left) n++; if (!c.right) n++;
+          if (c.joiner !== 'none') { if (!c.left2) n++; if (!c.right2) n++; }
         }
         n += BB.countIncomplete(currentBlock.ifbody);
         currentBlock.elseifs.forEach(function (ei) {
           var ec = ei.condition;
-          if (ec) { if (!ec.leftExpr) n++; if (!ec.rightExpr) n++; }
+          if (ec) { if (!ec.left) n++; if (!ec.right) n++; }
           n += BB.countIncomplete(ei.body);
         });
         if (currentBlock.elsebody) n += BB.countIncomplete(currentBlock.elsebody);
@@ -47,7 +47,7 @@
       }
       if (currentBlock.type === 'whileloop') {
         var c = currentBlock.condition;
-        if (c) { if (!c.leftExpr) n++; if (!c.rightExpr) n++; }
+        if (c) { if (!c.left) n++; if (!c.right) n++; }
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       if (currentBlock.type === 'forloop') {
@@ -55,7 +55,7 @@
       }
       if (currentBlock.type === 'elseifclause') {
         var c = currentBlock.condition;
-        if (c) { if (!c.leftExpr) n++; if (!c.rightExpr) n++; }
+        if (c) { if (!c.left) n++; if (!c.right) n++; }
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       if (currentBlock.type === 'elseclause') {
@@ -79,6 +79,15 @@
     if (!u && !t) return true; if (!u || !t) return false;
     if (u.type !== t.type) return false;
     if (u.type === 'value') { return (u.params[0] || '').trim() === (t.params[0] || '').trim(); }
+    if (u.type === 'math') {
+      var ut = u.terms || [], tt = t.terms || [];
+      if (ut.length !== tt.length) return false;
+      for (var i = 0; i < ut.length; i++) if ((ut[i] || '').trim() !== (tt[i] || '').trim()) return false;
+      var uo = u.ops || [], to = t.ops || [];
+      if (uo.length !== to.length) return false;
+      for (var i = 0; i < uo.length; i++) if (uo[i] !== to[i]) return false;
+      return true;
+    }
     for (var i = 0; i < (u.params || []).length; i++) if ((u.params[i] || '').trim() !== (t.params[i] || '').trim()) return false;
     var uc = u.children || [], tc = t.children || [];
     if (uc.length !== tc.length) return false;
@@ -89,13 +98,13 @@
   BB.compareCondition = function (u, t) {
     if (!u && !t) return true; if (!u || !t) return false;
     if (u.op !== t.op) return false;
-    if (!BB.compareExpr(u.leftExpr, t.leftExpr)) return false;
-    if (!BB.compareExpr(u.rightExpr, t.rightExpr)) return false;
+    if ((u.left || '').trim() !== (t.left || '').trim()) return false;
+    if ((u.right || '').trim() !== (t.right || '').trim()) return false;
     if (u.joiner !== t.joiner) return false;
     if (u.joiner !== 'none') {
       if (u.op2 !== t.op2) return false;
-      if (!BB.compareExpr(u.leftExpr2, t.leftExpr2)) return false;
-      if (!BB.compareExpr(u.rightExpr2, t.rightExpr2)) return false;
+      if ((u.left2 || '').trim() !== (t.left2 || '').trim()) return false;
+      if ((u.right2 || '').trim() !== (t.right2 || '').trim()) return false;
     }
     return true;
   };
@@ -109,6 +118,20 @@
     if (u.type === 'value') {
       var uv = (u.params[0] || '').trim(), tv = (t.params[0] || '').trim();
       if (uv !== tv) return tier === 3 ? 'Value should be ' + tv : 'Check value';
+    }
+    if (u.type === 'math') {
+      var ut = u.terms || [], tt = t.terms || [];
+      if (ut.length !== tt.length) return 'Structure mismatch';
+      for (var i = 0; i < ut.length; i++) {
+        if ((ut[i] || '').trim() !== (tt[i] || '').trim()) {
+          return tier === 3 ? 'Term ' + (i + 1) + ' should be ' + tt[i] : 'Check term ' + (i + 1);
+        }
+      }
+      var uo = u.ops || [], to = t.ops || [];
+      for (var i = 0; i < uo.length; i++) {
+        if (uo[i] !== to[i]) return tier === 3 ? 'Operator ' + (i + 1) + ' should be ' + to[i] : 'Check operator ' + (i + 1);
+      }
+      return null;
     }
     for (var i = 0; i < (u.params || []).length; i++) {
       if ((u.params[i] || '').trim() !== (t.params[i] || '').trim()) {
@@ -130,14 +153,14 @@
 
   BB.generateCondHint = function (u, t, tier) {
     if (!u && !t) return null; if (!u || !t) return 'Condition missing';
-    var h = BB.generateExprHint(u.leftExpr, t.leftExpr, tier); if (h) return 'Left side: ' + h;
+    if ((u.left || '').trim() !== (t.left || '').trim()) return tier === 3 ? 'Left side should be ' + t.left : 'Check left side';
     if (u.op !== t.op) return tier === 3 ? 'Operator should be ' + t.op : 'Check operator';
-    h = BB.generateExprHint(u.rightExpr, t.rightExpr, tier); if (h) return 'Right side: ' + h;
+    if ((u.right || '').trim() !== (t.right || '').trim()) return tier === 3 ? 'Right side should be ' + t.right : 'Check right side';
     if (t.joiner !== 'none') {
       if (u.joiner !== t.joiner) return 'Check joiner (and/or)';
-      h = BB.generateExprHint(u.leftExpr2, t.leftExpr2, tier); if (h) return '2nd Left: ' + h;
+      if ((u.left2 || '').trim() !== (t.left2 || '').trim()) return tier === 3 ? '2nd left should be ' + t.left2 : 'Check 2nd left side';
       if (u.op2 !== t.op2) return tier === 3 ? '2nd Op should be ' + t.op2 : 'Check 2nd operator';
-      h = BB.generateExprHint(u.rightExpr2, t.rightExpr2, tier); if (h) return '2nd Right: ' + h;
+      if ((u.right2 || '').trim() !== (t.right2 || '').trim()) return tier === 3 ? '2nd right should be ' + t.right2 : 'Check 2nd right side';
     }
     return null;
   };
