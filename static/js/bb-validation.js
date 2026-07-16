@@ -485,6 +485,73 @@
   };
 
   // ── Workspace builder ─────────────────────────────────────────────────────
+  // ── Stale-save detection ────────────────────────────────────────────────
+  // BB.STUDENT_SAVES entries are client-side snapshots of BB.SECTIONS taken
+  // at some earlier point in time (see BB.saveBlocks/bbNext). Two things can
+  // make an old snapshot unsafe to load verbatim:
+  //  1. Schema drift — e.g. the block-expression-slot-simplification pass
+  //     renamed condition.leftExpr/rightExpr to flat condition.left/right
+  //     and math's params/children to terms/ops. A pre-refactor snapshot
+  //     still has the old field names; BB.genCond()/genExpr() read the new
+  //     ones, so an old snapshot silently renders as the *default* fallback
+  //     ("x == 0", "(0 + 0)") instead of the student's real answer — no
+  //     error, no signal, just wrong generated code (confirmed live: 19 of
+  //     39 rows in block_saves carried this old schema across 4 users and
+  //     14+ lesson pages).
+  //  2. Lesson-content drift — a step's own template can be rewritten later
+  //     (e.g. project_eleven's if/else moved from a placeable `ifblock` to
+  //     locked text) after a student already saved progress against the
+  //     old shape.
+  // Both cases share one symptom: the saved snapshot no longer matches what
+  // the *current* step template would produce. Rather than special-case
+  // every possible schema rename, this checks both — an explicit scan for
+  // known-legacy field names, and a structural signature comparison against
+  // the fresh (current-schema, current-content) template — and discards the
+  // save if either disagrees, falling back to a clean rebuild.
+  function hasLegacySchema(node) {
+    if (!node || typeof node !== 'object') return false;
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) if (hasLegacySchema(node[i])) return true;
+      return false;
+    }
+    if ('leftExpr' in node || 'rightExpr' in node || 'leftExpr2' in node || 'rightExpr2' in node || 'expectedCondTypes' in node) return true;
+    if (node.type === 'math' && 'children' in node && !('terms' in node)) return true;
+    for (var key in node) {
+      if (Object.prototype.hasOwnProperty.call(node, key) && hasLegacySchema(node[key])) return true;
+    }
+    return false;
+  }
+
+  // A signature per top-level item that reflects lesson content (the fixed
+  // "shape" every student on this step should share) without reflecting the
+  // student's own in-progress answer — a slot's un-filled vs filled content
+  // must not itself count as a mismatch, only its master/hint (which come
+  // from the lesson template, not the student).
+  function itemSignature(item) {
+    if (!item) return 'null';
+    if (item.type === 'slot') {
+      var masterType = item.master ? item.master.type : '?';
+      var hint = item.phantom_meta ? item.phantom_meta.hint : '';
+      return 'slot:' + masterType + ':' + hint;
+    }
+    if (item.type === 'codeblock') return 'code:' + ((item.params && item.params[0]) || '').trim();
+    return item.type + ':' + JSON.stringify(item.params || []);
+  }
+
+  function sectionSignature(arr) { return (arr || []).map(itemSignature).join('|'); }
+
+  function savedStateIsStale(savedState, freshStep) {
+    if (!savedState) return false;
+    if (hasLegacySchema(savedState)) return true;
+    var sections = ['global', 'setup', 'loop'];
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      if (sectionSignature(savedState[s]) !== sectionSignature(freshStep[s])) return true;
+    }
+    return false;
+  }
+  BB._savedStateIsStale = savedStateIsStale; // exposed for testing
+
   BB.buildWorkspace = function (stepIdx) {
     if (!BB.PROGRESSION_MODE || !BB.STEPS || stepIdx >= BB.STEPS.length) return;
     var step = BB.STEPS[stepIdx];
@@ -494,8 +561,15 @@
     console.log('[buildWorkspace] step.global:', JSON.stringify(step.global));
     console.log('[buildWorkspace] step.setup:', JSON.stringify(step.setup));
     console.log('[buildWorkspace] step.loop:', JSON.stringify(step.loop));
-    if (BB.STUDENT_SAVES[stepIdx] && !step.reset) {
-      var savedState = BB.STUDENT_SAVES[stepIdx];
+    var savedState = BB.STUDENT_SAVES[stepIdx];
+    var discardedStale = false;
+    if (savedState && savedStateIsStale(savedState, step)) {
+      console.warn('[buildWorkspace] stepIdx=' + stepIdx + ' saved state is stale (legacy schema or lesson content changed) — discarding and rebuilding from the current step template');
+      delete BB.STUDENT_SAVES[stepIdx];
+      savedState = null;
+      discardedStale = true;
+    }
+    if (savedState && !step.reset) {
       BB.SECTIONS.global = JSON.parse(JSON.stringify(savedState.global));
       BB.SECTIONS.setup  = JSON.parse(JSON.stringify(savedState.setup));
       BB.SECTIONS.loop   = JSON.parse(JSON.stringify(savedState.loop));
@@ -504,6 +578,12 @@
       BB.SECTIONS.setup  = JSON.parse(JSON.stringify(step.setup));
       BB.SECTIONS.loop   = JSON.parse(JSON.stringify(step.loop));
     }
+    // Write the clean rebuild straight back to the DB rather than waiting on
+    // the dirty-tracking autosave interval — that only fires once
+    // BB._autoSaveReady flips (500ms after init), so relying on it here
+    // would make the self-heal a timing race. A discarded stale save should
+    // never be reloadable again on the next visit.
+    if (discardedStale && BB.USERNAME && BB.PAGE) BB.saveBlocks();
     BB.PALETTE_ALLOWED = (step.palette !== undefined && step.palette !== null) ? step.palette : null;
     BB.stepLabel = step.label;
     // Refresh #codeout for the *new* step's SECTIONS before dispatching

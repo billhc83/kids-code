@@ -18,7 +18,8 @@
  *               SIM_ENGINE_ROLLOUT_PLAN.md Step 6a.
  *
  * Special component types:
- *   sonar  — HC-SR04 ultrasonic sensor with a distance slider (0-100 cm). The
+ *   sonar  — HC-SR04 ultrasonic sensor with a distance slider (2-100 cm; the
+ *            HC-SR04's real datasheet minimum sensing range). The
  *            slider's raw pulse duration (debounced) is sent on the component's
  *            `pin_echo`, and whatever the sketch's own map()/if-chain does with
  *            it is what shows up (e.g. a continuous buzzer pitch via
@@ -366,13 +367,19 @@ window.SimEngine = (function () {
         var sliderEl = document.createElement('input');
         sliderEl.type = 'range';
         sliderEl.id = comp.id + '-slider';
-        sliderEl.min = '0';
+        /* HC-SR04's real minimum sensing range is ~2cm (its datasheet's own
+           blanking-zone limit) — closer than that and a real sensor can't
+           get a clean echo at all. Floor the slider there instead of 0 so
+           sonarDurationUs() below can never compute exactly 0us, which
+           would otherwise collide with a sketch's own (correct) `duration
+           == 0` pulseIn()-timeout guard and misread as "nothing detected". */
+        sliderEl.min = '2';
         sliderEl.max = '100';
         sliderEl.value = '80';
         sliderEl.style.cssText = 'width:110px;cursor:pointer;accent-color:#00ff88;';
         var sliderHints = document.createElement('div');
         sliderHints.style.cssText = 'display:flex;justify-content:space-between;width:110px;font-size:8px;color:#475569;';
-        sliderHints.innerHTML = '<span>0 cm</span><span>50</span><span>100 cm</span>';
+        sliderHints.innerHTML = '<span>2 cm</span><span>50</span><span>100 cm</span>';
         sliderWrap.appendChild(sliderEl);
         sliderWrap.appendChild(sliderHints);
         col.appendChild(wrap);

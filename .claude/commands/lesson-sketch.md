@@ -377,6 +377,53 @@ void loop() {
 
 ---
 
+### Progressive sim checkpoints (optional pattern)
+
+Most sensor-driven progressions are "invisible" for their first half — 5–8
+steps of variables, pin setup, and sensor-reading plumbing before the first
+branch of the if/else-if/else chain produces anything a student can see or
+hear. Validated on `project_fifteen` (Backup Alarm): resequencing the sketch
+so there's an early, unconditional payoff turns the lesson into repeated
+"build → test → build more" checkpoints instead of one big build-then-test
+at the very end.
+
+**When to offer this to the user** (don't apply unprompted — ask first):
+the sketch has a sensor-driven if/else-if/else chain where every branch
+ultimately drives the same small set of outputs (LEDs/buzzer/servo) just
+with different values, and there are several plumbing-only steps before the
+`if` branch would normally appear.
+
+**The pattern, as three changes to the default step order:**
+
+1. **Reward-first step** — insert a step right after `setup()` is wired
+   (before any sensor-reading plumbing) that turns on the chain's full set
+   of outputs unconditionally — e.g. all LEDs HIGH, buzzer tone() on. This
+   proves the circuit works before teaching it to think, and gives the sim
+   tab something to show on step 3 instead of step 9.
+2. **Plumbing steps proceed as normal** — sensor prep, pulse, echo, distance
+   calculation — untouched by this pattern. The reward step's output lines
+   just sit there unconditionally the whole time.
+3. **Capture step, not an authoring step** — when the first real branch
+   (the `if`) is built, its phantoms do NOT introduce new output lines.
+   Instead the chunk moves the reward step's existing lines inside the new
+   `if { }`, flipping whichever values need to change for that zone (e.g.
+   yellow/red LEDs go from HIGH to LOW because "safe" now means green-only).
+   The How-To tab frames this as "wrap code you already placed," not
+   "write new code." Later branches (`else if`, `else`) are authored
+   normally — only the first branch gets the capture treatment, since it's
+   the one being carved out of the reward step's flat code.
+
+The resulting resolved code at the final step is byte-identical to the
+default (non-reordered) approach — this is purely a reordering of when
+each line first appears, not a change to what the finished sketch does.
+
+If the user wants this, say so explicitly in the Step 3 plan table (mark
+the reward step and the capture step) before generating. See `/lesson-drawer`
+for how the drawer/sim-tab side of this pattern works once the sketch is
+annotated this way.
+
+---
+
 ### The final "Mission Complete" step — ALWAYS add this last
 
 After all coding steps, append one final step with NO code at all:

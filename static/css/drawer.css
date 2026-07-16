@@ -2,8 +2,14 @@
    and templates/try_it_builder.html. Keep this the single source of truth;
    don't re-add #drawer-* or .drawer-* rules to either template's inline <style>. */
 
+/* Anchored to #workspace (position:relative, set per-host-template), not
+   #main-content-wrapper — the step-nav bar above #workspace is 0px when hidden
+   and a variable height when a guided step is active, so a top offset guessed
+   from #main-content-wrapper's box (previously a hardcoded 48px) drifts out of
+   sync with where the block builder actually starts. Anchoring to #workspace
+   itself means the drawer always spans exactly the BB's own height. */
 #drawer-tab {
-  position: absolute; right: 0; top: 48px; bottom: 0; width: 32px;
+  position: absolute; right: 0; top: 0; bottom: 0; width: 32px;
   background: #163d73; border-left: 1px solid #0f2c54;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 100; user-select: none; transition: all 0.2s;
@@ -15,7 +21,7 @@
   text-transform: uppercase; transform: rotate(180deg);
 }
 #drawer-panel {
-  position: absolute; right: 32px; top: 48px; bottom: 0; width: 0;
+  position: absolute; right: 32px; top: 0; bottom: 0; width: 0;
   background: #f5f7fb; border-left: 1px solid #d8e0eb;
   overflow: hidden; z-index: 99; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex; flex-direction: column; box-shadow: -4px 0 15px rgba(0,0,0,0.15);
@@ -48,7 +54,11 @@
 .drawer-tab-panels {
   flex: 1; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: #a9b7c9 #e8edf4;
+  /* direction:rtl flips the scrollbar to the left edge; direction:ltr on the
+     panel children undoes the reading-order flip so drawer content stays normal. */
+  direction: rtl;
 }
+.drawer-tab-panels > * { direction: ltr; }
 .drawer-tab-panels::-webkit-scrollbar { width: 9px; }
 .drawer-tab-panels::-webkit-scrollbar-track { background: #e8edf4; }
 .drawer-tab-panels::-webkit-scrollbar-thumb { background: #a9b7c9; border-radius: 5px; }

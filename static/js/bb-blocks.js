@@ -86,7 +86,7 @@
   BB.BLOCKS = {
     intvar: {
       allowed: ['global', 'loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '0' }],
+      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '' }],
       defaults: [null, null],
       exprCategoryKind: 'numeric',
       genStmt: function (p, ex) { return 'int ' + (p[0] || 'myVar') + ' = ' + genExpr(ex && ex[1], p[1], '0') + ';'; }
@@ -128,27 +128,27 @@
     },
     pinmode: {
       allowed: ['setup'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Mode', o: ['OUTPUT', 'INPUT', 'INPUT_PULLUP'] }],
-      genStmt: function (p) { return 'pinMode(' + (p[0]) + ', ' + (p[1]) + ');'; }
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Mode', o: ['OUTPUT', 'INPUT', 'INPUT_PULLUP'] }],
+      genStmt: function (p) { return 'pinMode(' + (p[0] || '2') + ', ' + (p[1]) + ');'; }
     },
     digitalwrite: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Value', o: ['HIGH', 'LOW'] }],
-      genStmt: function (p) { return 'digitalWrite(' + (p[0]) + ', ' + (p[1]) + ');'; }
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'sel', l: 'Value', o: ['HIGH', 'LOW'] }],
+      genStmt: function (p) { return 'digitalWrite(' + (p[0] || '2') + ', ' + (p[1]) + ');'; }
     },
     analogwrite: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'PWM_PIN_OPTIONS' }, { t: 'vartext', l: 'Value' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'PWM_PIN_OPTIONS' }, { t: 'vartext', l: 'Value' }],
       genStmt: function (p) { return 'analogWrite(' + (p[0] || 9) + ', ' + (p[1] || '128') + ');'; }
     },
     analogread: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'ANALOG_PIN_OPTIONS' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'ANALOG_PIN_OPTIONS' }],
       genExpr: function (p) { return 'analogRead(' + (p[0] || 'A0') + ')'; }
     },
     digitalread: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: false, asExpr: true,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
       genExpr: function (p) { return 'digitalRead(' + (p[0] || '2') + ')'; }
     },
     pulsein: {
@@ -178,7 +178,7 @@
     },
     tone: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'vartext', l: 'Freq' }, { t: 'number', l: 'Duration' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }, { t: 'vartext', l: 'Freq' }, { t: 'number', l: 'Duration' }],
       genStmt: function (p) {
         var pin = (p[0] || 5), f = (p[1] || '440'), d = p[2];
         return (d !== '' && d !== null && d !== undefined) ? ('tone(' + pin + ', ' + f + ', ' + d + ');') : ('tone(' + pin + ', ' + f + ');');
@@ -186,7 +186,7 @@
     },
     notone: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
+      inputs: [{ t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
       genStmt: function (p) { return 'noTone(' + (p[0] || '0') + ');'; }
     },
     random: {
@@ -262,7 +262,7 @@
     },
     servoattach: {
       allowed: ['setup'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'vartext', l: 'Servo' }, { t: 'sel', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
+      inputs: [{ t: 'vartext', l: 'Servo' }, { t: 'vartext', l: 'Pin', o: 'DIGITAL_PIN_OPTIONS' }],
       genStmt: function (p) { return (p[0] || 'myServo') + '.attach(' + (p[1] || '9') + ');'; }
     },
     servowrite: {
@@ -349,28 +349,30 @@
   BB.getVarSuggestions = function () {
     var seen = {}, out = [];
     function add(v) { if (!v) return; if (seen[v]) return; seen[v] = true; out.push(v); }
-    ['global', 'setup', 'loop'].forEach(function (sec) {
-      BB.SECTIONS[sec].forEach(function (b) {
-        if (b.type === 'intvar' || b.type === 'longvar' || b.type === 'stringvar') { add(b.params[0]); }
-        if (b.type === 'codeblock') {
-          var c = b.params[0] || '';
-          var m = c.match(/(?:int|long|String|bool|unsigned long)\s+([a-zA-Z_]\w*)/);
-          if (m) add(m[1]);
-          var m2 = c.match(/([a-zA-Z_]\w*)\s*=/);
-          if (m2) add(m2[1]);
-        }
-      });
-      function walkBody(arr) {
-        arr.forEach(function (b) {
-          if (b.type === 'intvar' || b.type === 'longvar') { add(b.params[0]); }
-          if (b.ifbody) walkBody(b.ifbody);
-          if (b.elseifs) b.elseifs.forEach(function (ei) { walkBody(ei.body); });
-          if (b.elsebody) walkBody(b.elsebody);
-          if (b.body) walkBody(b.body);
-        });
+    function checkDecl(b) {
+      if (b.type === 'intvar' || b.type === 'longvar' || b.type === 'stringvar' || b.type === 'boolvar') { add(b.params[0]); }
+      if (b.type === 'codeblock') {
+        var c = b.params[0] || '';
+        var m = c.match(/(?:int|long|String|bool|unsigned long)\s+([a-zA-Z_]\w*)/);
+        if (m) add(m[1]);
+        var m2 = c.match(/([a-zA-Z_]\w*)\s*=/);
+        if (m2) add(m2[1]);
       }
-      walkBody(BB.SECTIONS[sec]);
-    });
+    }
+    // Locked (//##) re-listed declarations parse as flat 'codeblock' text (block_parser.py's
+    // LOCKED_DIR always wins over var_decl), and that re-listing can land nested inside an
+    // if/for/while body carried forward from an earlier step — so this walk must apply the
+    // exact same checks at every depth, not just at section top level.
+    function walkBody(arr) {
+      arr.forEach(function (b) {
+        checkDecl(b);
+        if (b.ifbody) walkBody(b.ifbody);
+        if (b.elseifs) b.elseifs.forEach(function (ei) { walkBody(ei.body); });
+        if (b.elsebody) walkBody(b.elsebody);
+        if (b.body) walkBody(b.body);
+      });
+    }
+    ['global', 'setup', 'loop'].forEach(function (sec) { walkBody(BB.SECTIONS[sec]); });
     return out;
   };
 

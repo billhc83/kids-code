@@ -142,6 +142,52 @@ Must match the age group. Tie to the lesson theme where natural.
 
 ---
 
+### Progressive sim checkpoints (optional — only if `/lesson-sketch` used the reward-first pattern)
+
+By default a sim tab only exists on the final Mission Complete step. If the
+sketch was annotated using `/lesson-sketch`'s "Progressive sim checkpoints"
+pattern (a reward-first step early, then a capture step that wraps it in
+the first real condition), the sim tab should instead appear at **every
+step where the circuit's observable behavior actually changes for the
+first time** — validated on `project_fifteen`. That's:
+
+- The reward-first step itself (all outputs on, unconditionally).
+- The capture step (outputs now actually respond to the first condition).
+- Each later branch's output step (`else if` / `else` bodies get filled in
+  for the first time).
+- Mission Complete, as always.
+
+Steps that only build a condition's empty shell (`if (x > N) { }` with no
+body yet) or that only do sensor plumbing produce zero visible change —
+skip the sim tab there, since there's nothing new to see.
+
+**`sim_config` per checkpoint:** don't always use the full component list.
+Before the sensor is wired into the logic (e.g. the reward step), configure
+only the components actually driven at that point (lights/buzzer, no
+sensor). Once the sensor is wired in, switch to the full config. This
+mirrors what the student would actually observe — a sim showing a sensor
+slider that does nothing yet is confusing, not honest.
+
+**The `🎮 Try It:` callout — append to the `explain` tab, not a new tab.**
+On every step that has a checkpoint sim tab, add one short paragraph to the
+end of that step's `explain` content:
+- Tell the student to open Try It.
+- Say exactly what action to take (e.g. "slide the sensor past 50cm").
+- Say what they should observe.
+- For any checkpoint after the first, explicitly contrast the new
+  behavior against what they saw at the *previous* checkpoint — this is
+  what makes the progression legible as a progression, not just a series
+  of disconnected demos. E.g.: *"That's a big change from Step 3's
+  'everything on' test! Now slide it in close — notice everything goes
+  dark. That's not a bug: you haven't taught your alarm what 'close'
+  means yet — that's exactly what the next few steps build."*
+
+This callout pattern is additive to the standard `explain` structure above
+(narrative → what it adds → why → preview) — write the normal four beats
+first, then append the Try It paragraph last.
+
+---
+
 ### Troubleshooting lessons (`lesson_type = "troubleshoot"`)
 
 Exactly 2 drawer steps matching the 2 sketch steps.

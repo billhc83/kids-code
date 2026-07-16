@@ -178,12 +178,12 @@ The Arduino sees <b>LOW</b> when the switch is <b>on</b> or the button is <b>pre
 
 <b>Think about the flow:</b><br><br>
 
-IF switch is ON<br>
+IF switch is ON (LOW)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Light ON<br>
-&nbsp;&nbsp;&nbsp;&nbsp;IF button pressed<br>
+&nbsp;&nbsp;&nbsp;&nbsp;IF button pressed (LOW)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Engine ON<br><br>
 
-IF switch is OFF (else)<br>
+IF switch is OFF (HIGH) (else)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Everything OFF<br><br>
 
 Remember: The switch is the boss.

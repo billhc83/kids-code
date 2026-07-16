@@ -171,6 +171,27 @@ STEPS = [
 
 backup_circuit_b64 = img_to_b64("static/graphics/project_fifteen_circuit.png")
 
+SIM_LIGHTS_ONLY = {
+    "mode": "interpreted",
+    "components": [
+        {"type": "led",    "id": "greenLED",  "color": "green",  "pin": 4, "label": "Green"},
+        {"type": "led",    "id": "yellowLED", "color": "yellow", "pin": 5, "label": "Yellow"},
+        {"type": "led",    "id": "redLED",    "color": "red",    "pin": 6, "label": "Red"},
+        {"type": "buzzer", "id": "buz1",                          "pin": 3, "label": "Buzzer"},
+    ],
+}
+
+SIM_FULL = {
+    "mode": "interpreted",
+    "components": [
+        {"type": "sonar",  "id": "sonar1",    "label": "Distance Sensor", "pin_trig": 9, "pin_echo": 10},
+        {"type": "led",    "id": "greenLED",  "color": "green",  "pin": 4, "label": "Safe"},
+        {"type": "led",    "id": "yellowLED", "color": "yellow", "pin": 5, "label": "Warning"},
+        {"type": "led",    "id": "redLED",    "color": "red",    "pin": 6, "label": "Danger"},
+        {"type": "buzzer", "id": "buz1",                         "pin": 3, "label": "Buzzer"},
+    ],
+}
+
 DRAWER_CONTENT = {
 
  "project_fifteen": {
@@ -178,20 +199,20 @@ DRAWER_CONTENT = {
 
 {
     "title": "Step 1 — System Memory 📦",
-    "tip": "Set up your system’s memory so it knows what everything is.",
+    "tip": "Set up your system's memory so it knows what everything is.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Before your backup alarm can work, it needs to know what parts it is using. We store this information in <b>variables</b>.</p><br><p>Each variable acts like a label for a part of your system:</p><ul><li>📡 <b>trigPin</b> → sends out a signal to measure distance - Pin 9<br><br></li><li>👂 <b>echoPin</b> → listens for the signal bouncing back - Pin 10<br><br></li><li>🔊 <b>buzzerPin</b> → makes sound when objects are close - Pin 3<br><br></li><li>💡 <b>greenLED</b>, <b>yellowLED</b>, <b>redLED</b> → show safe, warning, and danger zones - Pins 4, 5 and 6<br><br></li><li>⏱ <b>duration</b> → stores how long the signal takes to return - Set to 0<br><br></li><li>📏 <b>distance</b> → stores how far away an object is - Set to 0</li></ul><p>Without these, your system wouldn’t know what anything is!</p>",
+            "content": "<p>Every build starts with a parts list. Before your backup alarm can measure anything or light anything up, your program needs its own list — a set of <strong>variables</strong> (labels that hold a piece of information your program can look up and change later, similar to a labeled fuse box in a car).</p><p>This step creates eight labels: one for each pin your sensor, buzzer, and LEDs are wired to, plus two more to store the readings your sensor will take later.</p><p>Skip this step and every later step breaks — your code has no way to say \"turn on the buzzer\" without a label pointing at the right pin.</p>",
             "image_b64": backup_circuit_b64
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Create containers (variables) for each part of your system.</p><p>2. Give each one the exact name shown in the instructions.</p><p>3. Assign each pin a number so your board knows where things are connected.</p><p>4. Create containers for <b>duration</b> and <b>distance</b> to store sensor data.</p><p>These variables will be used in almost every step, so they must be correct!</p>"
+            "content": "<p>Each variable needs a name, a type (what kind of value it holds), and a starting value. Here's all eight:</p><ol><li><strong>trigPin</strong> — Sends the sensor's measuring pulse out. It's an integer (whole-number) variable, set to <strong>9</strong> to match Arduino pin 9 from your wiring.</li><li><strong>echoPin</strong> — Listens for the pulse bouncing back. Integer, set to <strong>10</strong>, matching pin 10.</li><li><strong>buzzerPin</strong> — Controls your alarm's sound. Integer, set to <strong>3</strong>, matching pin 3.</li><li><strong>greenLED</strong> — Your safe-zone light. Integer, set to <strong>4</strong>.</li><li><strong>yellowLED</strong> — Your warning light. Integer, set to <strong>5</strong>.</li><li><strong>redLED</strong> — Your danger light. Integer, set to <strong>6</strong>.</li><li><strong>duration</strong> — Will store how long the sensor's pulse takes to bounce back, in microseconds. It's a <em>long</em> variable (like an integer, but built for bigger numbers) since timing values can get large. Starts at <strong>0</strong> since no reading has happened yet.</li><li><strong>distance</strong> — Will store the calculated distance in centimeters once you do the math in a later step. Integer, starts at <strong>0</strong>.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Think of this like labeling wires in a car. If everything is labeled clearly, the system can react quickly and correctly. If not, things get confusing fast!</p>"
+            "content": "<p>Think of this like a pit crew labeling every gauge on a race car's dashboard before the race starts. A crew that knows exactly which gauge shows fuel and which shows temperature can react instantly — your program needs the same clear labels before it can react to anything.</p>"
         }
     }
 },
@@ -202,246 +223,258 @@ DRAWER_CONTENT = {
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Now that your system knows the parts, you need to tell it how each one behaves using <b>pin modes</b>.</p><br><p>There are two main types:</p><ul><li>📤 <b>OUTPUT</b> → sends signals (LEDs, buzzer, trigger pin)<br><br></li><li>📥 <b>INPUT</b> → receives signals (echo pin)</li></ul><p>This step prepares your system so it can send and receive information properly.</p>"
+            "content": "<p>Your variables are labeled, but Arduino still doesn't know whether each pin should be sending signals out or listening for them. This step configures every pin's <strong>mode</strong> — OUTPUT for parts that send power (the buzzer, the LEDs, the sensor's trigger pin) and INPUT for the one part that receives a signal (the sensor's echo pin).</p><p>This all happens inside <strong>setup()</strong>, a block of code that runs exactly once when your Arduino powers on — like a car's dashboard doing a quick systems check the moment you turn the key.</p><p>Get a pin mode backwards here and that part simply won't work later, even if the rest of your code is perfect.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Go into the <b>setup</b> section.</p><p>2. Set each pin to the correct mode:</p><ul><li>Trigger, buzzer, and LEDs → OUTPUT</li><li>Echo pin → INPUT</li></ul><p>3. Turn on communication with the screen so you can see information later.</p><p>This step only runs once when the system starts.</p>"
+            "content": "<ol><li><strong>trigPin</strong> — Set its mode to <strong>OUTPUT</strong>, since your Arduino needs to send a pulse out through it.</li><li><strong>echoPin</strong> — Set its mode to <strong>INPUT</strong>, since this pin only ever receives the sensor's returning pulse.</li><li><strong>buzzerPin</strong> — <strong>OUTPUT</strong>, since Arduino sends power to it to make sound.</li><li><strong>greenLED</strong> — <strong>OUTPUT</strong>.</li><li><strong>yellowLED</strong> — <strong>OUTPUT</strong>.</li><li><strong>redLED</strong> — <strong>OUTPUT</strong>.</li></ol><p>You'll also see <code>Serial.begin(9600)</code> already in place — this turns on a communication channel between your Arduino and your computer, which some later steps use to double-check readings.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Imagine plugging in devices at home. Some devices send signals (like a remote), while others receive them (like a TV). If you mix them up, nothing works correctly!</p>"
+            "content": "<p>This is like a stage manager checking every microphone and speaker before a concert — deciding which ones will pick up sound (INPUT) and which ones will play sound (OUTPUT). Mix that up and the whole show falls apart.</p>"
         }
     }
 },
 
 {
-    "title": "Step 3 — Prepare the Sensor 📡",
+    "title": "Step 3 — Light It Up ✨",
+    "tip": "Prove your circuit works before you make it smart.",
+    "tabs": {
+        "explain": {
+            "label": "📖 What & Why",
+            "content": "<p>Before your alarm can react to anything, let's prove the wiring itself is solid. Real engineers do this too — before adding any decision-making logic, they run a basic test to confirm every part responds when powered.</p><p>This step turns all three LEDs and the buzzer on at the same time, with no conditions attached. If your circuit is wired correctly, you'll see every light and hear the buzzer the moment this code runs.</p><p>Don't worry that this isn't \"smart\" yet — you're about to spend the next several steps teaching your sensor to measure distance, and a few steps after that, you'll come back and turn this into a real reacting alarm.</p><p>🎮 <strong>Try It:</strong> Open the Try It tab now. You should see all three LEDs lit and the buzzer playing a steady 1000 Hz tone — no sensor involved yet, because you haven't wired one into the logic. If everything's lit, your circuit and this step's code both check out.</p>"
+        },
+        "howto": {
+            "label": "🔧 How To",
+            "content": "<ol><li><strong>Green LED ON</strong> — Turn greenLED to HIGH (this block sends full power to a pin, the opposite of LOW). You'll see the green light switch on.</li><li><strong>Yellow LED ON</strong> — Same block, applied to yellowLED.</li><li><strong>Red LED ON</strong> — Same block, applied to redLED.</li><li><strong>Buzzer ON</strong> — Use the tone block, which needs two values: the pin (buzzerPin) and a frequency in Hz (how fast the sound wave vibrates — higher numbers sound higher-pitched). Use <strong>1000</strong> Hz.</li></ol>"
+        },
+        "logic": {
+            "label": "🧠 Logic",
+            "content": "<p>This is exactly what a pit crew does before a race — floor every gauge and light to make sure the electrics are good, before worrying about how the car should react on track. Confirm the parts work, then teach them when to work.</p>"
+        },
+        "sim": {"label": "🎮 Try It", "type": "sim", "sim_config": SIM_LIGHTS_ONLY}
+    }
+},
+
+{
+    "title": "Step 4 — Prepare the Sensor 📡",
     "tip": "Reset the sensor before sending a signal.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>The ultrasonic sensor works by sending out a sound wave and listening for it to return.</p><br><p>Before sending a new signal, we must make sure the trigger is turned <b>OFF</b> first.</p><p>This clears any leftover signal so the next reading is accurate.</p><br><p>We also wait a very tiny amount of time to let the sensor settle.</p>"
+            "content": "<p>Your lights and buzzer are proven to work — now it's time to teach the system how to actually measure distance. Your ultrasonic sensor (a device that measures distance using sound waves too high-pitched for humans to hear) works by sending a burst of sound and timing how long it takes to bounce back.</p><p>Before sending a fresh pulse, we need the trigger pin to start from a clean OFF state and give the sensor a tiny pause to settle. Skip this reset and leftover signal from a previous reading can throw off the next measurement.</p><p>Your lights are still on in the background from the last step — we're not touching them again until the sensor's measurements are ready to control them.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Inside the loop, turn the trigger pin OFF.</p><p>2. Add a very short delay so the sensor resets properly. Lets use 2 microseconds.</p><p>This prepares the sensor for a clean measurement.</p>"
+            "content": "<ol><li><strong>Set trigPin LOW</strong> — Use digitalWrite (a block that sets a pin's power level) with the value LOW, which means \"no power.\" This clears any leftover signal from the trigger pin.</li><li><strong>Small delay</strong> — Use delayMicroseconds (a pause measured in millionths of a second — much shorter than the delay block you may have used before, which pauses in milliseconds). Set it to <strong>2</strong> microseconds, just enough for the sensor to settle.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Think of this like taking a deep breath before speaking. You reset first, then send a clear signal. Without resetting, your readings can get messy and unreliable.</p>"
+            "content": "<p>Think of this like a swimmer shaking out their arms right before diving in — a tiny reset that clears tension so the next move is clean. Your sensor needs the same brief pause before it can send an accurate signal.</p>"
         }
     }
 },
 
 {
-    "title": "Step 4 — Send the Signal 🚀",
+    "title": "Step 5 — Send the Signal 🚀",
     "tip": "Send out a quick signal to measure distance.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Now it's time for your sensor to send out a signal!</p><br><p>The ultrasonic sensor works by sending a tiny burst of sound that travels through the air.</p><p>To do this, we briefly turn the <b>trigger pin ON</b>, then turn it OFF again.</p><br><p>This creates a short pulse — like a quick clap — that starts the measurement.</p><p>The timing of this pulse is very important, so we only leave it on for a very tiny amount of time.</p>"
+            "content": "<p>With the trigger pin reset, it's time to actually send the measuring pulse. Your sensor sends a burst of sound by briefly switching the trigger pin ON, then quickly back OFF — a signal so short it's measured in millionths of a second.</p><p>This tiny pulse is what starts the whole measurement: the moment it fires, the sensor begins listening for the sound to bounce off something and return.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Turn the trigger pin ON.</p><p>2. Wait a very short time (just enough for the signal to send). Lets use 10 microseconds.</p><p>3. Turn the trigger pin OFF again.</p><p>This creates the pulse that tells the sensor to begin measuring distance.</p>"
+            "content": "<ol><li><strong>Set trigPin HIGH</strong> — digitalWrite, value HIGH. This fires the pulse.</li><li><strong>Wait 10 microseconds</strong> — delayMicroseconds, value <strong>10</strong>. This is the exact pulse width the HC-SR04 sensor (the sensor model wired into your circuit) needs to register a clean signal.</li><li><strong>Set trigPin LOW</strong> — digitalWrite, value LOW. This ends the pulse.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Like using a walkie-talkie:  You press the button and say something quickly, then you let go to listen If you hold the button down the whole time, you can’t hear the other person at all.</p><p>👉 The trigger pulse is like pressing the button quickly, then letting go so you can listen.</p>"
+            "content": "<p>This is like a coach's short, sharp whistle blast to start a race — not a long note, just a quick, clear signal that kicks things off. Hold the whistle too long and you'd miss timing the runners; your sensor's pulse works the same way.</p>"
         }
     }
 },
 
 {
-    "title": "Step 5 — Listen for the Echo 👂",
+    "title": "Step 6 — Listen for the Echo 👂",
     "tip": "Measure how long it takes for the signal to return.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>After sending the signal, your sensor listens for it to come back.</p><br><p>The sound wave travels forward, hits an object, and bounces back to the sensor.</p><p>We measure how long this takes using a special function.</p><br><p>This time is stored in a variable called <b>duration</b>.</p><p>The longer the time, the farther away the object is.</p>"
+            "content": "<p>Your sensor sent its signal in the last step — now it needs to listen for that signal to return. The time between sending and receiving is the raw ingredient every distance sensor depends on: sound travels at a known, steady speed, so timing its round trip tells you how far it traveled.</p><p>This measurement is precise enough that it's handled automatically rather than block-by-block — check the How To tab to see exactly what's happening.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Use the echo pin to listen for the returning signal.</p><p>2. Store the time it takes in the <b>duration</b> variable.</p><p>This value will be used to calculate distance in the next step.</p>"
+            "content": "<p>This step is handled automatically, because timing a returning sound wave to the microsecond isn't something you'd build block-by-block — Arduino has a purpose-built tool for exactly this.</p><p>The locked code uses <strong>pulseIn</strong>, a block built specifically for this kind of ultrasonic sensor. It watches echoPin (the pin your sensor sends its return signal on) and waits for it to go HIGH — the moment the sound wave arrives back. It then measures exactly how long that HIGH signal lasted, in microseconds, and stores that number in <strong>duration</strong>, the variable you created back in Step 1.</p><p>If nothing is close enough to bounce the sound back, pulseIn eventually gives up and returns <strong>0</strong> — you'll use that exact detail in the very next step.</p><p>You now have a real, live measurement stored in duration. The next step turns that raw timing number into an actual distance in centimeters.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>This is like yelling and waiting for your echo. If it comes back quickly, the wall is close. If it takes longer, the wall is farther away.</p>"
+            "content": "<p>This is like timing an echo in a canyon — shout, count the seconds until it returns, and you can work out how far away the canyon wall is. Your sensor \"shouts\" with sound waves instead of a voice, but the idea is identical.</p>"
         }
     }
 },
 
 {
-    "title": "Step 6 — Calculate Distance 📏",
+    "title": "Step 7 — Calculate Distance 📏",
     "tip": "Turn time into a real-world distance.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Now we turn the time measurement into distance!</p><br><p>Sound travels at a known speed through the air. By using this speed, we can convert the time into how far away something is.</p><br><p>We divide the result by 2 because the sound travels to the object <b>and back</b>.</p><br><p><b>But what if we don’t hear anything back?</b></p><p>If no echo is received, it means nothing was detected. In that case, we treat the object as being very far away.</p><br><p>This final value is stored in the <b>distance</b> variable.</p>"
+            "content": "<p>You now have a raw timing number in duration — but \"4,706 microseconds\" doesn't mean much to a driver. This step converts that timing into an actual distance in centimeters, using the fact that sound travels through air at a known, steady speed.</p><p>There's one edge case to handle first: if nothing was close enough to bounce the signal back, pulseIn returns exactly 0 (as you saw in the last step) — and 0 microseconds obviously doesn't mean \"the object is 0cm away.\" It means the opposite: nothing detected, so treat the object as very far away.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Check if a duration was received.</p><p>2. If not, set distance to a large value (like 999).</p><p>3. Otherwise, convert duration into distance using the formula.</p><p>4. Store the result in the <b>distance</b> variable.</p><p>This gives your system real-world information it can react to.</p>"
+            "content": "<ol><li><strong>If no echo received</strong> — Use an if block (checks a condition, and only runs the code inside it when that condition is true) checking whether duration equals 0.</li><li><strong>Set distance to a far value</strong> — Inside that if, set distance to <strong>999</strong> — a placeholder far outside any real reading, so \"nothing detected\" always counts as safe.</li></ol><p>The locked else branch handles the normal case: <code>distance = duration * 0.034 / 2</code>. 0.034 is the speed of sound in centimeters per microsecond, and dividing by 2 accounts for the sound traveling to the object <em>and back</em> — you only want the one-way distance.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Imagine timing how long it takes for a ball to bounce off a wall and come back.</p><p>If you hear the bounce, you can calculate how far away the wall is.</p><p><b>If you don’t hear anything</b>, it probably means the wall is too far away — so you assume it's far.</p>"
+            "content": "<p>This is like a rally co-driver converting \"it took 3 seconds to hear the echo off that cliff\" into an actual distance in meters — same raw timing, just translated into units a driver can actually act on.</p>"
         }
     }
 },
 
 {
-    "title": "Step 7 — Safe Zone Check 🟢",
+    "title": "Step 8 — Safe Zone Check 🟢",
     "tip": "Decide when everything is safe.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Your system now knows the distance — but it needs to decide what that means.</p><br><p>We use an <b>if statement</b> to check conditions.</p><p>This lets the system ask a question like:</p><p><b>“Is the object far enough away to be safe?”</b></p><br><p>If the answer is YES, the system will enter the safe zone.</p><p>This is the first decision your system makes.</p>"
+            "content": "<p>Your system now knows the real distance to whatever's behind the car — but knowing a number isn't the same as reacting to it. This step adds your first real decision: an if block that asks \"is the object far enough away to be safe?\"</p><p>Right now this decision doesn't do anything yet — the block's body is empty. In the very next step, you'll reconnect it to your lights and buzzer from Step 3, so hang on for that.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Create an <b>if</b> condition.</p><p>2. Check if the distance is greater than the safe value.</p><p>We chose 50 because it’s a middle distance that makes the alarm react at a useful time — not too early and not too late.</p><p>3. Open the block where your safe actions will go.</p><p>This tells your system when everything is safe.</p>"
+            "content": "<ol><li><strong>If distance greater than 50</strong> — Use an if block checking whether distance is greater than <strong>50</strong> (centimeters). 50cm is roughly arm's length — close enough to react to, far enough that there's no rush yet.</li></ol><p>Nothing goes inside it yet — you're just building the question. The answer comes next.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>This is like checking your surroundings before stepping back. If nothing is close, you’re safe to move.</p>"
+            "content": "<p>This is like a driver's mirror check before reversing — glancing back and asking \"is anything close?\" before deciding whether to worry. Right now your system is only asking the question; it hasn't decided how to react yet.</p>"
         }
     }
 },
 
 {
-    "title": "Step 8 — Safe Zone Response 🟢",
-    "tip": "Show that everything is safe.",
+    "title": "Step 9 — Reconnect the Lights 🟢",
+    "tip": "Turn your always-on lights into a real reaction.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>When the system detects a safe distance, it should clearly show that everything is okay.</p><br><p>We do this by:</p><ul><li>💡 Turning the <b>green LED ON</b></li><li>⚫ Turning the other LEDs OFF</li><li>🔇 Keeping the buzzer silent</li></ul><p>This gives clear feedback to the driver: no danger detected.</p>"
+            "content": "<p>Remember Step 3, where you turned all three LEDs and the buzzer on permanently, just to prove the wiring worked? Those lines of code are still sitting in your program, running every single time through the loop — they just haven't been touched since.</p><p>This step moves them inside the \"is it safe?\" question you built in Step 8. Once they're inside, they'll only run when the condition is actually true — which means your lights finally start reacting to something instead of just sitting on forever.</p><p>There's a change to make while you move them: \"safe\" shouldn't mean all three lights on — it should mean <strong>only</strong> the green light on. So the yellow and red lights, and the buzzer, need to flip from ON to OFF inside this block.</p><p>🎮 <strong>Try It:</strong> Slide the distance sensor to somewhere past 50cm — you should see only the green light on, buzzer silent. That's a big change from Step 3's \"everything on\" test! Now slide it in close, under 50cm — notice everything goes dark. That's not a bug: you haven't taught your alarm what \"close\" or \"very close\" means yet. That's exactly what the next few steps build.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Turn the buzzer OFF so there is no sound.</p><p>2. Turn the green LED ON.</p><p>3. Turn the yellow and red LEDs OFF.</p><p>Make sure every light is controlled so there is no confusion.</p>"
+            "content": "<ol><li><strong>Turn buzzer OFF</strong> — Use the noTone block (the opposite of tone) on buzzerPin. When it's safe, there's nothing to warn about.</li><li><strong>Green LED stays ON</strong> — This line carries over unchanged from Step 3 — green already meant \"good,\" so it doesn't need to flip.</li><li><strong>Turn yellow LED OFF</strong> — digitalWrite, value LOW. In Step 3 this was HIGH; now that it's inside the safe-zone condition, it needs to flip to LOW so only green shows.</li><li><strong>Turn red LED OFF</strong> — digitalWrite, value LOW, same reasoning as yellow.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Think of a traffic light. Green means go — everything is clear. No sound, no warning, just safe movement.</p>"
-        }
+            "content": "<p>This is like a race car's pit board — the crew doesn't hold up every signal at once, they show the driver exactly one message that matches the current situation. Your lights are learning the same lesson: show one true answer, not everything at once.</p>"
+        },
+        "sim": {"label": "🎮 Try It", "type": "sim", "sim_config": SIM_FULL}
     }
 },
 
 {
-    "title": "Step 9 — Warning Zone Check 🟡",
+    "title": "Step 10 — Warning Zone Check 🟡",
     "tip": "Detect when things are getting closer.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Not everything is either safe or dangerous — sometimes you're getting close.</p><br><p>We use an <b>else if</b> statement to check a second condition.</p><p>This only runs if the first condition (safe zone) was NOT true.</p><br><p>Now the system asks:</p><p><b>“Is the object getting close, but not too close?”</b></p><p>This creates a middle warning zone.</p>"
+            "content": "<p>Not every distance is either perfectly safe or full-blown danger — there's a middle zone where a driver should start paying attention. This step adds a second question using <strong>else if</strong> (a block that only gets checked when the first if's condition was false), asking \"is the object getting close, but not too close yet?\"</p><p>Just like Step 8, this step only builds the question — the reaction comes in the next step.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Add an <b>else if</b> after your first condition.</p><p>2. Check if the distance is greater than the warning threshold.</p><p>3. Let use 20 for this number.  That means its closer than 50 but not too close.</p><p>This creates a second level of awareness in your system.</p>"
+            "content": "<ol><li><strong>Else if distance greater than 20</strong> — Use an else if block checking whether distance is greater than <strong>20</strong> centimeters. Since this only gets checked when the safe-zone condition was false, it effectively means \"between 20 and 50cm.\"</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>This is like a yellow traffic light. You’re not in danger yet, but you need to pay attention and slow down.</p>"
+            "content": "<p>This is like a video game giving you a warning beep when your health drops below a threshold, but before it's actually critical — a heads-up zone between \"fine\" and \"danger,\" giving you a chance to react early.</p>"
         }
     }
 },
 
 {
-    "title": "Step 10 — Warning Response 🟡",
+    "title": "Step 11 — Warning Zone Response 🟡",
     "tip": "Alert the driver with a repeating beep.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>When an object is getting close, the system should warn the driver — but not panic yet.</p><br><p>We do this using a <b>buzzer</b> that turns ON and OFF repeatedly.</p><p>This creates a beeping sound.</p><br><p>The pattern works like this:</p><ul><li>🔊 Turn sound ON</li><li>⏳ Wait</li><li>🔇 Turn sound OFF</li><li>⏳ Wait again</li></ul><p>This repeating pattern creates the familiar \"beep... beep...\" warning sound.</p><br><p>We also turn on the yellow LED to show caution.</p>"
+            "content": "<p>Now let's give the warning zone an actual reaction. Unlike the danger zone (which you'll build soon), a warning shouldn't be a constant, urgent sound — it should be a noticeable but calmer repeating beep, paired with the yellow light.</p><p>You'll build this beep using tone, a short pause, noTone, another short pause — on, off, on, off — which is exactly how a real \"beep… beep… beep…\" warning sound is built.</p><p>🎮 <strong>Try It:</strong> Head back to Try It and slide the sensor into the 20–50cm range — you'll hear a repeating beep and see the yellow light, right alongside the green-only behavior you already built for anything past 50cm. Notice the safe zone still works exactly like it did last time — you've added a whole new zone without breaking the one before it.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Turn the buzzer ON using a tone.  We will use a frequency of 1000 Hz. This frequency decided the tone the buzzer will make.</p><p>2. Wait for a short amount of time. 300 ms.</p><p>3. Turn the buzzer OFF.</p><p>4. Wait again.  300 ms.</p><p>5. Set the LEDs so only the yellow light is ON. and the other two are off.</p><p>This creates a repeating warning signal.</p>"
+            "content": "<ol><li><strong>Turn buzzer ON (1000 Hz)</strong> — tone block, buzzerPin, frequency <strong>1000</strong> Hz.</li><li><strong>Delay 300ms</strong> — delay (a pause measured in milliseconds — a thousand times longer than the microsecond delays from your sensor steps), value <strong>300</strong>.</li><li><strong>Turn buzzer OFF</strong> — noTone, buzzerPin.</li><li><strong>Delay 300ms</strong> — delay, value <strong>300</strong> again, completing the \"on, pause, off, pause\" beep cycle.</li><li><strong>Turn green LED OFF</strong> — digitalWrite, value LOW.</li><li><strong>Turn yellow LED ON</strong> — digitalWrite, value HIGH.</li><li><strong>Turn red LED OFF</strong> — digitalWrite, value LOW.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>This is like a car slowly getting closer to something. The system says: \"Be careful… something is getting close.\" The repeating sound grabs attention without causing panic.</p>"
-        }
+            "content": "<p>This is like a car's turn signal — not a constant sound, but a steady, repeating pulse designed to catch your attention without being alarming. A warning should feel different from an emergency, and the repeating beep does exactly that.</p>"
+        },
+        "sim": {"label": "🎮 Try It", "type": "sim", "sim_config": SIM_FULL}
     }
 },
 
 {
-    "title": "Step 11 — Danger Zone 🚨",
+    "title": "Step 12 — Danger Zone 🚨",
     "tip": "Trigger a constant alert when too close.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>If the object is very close, the system must react immediately.</p><br><p>This is the <b>danger zone</b>.</p><p>Instead of beeping, the buzzer stays ON continuously to create urgency.</p><br><p>We also turn on the red LED to clearly show danger.</p><p>This tells the driver: <b>STOP NOW!</b></p>"
+            "content": "<p>This is the final zone — and the moment your alarm becomes a complete, working system. Anything not caught by the safe or warning conditions falls into this last case, using <strong>else</strong> (the block that runs when every earlier if/else if condition was false) — meaning you don't even need to check a number here, since anything this close has already failed both earlier tests.</p><p>Unlike the warning beep, danger needs urgency: a constant tone instead of a repeating one, and the red light instead of yellow.</p><p>🎮 <strong>Try It:</strong> This is the big one — slide the sensor through the full range. Past 50cm: green only. Between 20–50cm: yellow, beeping. Under 20cm: red, with a steady higher-pitched tone. All three zones, working together for the first time, exactly like a real car's backup sensor.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. Add an <b>else</b> block for when no other conditions are true.</p><p>2. Turn the buzzer ON and keep it ON. Lets use a frequency of 1500 now so our buzzer makes a higher pitched sound.</p><p>3. Turn the red LED ON.</p><p>4. Turn the other LEDs OFF.</p><p>This creates a strong, clear danger signal.</p>"
+            "content": "<ol><li><strong>Turn buzzer ON (1500 Hz)</strong> — tone block, buzzerPin, frequency <strong>1500</strong> Hz — higher-pitched than the warning zone's 1000 Hz, so it's instantly distinguishable by ear.</li><li><strong>Turn green LED OFF</strong> — digitalWrite, LOW.</li><li><strong>Turn yellow LED OFF</strong> — digitalWrite, LOW.</li><li><strong>Turn red LED ON</strong> — digitalWrite, HIGH.</li></ol><p>Notice there's no delay/noTone pattern here like the warning zone had — the tone just stays on continuously, which is exactly what makes it read as more urgent.</p>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>This is like a loud alarm going off when you're about to hit something. No more warnings — it’s time to stop immediately!</p>"
-        }
+            "content": "<p>This is like the difference between a car's turn signal and its collision-warning alarm — one is a calm, repeating pulse, the other is a constant, impossible-to-ignore tone. Same buzzer, same LEDs, but the pattern itself communicates how serious the situation is.</p>"
+        },
+        "sim": {"label": "🎮 Try It", "type": "sim", "sim_config": SIM_FULL}
     }
 },
 
 {
-    "title": "Step 12 — System Loop 🔁",
+    "title": "Step 13 — System Loop 🔁",
     "tip": "Keep the system running smoothly.",
     "tabs": {
         "explain": {
             "label": "📖 What & Why",
-            "content": "<p>Your system runs over and over again inside a loop.</p><br><p>Without a small pause, it would run too fast and could cause unstable readings.</p><p>We add a short delay to give the system time to reset before the next measurement.</p><br><p>This makes the sensor more stable and reliable.</p>"
+            "content": "<p>Your alarm's logic is complete — this last step just makes it run smoothly. Right now your loop repeats as fast as Arduino can possibly execute it, which can make sensor readings jittery and unstable.</p><p>A short pause at the end of each loop gives the sensor time to settle before the next measurement, the same way you gave it a tiny pause back in Step 4.</p>"
         },
         "howto": {
             "label": "🔧 How To",
-            "content": "<p>1. At the end of the loop, add a small delay. Lets use 50 ms.</p><p>2. This delay should be short — just enough to stabilize the system.</p><p>3. The loop will then repeat automatically.</p><p>This keeps your system running smoothly.</p>"
+            "content": "<ol><li><strong>Small delay for stability</strong> — delay block, value <strong>50</strong> milliseconds, added at the very end of loop(). Short enough that the alarm still feels instant to a driver, long enough to steady the readings.</li></ol>"
         },
         "logic": {
             "label": "🧠 Logic",
-            "content": "<p>Think of this like blinking your eyes. You don’t constantly stare without pause — small breaks help everything stay clear and stable.</p>"
+            "content": "<p>This is like a car's suspension smoothing out small bumps in the road — the system underneath is already working, this step just takes the jitter out of it.</p>"
         }
     }
 },
+
 {
-    "title": "Step 13 — Mission Complete 🎉",
+    "title": "Step 14 — Mission Complete 🎉",
     "tip": "Your backup alarm system is fully operational!",
     "tabs": {
         "explain": {
             "label": "📖 What You Built",
-            "content": "<p>🚗 Congratulations, Engineer!</p><br><p>You successfully designed and built a <b>smart backup alarm system</b> — just like the ones used in real cars.</p><br><p>Your system can:</p><ul><li>📡 Measure distance using an ultrasonic sensor</li><li>🧠 Make decisions based on that distance</li><li>💡 Show safe, warning, and danger zones using LEDs</li><li>🔊 Alert the driver using sound patterns</li></ul><p>You didn’t just write code — you built a real-world system that senses, thinks, and reacts.</p>"
+            "content": "<p>🚗 Congratulations, Engineer! You designed and built a complete smart backup alarm — sensing distance, making decisions, and reacting with lights and sound, just like a real car's system.</p><p>Your system can now:</p><ul><li>📡 Measure real-world distance using an ultrasonic sensor</li><li>🧠 Make three-way decisions using if / else if / else</li><li>💡 Show safe, warning, and danger zones using LEDs</li><li>🔊 Alert the driver with two different sound patterns</li><li>✨ Start from a proven-working circuit and build logic on top of it, one working piece at a time</li></ul><p>You didn't just copy code — you tested your wiring first, then taught your system to think.</p>"
         },
         "howto": {
             "label": "🔧 Try This Next",
-            "content": "<p>Now that your system works, try improving it!</p><br><p>Here are some ideas:</p><ul><li>⚡ Change the distance values to make the system more or less sensitive</li><li>🔊 Make the beeping faster as objects get closer</li><li>🌈 Add more LEDs for smoother distance levels</li><li>📺 Display the distance on a screen</li><li>🎮 Turn it into a game or challenge system</li></ul><p>Experimenting is how real engineers improve their designs!</p>"
+            "content": "<p>Now that your system works, here are some ideas to make it even better:</p><ul><li>⚡ <strong>Change the zone distances</strong> — try 40cm and 15cm instead of 50 and 20, and see how it changes the feel.</li><li>🔊 <strong>Speed up the warning beep</strong> — shrink the 300ms delays as distance decreases, so the beep gets faster the closer you get.</li><li>🌈 <strong>Add a fourth LED</strong> — split the warning zone into \"getting close\" and \"really close\" with an extra color.</li><li>📟 <strong>Print the distance to Serial</strong> — use Serial.println(distance) so you can watch the exact numbers as you test.</li><li>🎮 <strong>Turn it into a game</strong> — build a \"don't get caught\" challenge where a player tries to stay in the safe zone as long as possible.</li></ul><p>Experimenting is how real engineers improve their designs.</p>"
         },
         "logic": {
             "label": "🧠 What You Learned",
-            "content": "<p>This project brought together everything you’ve been learning:</p><ul><li>📦 Variables to store important information</li><li>⚙️ Setup to prepare your system</li><li>📡 Sensors to collect real-world data</li><li>🧠 Logic to make decisions (if / else if / else)</li><li>💡 Outputs to respond with lights and sound</li><li>🔁 Loops to keep everything running continuously</li></ul><br><p>This is how real systems work — input → thinking → output.</p><p>You are now thinking like an engineer. 🚀</p>"
+            "content": "<p>This project brought together everything you've been building toward:</p><ul><li>📦 <strong>Variables</strong> — labels that store and update information your program needs.</li><li>⚙️ <strong>Setup</strong> — configuring your hardware once, before the real logic runs.</li><li>📡 <strong>Sensors</strong> — turning a real-world signal (sound timing) into a usable number.</li><li>🧠 <strong>Conditional logic</strong> — if / else if / else, letting your program choose between multiple reactions.</li><li>💡 <strong>Outputs</strong> — controlling LEDs and a buzzer to communicate a decision.</li><li>🔁 <strong>Loops</strong> — running the same logic continuously, the way a real system never really \"finishes.\"</li></ul><p>You built something that senses, thinks, and reacts — you're thinking like an engineer now. 🚀</p>"
         },
-        "sim": {
-            "label": "🎮 Try It",
-            "type": "sim",
-            "sim_config": {
-                "mode": "interpreted",
-                "components": [
-                    {"type": "sonar",  "id": "sonar1",    "label": "Distance Sensor", "pin_trig": 9, "pin_echo": 10},
-                    {"type": "led",    "id": "greenLED",  "color": "green",  "pin": 4, "label": "Safe"},
-                    {"type": "led",    "id": "yellowLED", "color": "yellow", "pin": 5, "label": "Warning"},
-                    {"type": "led",    "id": "redLED",    "color": "red",    "pin": 6, "label": "Danger"},
-                    {"type": "buzzer", "id": "buz1",                         "pin": 3, "label": "Buzzer"},
-                ]
-            }
-        }
+        "sim": {"label": "🎮 Try It", "type": "sim", "sim_config": SIM_FULL}
     }
- }
+}
+
     ]
   }
 }
 
-SKETCH_PRESET = {   
-        'sketch': """
+SKETCH_PRESET = {
+    'sketch': """
 //>> Step 1 - Define Global Variables | guided | blocks | filter:true
 
 //?? Define trigPin
@@ -500,7 +533,23 @@ void setup() {
 void loop() {
 }
 
-//>> Step 3 - Prepare Sensor | guided
+//>> Step 3 - Light It Up | guided
+
+void loop() {
+  //?? Turn green LED ON
+  digitalWrite(greenLED, HIGH);
+
+  //?? Turn yellow LED ON
+  digitalWrite(yellowLED, HIGH);
+
+  //?? Turn red LED ON
+  digitalWrite(redLED, HIGH);
+
+  //?? Turn buzzer ON (1000 Hz)
+  tone(buzzerPin, 1000);
+}
+
+//>> Step 4 - Prepare Sensor | guided
 
 void loop() {
   //?? Set trigPin LOW
@@ -508,9 +557,14 @@ void loop() {
 
   //?? Small delay
   delayMicroseconds(2);
+
+  //## digitalWrite(greenLED, HIGH);
+  //## digitalWrite(yellowLED, HIGH);
+  //## digitalWrite(redLED, HIGH);
+  //## tone(buzzerPin, 1000);
 }
 
-//>> Step 4 - Send Pulse | guided
+//>> Step 5 - Send Pulse | guided
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -524,9 +578,14 @@ void loop() {
 
   //?? Set trigPin LOW
   digitalWrite(trigPin, LOW);
+
+  //## digitalWrite(greenLED, HIGH);
+  //## digitalWrite(yellowLED, HIGH);
+  //## digitalWrite(redLED, HIGH);
+  //## tone(buzzerPin, 1000);
 }
 
-//>> Step 5 - Read Echo | free
+//>> Step 6 - Read Echo | free
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -537,9 +596,14 @@ void loop() {
 
   //## Read duration from echoPin
   duration = pulseIn(echoPin, HIGH);
+
+  //## digitalWrite(greenLED, HIGH);
+  //## digitalWrite(yellowLED, HIGH);
+  //## digitalWrite(redLED, HIGH);
+  //## tone(buzzerPin, 1000);
 }
 
-//>> Step 6 - Calculate Distance | guided | blocks | filter:true
+//>> Step 7 - Calculate Distance | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -557,9 +621,14 @@ void loop() {
   else {
     //## distance = duration * 0.034 / 2;
   }
+
+  //## digitalWrite(greenLED, HIGH);
+  //## digitalWrite(yellowLED, HIGH);
+  //## digitalWrite(redLED, HIGH);
+  //## tone(buzzerPin, 1000);
 }
 
-//>> Step 7 - Safe Zone Check | guided | blocks | filter:true
+//>> Step 8 - Safe Zone Check | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -578,9 +647,14 @@ void loop() {
   //?? If distance > 50
   if (distance > 50) {
   }
+
+  //## digitalWrite(greenLED, HIGH);
+  //## digitalWrite(yellowLED, HIGH);
+  //## digitalWrite(redLED, HIGH);
+  //## tone(buzzerPin, 1000);
 }
 
-//>> Step 8 - Safe Zone Output | guided
+//>> Step 9 - Make Safe Mean Only Green | guided
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -600,8 +674,7 @@ void loop() {
   //?? Turn buzzer OFF
   noTone(buzzerPin);
 
-  //?? Turn green LED ON
-  digitalWrite(greenLED, HIGH);
+  //## digitalWrite(greenLED, HIGH);
 
   //?? Turn yellow LED OFF
   digitalWrite(yellowLED, LOW);
@@ -612,7 +685,7 @@ void loop() {
   //## }
 }
 
-//>> Step 9 - Warning Zone Check | guided | blocks | filter:true
+//>> Step 10 - Warning Zone Check | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -639,7 +712,7 @@ void loop() {
   }
 }
 
-//>> Step 10 - Warning Zone Output | guided | filter:true
+//>> Step 11 - Warning Zone Output | guided | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -686,7 +759,7 @@ void loop() {
   //## }
 }
 
-//>> Step 11 - Danger Zone | guided | blocks | filter:true
+//>> Step 12 - Danger Zone | guided | blocks | filter:true
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -734,7 +807,7 @@ void loop() {
   }
 }
 
-//>> Step 12 - Loop Delay | guided
+//>> Step 13 - Loop Delay | guided
 
 void loop() {
   //## digitalWrite(trigPin, LOW);
@@ -775,7 +848,7 @@ void loop() {
   delay(50);
 }
 
-//>> Step 13 - Complete System | open
+//>> Step 14 - Mission Complete | open
 
 void loop() {
   //## digitalWrite(trigPin, LOW);

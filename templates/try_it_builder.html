@@ -5,7 +5,7 @@
 <title>Arduino Web IDE</title>
 
 <!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/drawer.css">
 
 <style>
@@ -182,22 +182,22 @@
     <button id="next-step-btn" style="opacity:0.5; pointer-events:none; margin-right: 30px;">Complete Step</button>
   </div>
 
-  <div id="workspace">
+  <div id="workspace" style="position:relative;">
     <div id="blocks-view"></div>
     <div id="editor-view" style="display: none;">
       <div id="editor"></div>
     </div>
-  </div>
 
-  <!-- GLOBAL DRAWER -->
-  <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
-    <div id="drawer-inner">
-      <div class="drawer-title">Info</div>
-      <div class="drawer-tabs"></div>
-      <div class="drawer-tab-panels"></div>
+    <!-- GLOBAL DRAWER -->
+    <div id="drawer-panel" {% if drawer_steps %}class="open"{% endif %}>
+      <div id="drawer-inner">
+        <div class="drawer-title">Info</div>
+        <div class="drawer-tabs"></div>
+        <div class="drawer-tab-panels"></div>
+      </div>
     </div>
+    <div id="drawer-tab"><span>📖 Info</span></div>
   </div>
-  <div id="drawer-tab"><span>📖 Info</span></div>
 </div>
 
 <script>

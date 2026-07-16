@@ -37,7 +37,10 @@
     }
 
     var def = BB.BLOCKS[block.type];
-    var fallback = (def.inputs[slotIdx] && def.inputs[slotIdx].fallback) || '0';
+    // '' is a valid explicit fallback (blank placeholder) - only unset (undefined)
+    // falls through to '0', so a falsy-but-intentional '' isn't clobbered by ||.
+    var defFallback = def.inputs[slotIdx] && def.inputs[slotIdx].fallback;
+    var fallback = typeof defFallback === 'string' ? defFallback : '0';
     function getFlat() { return (exNode && exNode.type === 'value') ? (exNode.params[0] || '') : ''; }
     function setFlat(v) { block.exChildren[slotIdx] = v === '' ? null : { type: 'value', params: [v], children: [] }; }
 
@@ -205,7 +208,8 @@
       }
       wrap.appendChild(drop);
     }
-    ei.addEventListener('click', function (e) { e.stopPropagation(); });
+    ei.addEventListener('click', function (e) { e.stopPropagation(); if (!drop) openDrop(''); });
+    ei.addEventListener('focus', function () { if (!drop) openDrop(''); });
     ei.addEventListener('input', function (e) {
       e.stopPropagation();
       setVal(e.target.value); window.genCode();
@@ -305,8 +309,8 @@
         ));
       } else {
         var ei = document.createElement('input'); ei.type = inp.t === 'number' ? 'number' : 'text';
-        ei.className = 'expr-input'; ei.value = exNode.params[ji] || '';
-        ei.style.width = (inp.t === 'number' ? '48px' : '60px');
+        ei.className = 'expr-input ' + (inp.t === 'number' ? 'expr-input-num' : 'expr-input-text');
+        ei.value = exNode.params[ji] || '';
         ei.addEventListener('click', function (e) { e.stopPropagation(); });
         ei.addEventListener('input', function (e) { e.stopPropagation(); exNode.params[ji] = e.target.value; window.genCode(); });
         chip.appendChild(ei);
@@ -755,6 +759,17 @@
   }
   BB.renderSlot = renderSlot;
 
+  // Reordering only makes sense when the student is free to build their own
+  // sequence - in guided/full steps each phantom slot already has one fixed
+  // correct position, so hide the move buttons rather than let a student drag
+  // a placed block away from the spot the step expects it. Same guidance check
+  // already used to gate insertion (canInsert) and body selection (canSelect).
+  function stepAllowsReorder() {
+    var step = BB.PROGRESSION_MODE && BB.STEPS ? BB.STEPS[BB.CURRENT_STEP] : null;
+    var guidance = step && step.config ? step.config.guidance : 'open';
+    return !BB.PROGRESSION_MODE || guidance === 'open' || guidance === 'verify';
+  }
+
   function renderActionBlock(block, idx, parentArr) {
     var d = document.createElement('div');
     var def = BB.B[block.type];
@@ -769,20 +784,26 @@
       if (block.parser_error) d.classList.add('parser-error');
       var code = document.createElement('span'); code.className = 'codeblock-code';
       code.textContent = block.params[0] || ''; d.appendChild(code);
-      function mkb2(ic, fn) {
-        var bt = document.createElement('button'); bt.className = 'act'; bt.textContent = ic;
-        bt.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return bt;
+      if (block.locked) {
+        var lockBadge = document.createElement('span'); lockBadge.className = 'lock-badge'; lockBadge.textContent = 'locked';
+        d.appendChild(lockBadge);
       }
-      d.appendChild(mkb2('\u2191', function () { if (idx > 0) { var t = parentArr[idx - 1]; parentArr[idx - 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
-      d.appendChild(mkb2('\u2193', function () { if (idx < parentArr.length - 1) { var t = parentArr[idx + 1]; parentArr[idx + 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
-      d.appendChild(mkb2('\u00D7', function () { parentArr.splice(idx, 1); render(); }));
+      // A locked block is cumulative code carried in from an earlier guided
+      // step - deletable only once the student is past guided/full steps
+      // (same stepAllowsReorder() gate already used for reordering), so the
+      // "locked" badge above never sits next to a delete button that
+      // contradicts it mid-tutorial.
+      if (!BB.READONLY_MODE && (!block.locked || stepAllowsReorder())) {
+        if (!block.locked && stepAllowsReorder()) {
+          d.appendChild(mkact('\u2191', function () { if (idx > 0) { var t = parentArr[idx - 1]; parentArr[idx - 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
+          d.appendChild(mkact('\u2193', function () { if (idx < parentArr.length - 1) { var t = parentArr[idx + 1]; parentArr[idx + 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
+        }
+        d.appendChild(mkact('\u00D7', function () { parentArr.splice(idx, 1); render(); window.genCode(); }));
+      }
       return d;
     }
     var nm = document.createElement('span'); nm.className = 'blk-name'; nm.textContent = block.type; d.appendChild(nm);
     var bdepth = braceDepth(parentArr, idx); if (bdepth > 0) d.style.marginLeft = (bdepth * 18) + 'px';
-
-    var actualParentArr = parentArr;
-    var actualIdx = idx;
 
     def.inputs.forEach(function (inp, j) {
       if (inp.t === 'expr') {
@@ -820,7 +841,8 @@
             }
             wrap.appendChild(drop);
           }
-          ei.addEventListener('click', function (e) { e.stopPropagation(); });
+          ei.addEventListener('click', function (e) { e.stopPropagation(); if (!drop) openDrop(''); });
+          ei.addEventListener('focus', function () { if (!drop) openDrop(''); });
           ei.addEventListener('input', function (e) {
             e.stopPropagation();
             block.params[capturedJ] = e.target.value; window.genCode();
@@ -864,23 +886,19 @@
       f.appendChild(el); d.appendChild(f);
     });
 
-    function mkb(ic, fn) {
-      var bt = document.createElement('button'); bt.className = 'act'; bt.textContent = ic;
-      bt.addEventListener('click', function (e) { e.stopPropagation(); fn(actualParentArr, actualIdx); }); return bt;
-    }
-
-    var isLockedCodeblock = block.type === 'codeblock' && block.locked;
-    if (!BB.READONLY_MODE && !isLockedCodeblock) {
-      d.appendChild(mkb('\u2191', function (arr, i) { if (i > 0) { var t = arr[i - 1]; arr[i - 1] = arr[i]; arr[i] = t; render(); } }, parentArr, idx));
-      d.appendChild(mkb('\u2193', function (arr, i) { if (i < arr.length - 1) { var t = arr[i + 1]; arr[i + 1] = arr[i]; arr[i] = t; render(); } }, parentArr, idx));
-      d.appendChild(mkb('\u00D7', function (arr, i) {
-        if (arr[i].type === 'slot') {
-          arr[i].content = null;
+    if (!BB.READONLY_MODE) {
+      if (stepAllowsReorder()) {
+        d.appendChild(mkact('\u2191', function () { if (idx > 0) { var t = parentArr[idx - 1]; parentArr[idx - 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
+        d.appendChild(mkact('\u2193', function () { if (idx < parentArr.length - 1) { var t = parentArr[idx + 1]; parentArr[idx + 1] = parentArr[idx]; parentArr[idx] = t; render(); } }));
+      }
+      d.appendChild(mkact('\u00D7', function () {
+        if (parentArr[idx].type === 'slot') {
+          parentArr[idx].content = null;
         } else {
-          arr.splice(i, 1);
+          parentArr.splice(idx, 1);
         }
-        render(); BB.checkStepComplete();
-      }, parentArr, idx));
+        render(); BB.checkStepComplete(); window.genCode();
+      }));
     }
     return d;
   }
@@ -903,7 +921,7 @@
         } else {
           parentArr.splice(idx, 1);
         }
-        if (BB.sel && (BB.sel.targetArr === block.ifbody || isDescendant(block, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete();
+        if (BB.sel && (BB.sel.targetArr === block.ifbody || isDescendant(block, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
     wrap.appendChild(hdr);
@@ -914,7 +932,7 @@
       var eiHdr = document.createElement('div'); eiHdr.className = 'elseif-header';
       eiHdr.appendChild(kw('else if (')); appendCondFields(eiHdr, ei.condition); eiHdr.appendChild(kw(')'));
       if (!BB.READONLY_MODE) {
-        eiHdr.appendChild(mkact('\u00D7', function () { block.elseifs.splice(eiIdx, 1); render(); }));
+        eiHdr.appendChild(mkact('\u00D7', function () { block.elseifs.splice(eiIdx, 1); render(); window.genCode(); }));
       }
       wrap.appendChild(eiHdr);
       var eiPathStr = parentPathStr + ' \u2192 else if';
@@ -925,7 +943,7 @@
       var elHdr = document.createElement('div'); elHdr.className = 'else-header';
       elHdr.appendChild(kw('else'));
       if (!BB.READONLY_MODE) {
-        elHdr.appendChild(mkact('\u00D7', function () { block.elsebody = null; render(); }));
+        elHdr.appendChild(mkact('\u00D7', function () { block.elsebody = null; render(); window.genCode(); }));
       }
       wrap.appendChild(elHdr);
       wrap.appendChild(makeBodyZone(block.elsebody, section, parentPathStr + ' \u2192 else', true, anc));
@@ -947,7 +965,7 @@
         if (parentArr[idx] && parentArr[idx].type === 'slot') { parentArr[idx].content = null; }
         else { parentArr.splice(idx, 1); }
         if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render();
-        BB.checkStepComplete();
+        BB.checkStepComplete(); window.genCode();
       }));
     }
     wrap.appendChild(hdr);
@@ -968,7 +986,7 @@
         if (parentArr[idx] && parentArr[idx].type === 'slot') { parentArr[idx].content = null; }
         else { parentArr.splice(idx, 1); }
         if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render();
-        BB.checkStepComplete();
+        BB.checkStepComplete(); window.genCode();
       }));
     }
     wrap.appendChild(hdr);
@@ -981,7 +999,6 @@
     var wrap = document.createElement('div'); wrap.className = 'for-block';
     wrap.setAttribute('data-id', block.id);
     var hdr = document.createElement('div'); hdr.className = 'for-header';
-    hdr.appendChild(kw('for ('));
     var fkw = document.createElement('span'); fkw.className = 'for-keyword'; fkw.textContent = 'for ('; hdr.appendChild(fkw);
     if (!block.forinit && block.forinit !== '') block.forinit = 'int i = 0';
     if (!block.forcond && block.forcond !== '') block.forcond = 'i < 10';
@@ -989,8 +1006,8 @@
     var keys = ['forinit', 'forcond', 'forincr'], labels = ['init', 'cond', 'incr'], phs = ['int i=0', 'i<10', 'i++'];
     for (var fi = 0; fi < 3; fi++) {
       (function (ki, la, ph) {
-        var fw = document.createElement('div'); fw.style.cssText = 'display:flex;flex-direction:column;font-size:8px;';
-        var fl = document.createElement('label'); fl.textContent = la; fl.style.color = '#57606a'; fw.appendChild(fl);
+        var fw = document.createElement('div'); fw.className = 'cond-field';
+        var fl = document.createElement('label'); fl.textContent = la; fw.appendChild(fl);
         var fe = document.createElement('input'); fe.type = 'text'; fe.className = 'cond-input'; fe.value = block[ki] || '';
         fe.placeholder = ph;
         fe.addEventListener('click', function (e) { e.stopPropagation(); });
@@ -1007,7 +1024,7 @@
         } else {
           parentArr.splice(idx, 1);
         }
-        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete();
+        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
     wrap.appendChild(hdr);
@@ -1031,7 +1048,7 @@
       }
     });
     wrap.appendChild(bz);
-    var cz = document.createElement('div'); cz.style.cssText = 'border-left:1px dashed #2e7d32;border-right:1px dashed #2e7d32;border-bottom:1px dashed #2e7d32;border-radius:0 0 5px 5px;padding:2px 6px;font-size:10px;color:#2e7d32;';
+    var cz = document.createElement('div'); cz.className = 'for-close';
     cz.textContent = '} // end for'; wrap.appendChild(cz);
     return wrap;
   }
@@ -1052,7 +1069,7 @@
         } else {
           parentArr.splice(idx, 1);
         }
-        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete();
+        if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
     wrap.appendChild(hdr);
@@ -1076,7 +1093,7 @@
       }
     });
     wrap.appendChild(bz);
-    var cz = document.createElement('div'); cz.style.cssText = 'border-left:1px dashed #6a1b9a;border-right:1px dashed #6a1b9a;border-bottom:1px dashed #6a1b9a;border-radius:0 0 5px 5px;padding:2px 6px;font-size:10px;color:#6a1b9a;';
+    var cz = document.createElement('div'); cz.className = 'while-close';
     cz.textContent = '} // end while'; wrap.appendChild(cz);
     return wrap;
   }
@@ -1152,7 +1169,8 @@
   BB.kw = kw;
 
   function mkact(text, fn) {
-    var b = document.createElement('button'); b.className = 'act'; b.textContent = text;
+    var b = document.createElement('button'); b.className = 'act' + (text === '×' ? ' act-danger' : '');
+    b.textContent = text;
     b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
   }
   BB.mkact = mkact;
@@ -1189,7 +1207,8 @@
       }
       wrap.appendChild(drop);
     }
-    ei.addEventListener('click', function (e) { e.stopPropagation(); });
+    ei.addEventListener('click', function (e) { e.stopPropagation(); if (!drop) openDrop(''); });
+    ei.addEventListener('focus', function () { if (!drop) openDrop(''); });
     ei.addEventListener('input', function (e) {
       e.stopPropagation();
       cond[key] = e.target.value; window.genCode();
