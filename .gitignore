@@ -25,10 +25,11 @@ instance/
 lesson_spec.json
 banner_spec.json
 
-# Temp planning and output files
-direction_shift.md
-routing_plan.md
+# Planning docs — working notes, not shipped code
+plans/
+finished_plans/
 my_output.json
+TODO.md
 
 .agent
 
@@ -41,3 +42,11 @@ movie2-capture/
 # Subagent-driven-development scratch (progress ledger, task briefs/reports)
 .superpowers/
 .gstack/
+docs/
+
+# One-off planning/audit artifacts — working notes, not shipped code
+circuit_prompt.md
+security-audit-2026-06.md
+security-audit-completion-log.md
+SIM_ENGINE_ROLLOUT_SPEC.md
+SIM_ENGINE_ROLLOUT_PLAN.md
