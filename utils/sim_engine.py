@@ -619,9 +619,11 @@ _DEFAULTS_BY_TYPE = {
 
 # Soft cap on a single loop() pass's accumulated delay() time, so a
 # pathological sketch (many/huge delay() calls) can't produce an unbounded
-# pin_sequences timeline. Real projects' delay-paced branches (eight, twelve)
-# top out around 300-450ms per pass.
-_MAX_LOOP_MS = 4000
+# pin_sequences timeline. Raised from 4000 to fit project_twelve's redesigned
+# counter chase (three sequential 1500ms delays = 4500ms in the pass where
+# the red light fires) — 4000 was silently truncating that pass's last
+# delay by 500ms, cutting the final light's on-phase short with no error.
+_MAX_LOOP_MS = 6000
 
 
 class _Env:

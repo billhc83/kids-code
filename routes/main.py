@@ -10,7 +10,7 @@ from utils.activity import log_activity
 from utils.lessons import LESSONS, LESSON_BY_KEY, count_unique_projects, TOTAL_PROJECTS
 from utils.auth import mark_first_login_complete
 from utils.demo_circuit import LED_DEMO_CIRCUIT
-from extensions import limiter
+from extensions import limiter, csrf
 import requests as http_requests
 from config import RESEND_API_KEY
 
@@ -68,6 +68,7 @@ def welcome_complete():
     return jsonify({"ok": True})
 
 @main_bp.route("/api/log-activity", methods=["POST"])
+@csrf.exempt
 @login_required
 def log_activity_route():
     data = request.get_json()

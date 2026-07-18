@@ -1,5 +1,11 @@
 # KidsCode — Project Context for Claude
 
+## Planning docs
+
+Standalone planning/assessment docs (not lesson skills, not audits) live in `plans/`
+while still open, and move to `finished_plans/` once every item in them is done.
+Write new plans directly into `plans/`.
+
 ## What This Is
 A Flask-based platform that teaches kids (ages 8–14) Arduino programming through themed, story-driven lessons. Each lesson has a physical circuit-building guide, an in-browser block builder IDE, and rich educational drawer content.
 

@@ -27,6 +27,7 @@ RETRIEVAL_K    = 5
 HIGH_THRESHOLD = 0.55  # DIRECT tier: confident enough to answer without the LLM
 DIRECT_MARGIN  = 0.08  # top match must clearly beat the runner-up, not just clear the threshold
 LOW_THRESHOLD  = 0.40  # RAG tier: inject as reference context, still let the LLM phrase the answer
+RAG_CHUNK_MARGIN = 0.10  # in RAG tier, only pass chunks within this of top1 — don't hand the LLM the full overfetched top-k
 
 
 def _user_key():
@@ -165,7 +166,7 @@ def help_chat():
                     direct_chunk = by_sim[0]
                 elif top1 >= LOW_THRESHOLD:
                     tier = "rag"
-                    rag_chunks = retrieved
+                    rag_chunks = [r for r in by_sim if (top1 - r.similarity) <= RAG_CHUNK_MARGIN]
         # else: embedding call failed/timed out — fall through to LEGACY silently.
 
     # ---- DIRECT: no LLM call at all, guaranteed success ------------------

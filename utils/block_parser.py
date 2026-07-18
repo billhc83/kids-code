@@ -614,6 +614,32 @@ def collect_types(blocks):
     return types
 
 
+def _contains_phantom_slot(blocks):
+    """
+    Whether any phantom slot exists in `blocks`, recursing into nested
+    if/else/loop bodies. Checks slot *presence*, not `content is None` —
+    a slot always carries phantom_meta regardless of fill mode, so this
+    correctly detects phantoms even when fill_values/fill:true pre-fills
+    their content (see parse_steps' active-section comment for why that
+    distinction matters).
+    """
+    for b in blocks:
+        if b['type'] == 'slot':
+            return True
+        if b['type'] == 'ifblock':
+            if _contains_phantom_slot(b.get('ifbody', [])):
+                return True
+            for ei in b.get('elseifs', []):
+                if _contains_phantom_slot(ei.get('body', [])):
+                    return True
+            if b.get('elsebody') and _contains_phantom_slot(b['elsebody']):
+                return True
+        elif b['type'] in ('forloop', 'whileloop'):
+            if _contains_phantom_slot(b.get('body', [])):
+                return True
+    return False
+
+
 def parse_steps(sketch_code):
     """
     Parse a multi-step progression sketch into a list of steps.
@@ -789,13 +815,23 @@ def parse_steps(sketch_code):
         else:
             step['palette'] = None
 
-        # Determine active section based on where new blocks (phantoms) are located
+        # Determine active section based on where new blocks (phantoms) are located.
+        # A slot always carries phantom_meta regardless of fill mode — checking
+        # `content is None` only finds phantoms when fill_values/fill:true is off,
+        # so any 'free'/'full' step (fill forced True) or any 'guided' step with
+        # an explicit fill:true override would never match here and always fall
+        # through to the `parsed['setup']` fallback below. Since the accumulation
+        # rule requires every step's setup/loop chunk to fully re-list prior
+        # locked code, that fallback is non-empty on almost every step — pinning
+        # the workspace/drawer to 'setup' regardless of where the new phantom
+        # actually is. Checking for slot presence (not content) is fill-mode
+        # agnostic and fixes this.
         active_section = 'loop'
-        if any(b['type'] == 'slot' and b['content'] is None for b in parsed['global']):
+        if _contains_phantom_slot(parsed['global']):
             active_section = 'global'
-        elif any(b['type'] == 'slot' and b['content'] is None for b in parsed['setup']):
+        elif _contains_phantom_slot(parsed['setup']):
             active_section = 'setup'
-        elif any(b['type'] == 'slot' and b['content'] is None for b in parsed['loop']):
+        elif _contains_phantom_slot(parsed['loop']):
             active_section = 'loop'
         elif parsed['setup']:
             active_section = 'setup'

@@ -351,6 +351,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
 <!-- Sim Engine -->
 <script src="/static/js/sim-engine.js"></script>
+<!-- Circuit Renderer -->
+<script src="/static/js/circuit_renderer.js"></script>
 </head>
 
 <body>
@@ -445,10 +447,34 @@ let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
 
 function switchTab(btn, panelId) {
   const inner = document.getElementById('drawer-inner');
+
+  // Leaving a sim tab: stop it (see the pairing comment on simDiv._simInit
+  // above) and re-arm it as pending so clicking back in starts it fresh
+  // rather than resuming whatever state it was in.
+  const leavingPanel = inner.querySelector('.drawer-tab-panel.active');
+  if (leavingPanel && leavingPanel.id !== panelId) {
+    Array.from(leavingPanel.children).forEach(el => {
+      if (el._simCleanup) {
+        try { el._simCleanup(); } catch (e) { console.error('Sim cleanup error:', e); }
+      }
+      if (el._simInit) {
+        el.innerHTML = '';
+        el.dataset.simPending = 'true';
+      }
+    });
+  }
+
   inner.querySelectorAll('.drawer-tab-btn').forEach(b => b.classList.remove('active'));
   inner.querySelectorAll('.drawer-tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById(panelId).classList.add('active');
+  const newPanel = document.getElementById(panelId);
+  newPanel.classList.add('active');
+
+  // Entering a sim tab that hasn't started yet: start it now.
+  Array.from(newPanel.children).forEach(el => {
+    if (el.dataset && el.dataset.simPending && el._simInit) el._simInit();
+  });
+
   const pansC = inner.querySelector('.drawer-tab-panels');
   if (pansC) pansC.scrollTop = 0;
 }
@@ -539,17 +565,56 @@ window.updateDrawer = function(stepIdx) {
       p.appendChild(simDiv);
       pansC.appendChild(p);
       const cfg = tab.sim_config;
-      setTimeout(() => {
+      /* Lazy start/stop (see switchTab()): a sim tab used to init the
+         instant its drawer step loaded, whether or not the student ever
+         actually opened it, then kept running (award_simulator_badge()
+         hits Supabase on every poll) until the step itself changed — a
+         browser tab left sitting on a "Try It" panel for hours polled the
+         whole time for nothing. _simInit is only called when this tab is
+         actually clicked into view; switchTab() calls _simCleanup() and
+         re-arms simPending the moment the student clicks elsewhere, so the
+         sim is only ever live while its own tab is the one on screen. */
+      simDiv.dataset.simPending = 'true';
+      simDiv._simInit = () => {
         if (!window.SimEngine) return;
         if (cfg.mode === 'code_driven') {
           SimEngine.initCodeDriven(simDiv, cfg);
         } else if (cfg.mode === 'interpreted') {
           SimEngine.initInterpreted(simDiv, cfg);
         }
-      }, 0);
+        delete simDiv.dataset.simPending;
+      };
+      if (i === 0) setTimeout(() => simDiv._simInit(), 0);  // already visible by default — start immediately
     } else {
-      p.innerHTML = `<p>${tab.content || ''}</p>` + (tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : ''));
-      pansC.appendChild(p);
+      p.innerHTML = `<p>${tab.content || ''}</p>`;
+      if (tab.circuit_definition) {
+        const circuitWrap = document.createElement('div');
+        circuitWrap.className = 'circuit-zoom-wrap';
+        circuitWrap.style.cssText = 'margin-top:8px;border-radius:8px;';
+        const circuitDiv = document.createElement('div');
+        circuitDiv.id = `dtab-${k}-circuit`;
+        circuitDiv.style.cssText = 'background:#f8f5e8;border-radius:8px;padding:12px;';
+        circuitWrap.appendChild(circuitDiv);
+        p.appendChild(circuitWrap);
+        pansC.appendChild(p);
+        circuitWrap.addEventListener('mousemove', (e) => {
+          const rect = circuitWrap.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          circuitDiv.style.transformOrigin = x + '% ' + y + '%';
+        });
+        circuitWrap.addEventListener('mouseleave', () => {
+          circuitDiv.style.transformOrigin = 'center center';
+        });
+        setTimeout(() => {
+          if (typeof CircuitRenderer !== 'undefined') {
+            new CircuitRenderer(tab.circuit_definition, circuitDiv.id).render();
+          }
+        }, 0);
+      } else {
+        p.innerHTML += tab.image_b64 ? `<img src="${tab.image_b64}">` : (tab.image ? `<img src="${tab.image}">` : '');
+        pansC.appendChild(p);
+      }
     }
   });
 };

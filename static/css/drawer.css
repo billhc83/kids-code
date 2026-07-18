@@ -106,6 +106,19 @@
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
 }
 
+/* Mouseover zoom on in-drawer circuit diagrams (SVG rendered by CircuitRenderer).
+   Scaling the child rather than the wrapper keeps overflow:hidden clipping to the
+   diagram's own footprint instead of spilling into surrounding drawer content. */
+.circuit-zoom-wrap { overflow: hidden; position: relative; }
+.circuit-zoom-wrap > div {
+  transition: transform 0.15s ease-out;
+  transform-origin: center center;
+}
+.circuit-zoom-wrap:hover > div {
+  transform: scale(2.2);
+  cursor: crosshair;
+}
+
 /* Optional badge convention for paired distinctions (e.g. input/output).
    Opt-in per project — see /lesson-drawer-audit. */
 .drawer-tab-panel .badge {
