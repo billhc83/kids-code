@@ -14,6 +14,7 @@ from routes.lessons import lessons_bp
 from routes.admin import admin_bp
 from routes.parent import parent_bp
 from routes.teacher import teacher_bp
+from routes.teacher_authoring import teacher_authoring_bp
 from routes.onboarding import onboarding_bp
 from routes.builder import builder_bp
 from routes.main import main_bp
@@ -49,6 +50,7 @@ app.register_blueprint(lessons_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(parent_bp)
 app.register_blueprint(teacher_bp)
+app.register_blueprint(teacher_authoring_bp)
 app.register_blueprint(onboarding_bp)
 app.register_blueprint(builder_bp)
 app.register_blueprint(main_bp)

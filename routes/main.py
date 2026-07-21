@@ -9,6 +9,7 @@ from utils.error_reporting import notify_discord_error_report
 from utils.activity import log_activity
 from utils.lessons import LESSONS, LESSON_BY_KEY, count_unique_projects, TOTAL_PROJECTS
 from utils.auth import mark_first_login_complete
+from utils.classes import is_class_enrolled, get_assignment_queue_for_student
 from utils.demo_circuit import LED_DEMO_CIRCUIT
 from extensions import limiter, csrf
 import requests as http_requests
@@ -34,6 +35,22 @@ def index():
 @main_bp.route("/dashboard")
 @login_required
 def dashboard():
+    # Class-enrolled students get an assignment queue instead of the fixed
+    # LESSON_SEQUENCE progression view (plan §2/#1) — distinct dashboard,
+    # not a variant of this one.
+    if is_class_enrolled(session["user_id"]):
+        completed = get_completed_lessons(session["user_id"])
+        queue = get_assignment_queue_for_student(session["user_id"])
+        for item in queue:
+            lesson_data = LESSON_BY_KEY.get(item["project_key"])
+            item["title"] = lesson_data["title"] if lesson_data else item["project_key"]
+            item["completed"] = item["project_key"] in completed
+        return render_template(
+            "student_queue.html",
+            queue=queue,
+            show_welcome=session.get("show_welcome", False),
+        )
+
     completed = get_completed_lessons(session["user_id"])
     user_badges = get_user_badges(session["user_id"])
     unlocked = get_user_progression(session["user_id"])

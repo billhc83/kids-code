@@ -1,6 +1,7 @@
 from flask import Blueprint, request, session, render_template, redirect, url_for, flash, abort
 from utils.decorators import login_required
 from utils.progression import complete_lesson, is_unlocked, get_completed_lessons
+from utils.classes import get_assignment_keys_for_student
 from utils.badges import check_and_award_badges
 from utils.lessons import get_lesson
 from utils.project_registry import PROJECTS
@@ -43,8 +44,14 @@ def lesson(lesson_key):
         abort(404)
 
     if not is_unlocked(session["user_id"], lesson_key):
-        flash("Complete the previous project to unlock this one")
-        return redirect(url_for("main.dashboard"))
+        # A teacher-pushed assignment is visible even when it isn't next in
+        # the fixed LESSON_SEQUENCE — school students don't walk that
+        # sequence at all (plan §2/#1). Only queried once sequence-unlock
+        # already said no, so individual/parent students' common case is
+        # unaffected.
+        if lesson_key not in get_assignment_keys_for_student(session["user_id"]):
+            flash("Complete the previous project to unlock this one")
+            return redirect(url_for("main.dashboard"))
 
     extra = {}
     import re
