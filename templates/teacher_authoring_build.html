@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ project.project_key }} — Build — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <p><a href="{{ url_for('teacher_authoring.project_list') }}">&larr; Back to My Authored Projects</a></p>
+        <h1>🛠️ {{ project.draft_data.meta.title if project.draft_data.meta else project.project_key }}</h1>
+        <p class="dash-sub">
+            Bare-minimum draft editor — paste a JSON array of step drafts.
+            See <code>utils/teacher_authoring_serializer.py</code> for the exact shape
+            (<code>LeafNode</code>/<code>CompoundNode</code>/<code>ElseifClause</code>/<code>ElseClause</code>).
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="flash-msg error">{{ error }}</div>
+    {% endif %}
+
+    <div class="dash-card">
+        <div class="dash-card-label">📝 Steps (JSON)</div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="steps_json" rows="24" style="width:100%;font-family:monospace;font-size:13px;">{{ steps_json }}</textarea>
+            <button type="submit" class="next-btn" style="margin-top:12px;">Save Draft</button>
+        </form>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-label">🔍 Try it</div>
+        <p><a href="{{ url_for('teacher_authoring.preview', project_id=project.id) }}" target="_blank">Preview in the real block builder &rarr;</a></p>
+        <p><a href="{{ url_for('teacher_authoring.drawer', project_id=project.id) }}">Edit drawer content &rarr;</a></p>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-label">🚀 Publish</div>
+        <p style="font-size:12px;color:#57606a;">
+            Validates the draft (materializes the sketch, round-trips it through the real parser,
+            checks drawer/step count parity) and freezes a <code>published_data</code> snapshot.
+        </p>
+        <form method="POST" action="{{ url_for('teacher_authoring.publish_project', project_id=project.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="next-btn">Publish</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

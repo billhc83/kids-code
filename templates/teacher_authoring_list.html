@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My Authored Projects — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <p><a href="{{ url_for('teacher.teacher_dashboard') }}">&larr; Back to Class Dashboard</a></p>
+        <h1>🛠️ My Authored Projects</h1>
+        <p class="dash-sub">Build your own lessons on top of an existing circuit.</p>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-label">📚 Projects ({{ projects|length }})</div>
+        {% if projects %}
+        <ul>
+            {% for p in projects %}
+            <li>
+                <a href="{{ url_for('teacher_authoring.build', project_id=p.id) }}">
+                    {{ p.draft_data.meta.title if p.draft_data.meta else p.project_key }}
+                </a>
+                — <code>{{ p.project_key }}</code> — {{ p.status }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">No authored projects yet.</p>
+        {% endif %}
+        <p style="margin-top:16px;">
+            <a href="{{ url_for('teacher_authoring.new_project') }}" class="next-btn">➕ New Project</a>
+        </p>
+    </div>
+
+</div>
+{% endblock %}

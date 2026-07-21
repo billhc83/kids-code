@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ cls.name }} — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <p><a href="{{ url_for('teacher.teacher_dashboard') }}">&larr; Back to Class Dashboard</a></p>
+        <h1>🏫 {{ cls.name }}</h1>
+        <p class="dash-sub">Manage this class's roster and push projects.</p>
+    </div>
+
+    {% if error %}
+    <div class="flash-msg error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="flash-msg success">{{ success }}</div>
+    {% endif %}
+
+    <!-- Roster -->
+    <div class="dash-card">
+        <div class="dash-card-label">👨‍💻 Roster ({{ roster|length }})</div>
+
+        {% if roster %}
+        <div class="student-grid">
+            {% for student in roster %}
+            <div class="student-card">
+                <div class="student-header">
+                    <div class="student-avatar">{{ student.username[0].upper() }}</div>
+                    <div>
+                        <div class="student-name">{{ student.username }}</div>
+                    </div>
+                </div>
+                <details class="reset-wrap">
+                    <summary style="color:#cf222e;">Remove from class</summary>
+                    <form method="POST" class="reset-form"
+                          onsubmit="return confirm('Remove {{ student.username }} from {{ cls.name }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="remove_student">
+                        <input type="hidden" name="enrollment_id" value="{{ student.enrollment_id }}">
+                        <button type="submit" class="reset-btn"
+                                style="background:#cf222e;color:#fff;border-color:#cf222e;">
+                            Remove
+                        </button>
+                    </form>
+                </details>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">No students enrolled yet.</p>
+        {% endif %}
+
+        {% if enrollable %}
+        <form method="POST" class="create-student-form" style="margin-top:16px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="enroll_student">
+            <div class="create-fields">
+                <select name="student_id" required>
+                    <option value="" disabled selected>Choose a student to enroll&hellip;</option>
+                    {% for student in enrollable %}
+                    <option value="{{ student.id }}">{{ student.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="next-btn">Enroll</button>
+            </div>
+        </form>
+        {% else %}
+        <p style="font-size:12px;color:#57606a;margin-top:12px;">
+            All of your students are already enrolled in this class.
+            Add more students from the <a href="{{ url_for('teacher.teacher_dashboard') }}">Class Dashboard</a>.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Push assignment -->
+    <div class="dash-card">
+        <div class="dash-card-label">📤 Push a Project</div>
+        <form method="POST" class="create-student-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="push_assignment">
+            <div class="create-fields">
+                <select name="project_key" required>
+                    <option value="" disabled selected>Choose a project&hellip;</option>
+                    {% for l in catalog %}
+                    <option value="{{ l.key }}">{{ l.title }}</option>
+                    {% endfor %}
+                </select>
+                <select name="target" required>
+                    <option value="class">Whole class</option>
+                    {% for student in roster %}
+                    <option value="{{ student.id }}">{{ student.username }} only</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="due_at" placeholder="Due date (optional)">
+                <button type="submit" class="next-btn">Push</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Assignment history -->
+    <div class="dash-card">
+        <div class="dash-card-label">📋 Assigned Projects ({{ assignments|length }})</div>
+        {% if assignments %}
+        <ul>
+            {% for a in assignments %}
+            <li>
+                <strong>{{ a.project_title }}</strong> &mdash;
+                {% if a.assigned_to_type == 'class' %}whole class{% else %}one student{% endif %}
+                {% if a.due_at %}(due {{ a.due_at[:10] }}){% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">Nothing pushed yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

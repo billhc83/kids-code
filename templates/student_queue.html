@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}My Projects — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <h1>🎯 My Projects</h1>
+        <p class="dash-sub">Projects your teacher has assigned you.</p>
+    </div>
+
+    <div class="dash-card">
+        <div class="dash-card-label">📋 Assigned ({{ queue|length }})</div>
+
+        {% if queue %}
+        <div class="student-grid">
+            {% for item in queue %}
+            <a href="{{ url_for('lessons.lesson', lesson_key=item.project_key) }}" class="student-card" style="text-decoration:none;color:inherit;display:block;">
+                <div class="student-header">
+                    <div class="student-avatar">{{ '✅' if item.completed else '🚀' }}</div>
+                    <div>
+                        <div class="student-name">{{ item.title }}</div>
+                    </div>
+                </div>
+                <div class="student-progress">
+                    <div class="progress-label">
+                        {% if item.completed %}
+                        Completed
+                        {% elif item.due_at %}
+                        Due {{ item.due_at[:10] }}
+                        {% else %}
+                        Not started
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">
+            Nothing assigned yet — check back after your teacher pushes your first project!
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

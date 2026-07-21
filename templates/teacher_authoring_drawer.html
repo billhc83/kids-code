@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ project.project_key }} — Drawer — KidsCode{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+
+    <div class="dash-header">
+        <p><a href="{{ url_for('teacher_authoring.build', project_id=project.id) }}">&larr; Back to Build</a></p>
+        <h1>📖 Drawer Content</h1>
+        <p class="dash-sub">
+            One entry per sketch step: <code>{"explain": {"label": "...", "content": "..."}, "howto": {...}, "logic": {...}}</code>.
+            Step count must match the sketch's step count before you can publish.
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="flash-msg error">{{ error }}</div>
+    {% endif %}
+
+    <div class="dash-card">
+        <div class="dash-card-label">📝 Drawer (JSON, keyed by step index as a string)</div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="drawer_json" rows="24" style="width:100%;font-family:monospace;font-size:13px;">{{ drawer_json }}</textarea>
+            <button type="submit" class="next-btn" style="margin-top:12px;">Save Drawer</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -82,6 +82,7 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
     <div class="dash-header">
         <h1>🏫 Class Dashboard</h1>
         <p class="dash-sub">Manage your students' KidsCode accounts.</p>
+        <p><a href="{{ url_for('teacher_authoring.project_list') }}">🛠️ My Authored Projects &rarr;</a></p>
     </div>
 
     {% if error %}
@@ -90,6 +91,44 @@ document.getElementById('welcomeDismiss').addEventListener('click', function() {
     {% if success %}
     <div class="flash-msg success">{{ success }}</div>
     {% endif %}
+
+    <!-- Classes -->
+    <div class="dash-card">
+        <div class="dash-card-label">
+            🏫 My Classes ({{ classes|length }})
+        </div>
+
+        {% if classes %}
+        <div class="student-grid">
+            {% for c in classes %}
+            <a href="{{ url_for('teacher.class_detail', class_id=c.id) }}" class="student-card" style="text-decoration:none;color:inherit;display:block;">
+                <div class="student-header">
+                    <div class="student-avatar">{{ c.name[0].upper() }}</div>
+                    <div>
+                        <div class="student-name">{{ c.name }}</div>
+                    </div>
+                </div>
+                <div class="student-progress">
+                    <div class="progress-label">
+                        {{ c.roster_count }} student{{ 's' if c.roster_count != 1 else '' }} enrolled
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#57606a;font-size:14px;">No classes yet. Create one below.</p>
+        {% endif %}
+
+        <form method="POST" class="create-student-form" style="margin-top:16px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="create_class">
+            <div class="create-fields">
+                <input type="text" name="class_name" placeholder="Class name" required>
+                <button type="submit" class="next-btn">Create Class</button>
+            </div>
+        </form>
+    </div>
 
     <!-- Student cards -->
     <div class="dash-card">
