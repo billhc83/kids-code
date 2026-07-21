@@ -635,7 +635,10 @@ class _Env:
         self.t = 0                # per-pass virtual clock, advanced by delay()
         self.sequence = {}        # {pin: [(t, state), ...]} — write history for this pass
         self.frequencies = {}     # {pin: hz} — last tone() frequency argument per pin
-        self.console = []         # Serial.print/println args, str()'d, in call order
+        self.console = []         # completed Serial lines, str()'d, in call order
+        self.console_buf = ''     # in-progress line — Serial.print() args accumulate
+                                   # here without a newline, same as real hardware,
+                                   # until a Serial.println() (or end of pass) flushes it
         # {servo_var_name: pin_or_None} — registered by a `Servo x;` global
         # declaration, bound to a pin by that variable's own .attach() call.
         # Restored from Phase 1 `state` like pin_modes/vars, since a Servo
@@ -820,7 +823,10 @@ def _eval_call(name, arg_nodes, env):
         return None
     if name in ('Serial.print', 'Serial.println'):
         if args:
-            env.console.append(str(args[0]))
+            env.console_buf += str(args[0])
+        if name == 'Serial.println':
+            env.console.append(env.console_buf)
+            env.console_buf = ''
         return None
     raise ValueError(f"'{name}()' is not supported by the sim interpreter yet")
 
@@ -934,6 +940,12 @@ def interpret(sketch, input_state=None, state=None, now_ms=None):
     }
     if pin_frequencies:
         result['pin_frequencies'] = pin_frequencies
+    if env.console_buf:
+        # A trailing Serial.print() with no matching println() before the pass
+        # ended still needs to reach the console — this pass's interpret() call
+        # won't run again to flush it later (each call gets a fresh buffer).
+        env.console.append(env.console_buf)
+        env.console_buf = ''
     if env.console:
         result['console_lines'] = env.console
     result['_state'] = {

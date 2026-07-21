@@ -93,7 +93,7 @@
     },
     longvar: {
       allowed: ['global', 'loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '0' }],
+      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '' }],
       defaults: [null, null],
       exprCategoryKind: 'numeric',
       genStmt: function (p, ex) { return 'long ' + (p[0] || 'myLong') + ' = ' + genExpr(ex && ex[1], p[1], '0') + ';'; }
@@ -105,7 +105,7 @@
     },
     setvar: {
       allowed: ['loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'vartext', l: 'Var' }, { t: 'expr', l: 'Value', fallback: '0' }],
+      inputs: [{ t: 'vartext', l: 'Var' }, { t: 'expr', l: 'Value', fallback: '' }],
       defaults: [null, null],
       exprCategoryKind: 'numeric',
       genStmt: function (p, ex) { return (p[0] || 'myVar') + ' = ' + genExpr(ex && ex[1], p[1], '0') + ';'; }
@@ -121,7 +121,7 @@
     },
     stringvar: {
       allowed: ['global', 'loop', 'if', 'for', 'while'], asStatement: true, asExpr: false,
-      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '""' }],
+      inputs: [{ t: 'text', l: 'Name' }, { t: 'expr', l: 'Value', fallback: '' }],
       defaults: [null, null],
       exprCategoryKind: 'string',
       genStmt: function (p, ex) { return 'String ' + (p[0] || 'myText') + ' = ' + genExpr(ex && ex[1], p[1], '""') + ';'; }

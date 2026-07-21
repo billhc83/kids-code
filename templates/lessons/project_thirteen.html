@@ -37,7 +37,7 @@
 <div class="lesson-tab-panel active" id="tab-overview">
     {% if circuit_def_json %}
         <script src="{{ url_for('static', filename='js/circuit_renderer.js') }}"></script>
-        <div id="circuit-canvas-{{ lesson_key }}" style="max-width:900px; margin:0 auto; background:#f8f5e8; border-radius:8px; padding:12px;"></div>
+        <div id="circuit-canvas-{{ lesson_key }}" style="max-width:900px; margin:0 auto; background:#f4f8ff; border-radius:8px; padding:12px;"></div>
         <script>
             const circuitDef_{{ lesson_key }} = {{ circuit_def_json | safe }};
             const renderer_{{ lesson_key }} = new CircuitRenderer(circuitDef_{{ lesson_key }}, 'circuit-canvas-{{ lesson_key }}');
@@ -52,7 +52,7 @@
 <div class="lesson-tab-panel" id="tab-stepbystep">
     {% if circuit_def_json %}
         <div style="max-width:900px; margin:0 auto;">
-            <div id="circuit-walk-canvas-{{ lesson_key }}" style="background:#f8f5e8; border-radius:8px; padding:12px; margin-bottom:16px;"></div>
+            <div id="circuit-walk-canvas-{{ lesson_key }}" style="background:#f4f8ff; border-radius:8px; padding:12px; margin-bottom:16px;"></div>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                 <button id="walk-prev-{{ lesson_key }}" class="lesson-tab-btn" style="padding:6px 18px;" disabled>← Previous</button>
                 <span id="walk-counter-{{ lesson_key }}" style="font-size:0.9em; color:#888;">Step 0 / 0</span>

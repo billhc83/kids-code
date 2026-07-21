@@ -804,7 +804,7 @@ def test_eighteen_speed_trap_persists_sawA_across_calls_and_computes_speed():
         EIGHTEEN_RESOLVED_SKETCH, input_state={3: 3000, 5: 1000},
         state=r1['_state'], now_ms=1_000_500.0,
     )
-    assert r2['console_lines'] == ['Saw B', 'Speed cm/s: ', '40.0']
+    assert r2['console_lines'] == ['Saw B', 'Speed cm/s: 40.0']
     # distance (20cm) / timeDiff (0.5s) = 40.0 cm/s
 
     # Pass 3: sawA/sawB were reset by the speed-calc branch — Sensor A must

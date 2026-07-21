@@ -56,13 +56,74 @@ Ask: "Does this look right? Any tabs to adjust before I write the file?"
 
 ---
 
-## Age calibration — apply to ALL tab content
+## Hard style rules — apply to every tab, every age group
+
+These are non-negotiable, confirmed across multiple correction rounds on
+`project_thirteen_v2`. Violating any of these is not a style nit — the
+content is not done.
+
+**No em-dashes, ever.** Never use the `—` character in any generated tab,
+tip line, or bullet, at any age. Before showing a draft, mentally
+grep-check every paragraph for `—` and replace with a period, comma, or a
+full second sentence — never leave a dash-fragment-then-clause
+construction. This applies to `tip` lines too, not just tab prose.
+
+**Full, standalone sentences only.** No compressed clause-chains that read
+like spoken explanation ("X breaks — there's nowhere to Y, so Z"). Every
+sentence must stand on its own and read cleanly out loud.
+
+**Howto's four beats (intent/block/values/result) are content to cover,
+never literal output labels.** Blend them into one connected paragraph per
+phantom block — need, then the block and what it generally does, then why
+this specific value/choice is correct here, then a relatable comparison.
+Never emit literal field labels like "Intent:", "Block:", "Values:",
+"Result:" in the output, and never itemize them as a dash-joined list.
+
+**Pick one metaphor per concept and hold it for the whole project.** If a
+variable is called "the flag" in one tab, it is "the flag" everywhere —
+never also "memory switch" or "state marker." Never reuse a metaphor word
+(e.g. "box") for two unrelated things in the same project (a variable is a
+box; don't also call an if-block's body "the box"). Keep a running mental
+list of concept → metaphor as you draft each step, and check new steps
+against it before writing.
+
+**Howto depth: general mechanism first, then the project-specific why.**
+Before describing the specific value/check being placed, state what that
+block type does *for anyone, in any project* — then explain why this
+lesson needs exactly this check/value and not some other one, tied to the
+lesson's actual goal. "Place an if-block checking X" without ever
+explaining what an if-block does or why X (and not something else) is a
+depth failure even if every beat is technically present.
+
+**No pre-emptive "nothing shows yet" reassurance**, except when a *prior*
+step's visible behavior is intentionally being taken away (the
+reward-first/capture progressive sim pattern below) — only then does the
+student need to be told the resulting silence is deliberate, not broken.
+Don't add this caveat to a step where nothing has been shown on screen at
+any point yet.
+
+---
+
+## Age calibration
+
+**`howto` tab** — scales by age:
 
 **Ages 8–10:** Max 2 sentences per paragraph. Emoji on every concept. Short words. Analogies: toys, games, food, animals. Never use "variable" (use "label"/"memory box") or "function" (use "instruction"/"rule").
 
 **Ages 11–12:** Up to 4 sentences per paragraph. Technical terms with inline plain-English definitions. Analogies: machines, vehicles, gadgets, sports. Light emoji.
 
 **Ages 13–14:** Full paragraphs. Correct technical vocabulary defined on first use. Analogies: engineering, science, real systems. Minimal emoji.
+
+**`explain` and `logic` tabs — always default to the 8-10 tier above,
+regardless of confirmed age_group.** Concrete object comparisons (boxes,
+flags, notebooks, scoreboards), never technical nouns like "variable,"
+"timestamp," or "compare against" — even with an inline definition. Depth
+comes from fully explaining the narrative, mechanism, and consequence
+through a comparison, not from naming the technical term. Sentence-length
+and analogy-domain can still loosen slightly for 13-14 (fuller sentences
+are fine), but the no-jargon rule itself does not relax with age unless
+the user explicitly confirms heavier vocabulary is wanted in these two
+tabs specifically for this project.
 
 ---
 
@@ -85,15 +146,19 @@ Structure:
 
 #### Guided steps — 4-beat framework
 
-For every phantom block (`//?? `) in the step, apply these four beats in order.
-Never give raw code syntax before completing all four beats.
+For every phantom block (`//?? `) in the step, cover these four beats, in
+order, as **one connected paragraph of flowing prose — never as a labeled
+list.** Do not write "Intent:", "Block:", "Values:", "Result:" (or any
+synonym) as literal headers in the output; these names are for you, not
+the student. Never give raw code syntax before the paragraph has covered
+all four beats.
 
-**Beat 1 — Intent:** Plain English — what needs to happen. No code, no block names.
-**Beat 2 — Block:** Name the block type and what it does generally.
-**Beat 3 — Values:** Walk through every slot/argument: what it expects, the specific value, and WHY that value is correct for this project.
-**Beat 4 — Result:** One sentence — what the student will see when the block is placed.
+1. **Intent** — plain English, what needs to happen right now. No code, no block names yet.
+2. **Block** — name the block type and state what it does *generally, for anyone, in any project* (see the Hard style rules "general mechanism first" rule above).
+3. **Values** — walk through every slot/argument: what it expects, the specific value, and *why that value is correct for this project* (not just "for this step" — tie it to the lesson's actual goal).
+4. **Result** — one sentence on what the student will see when the block is placed.
 
-Multiple phantoms: apply all four beats to each in sequence, numbered.
+Multiple phantoms in one step: write one such paragraph per phantom, in sequence.
 
 Locked lines in a guided step: after covering phantoms, add a brief note for any locked lines explaining why they are pre-set.
 
