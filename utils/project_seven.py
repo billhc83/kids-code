@@ -1,9 +1,11 @@
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 7: The Automagic Night Light',
     'circuit_image': 'static/graphics/project_seven_circuit.png',
     'banner_image': 'project_seven_banner.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [
@@ -107,49 +109,131 @@ STEPS = [
 ]
 
 DRAWER_CONTENT = {
-
     "project_seven": {
-    "title": "💡 Automagic Night Light",
-    "tip": "Use a light sensor to automatically turn a light on when it gets dark.",
-    "tabs": {
-        "story": {
-            "label": "👷 Mission",
-            "content": """
-<h3>Build Your Smart Night Light 🌙💡</h3>
+        "steps": [
+            {
+                "title": "Program the Night Light 💡",
+                "tip": "Watch the numbers scroll by so you can see exactly what your Arduino sees.",
+                "tabs": {
+                    "explain": {
+                        "label": "📖 What & Why",
+                        "content": (
+                            "<p>Streetlights never need someone to flip their switch. They watch the sky and decide on their own. 🌙</p>"
+                            "<p>Today you build that same trick into your night light, using the sensor plug and the light plug on your Arduino.</p>"
+                            "<p>Without this step, your light would just sit there forever. It would never check the light number, so it could never decide anything on its own.</p>"
+                            "<p>Once this step runs, your Arduino checks the light number by itself, over and over, forever.</p>"
+                        )
+                    },
+                    "howto": {
+                        "label": "🔧 How To",
+                        "content": (
+                            "<p>This whole program is built for you and locked in place, because getting a light sensor and a light to work together takes many exact steps in the right order. 🔒</p>"
+                            "<p>The first two lines set up the light plug and turn on the messages your Arduino sends back to you, so you can watch what it is thinking. 💬</p>"
+                            "<p>Then your Arduino asks the sensor plug one question: how much light is hitting it right now? It stores the answer as the light number and prints it so you can see it too. 🔢</p>"
+                            "<p>Next it checks the light number against 300, the darkness number for this exact sensor and resistor pair. Your 10k resistor and photoresistor were picked so daylight always lands above 300 and true darkness always lands below it. 🌗</p>"
+                            "<p>If the light number is under 300, the light plug switches on and it prints \"It's dark! Light ON.\" If it is 300 or higher, the light plug switches off and it prints \"Sun is up! Light OFF.\" instead. 💡</p>"
+                            "<p>Last, it waits a tenth of a second before checking again, so it is always watching. ⏱️</p>"
+                            "<p>Everything you just read is now running for real. In the next step, you get to reach in and start changing it yourself. 🛠️</p>"
+                        )
+                    },
+                    "logic": {
+                        "label": "🧠 Logic",
+                        "content": (
+                            "<p>Think of the sensor as a scout standing outside every second, holding up a number to show how bright it is right now. 🔦</p>"
+                            "<p>The darkness number, 300, is a line drawn in the sand. Any number below that line means dark, any number at or above it means bright. 📏</p>"
+                            "<p>Your Arduino checks the scout's number against that line again and again, so the moment it crosses the line, the light flips right away. ⚡</p>"
+                        )
+                    }
+                }
+            },
+            {
+                "title": "Mission Complete 🎉",
+                "tip": "Your night light is fully operational!",
+                "tabs": {
+                    "explain": {
+                        "label": "📖 What You Built",
+                        "content": (
+                            "<p>🎉 Great work, Engineer! You just finished a night light that runs entirely on its own.</p>"
+                            "<p>Your circuit and code work together to watch the world and react to it, no buttons needed.</p>"
+                            "<ul>"
+                            "<li>🌙 Turns the light ON the moment it gets dark</li>"
+                            "<li>☀️ Turns the light OFF the moment it gets bright again</li>"
+                            "<li>👁️ Reads the light number from your sensor plug every tenth of a second</li>"
+                            "<li>💬 Prints what it sees so you can watch it think in real time</li>"
+                            "</ul>"
+                            "<p>You proved you can build a system that senses, decides, and acts, all by itself.</p>"
+                        )
+                    },
+                    "howto": {
+                        "label": "🔧 Try This Next",
+                        "content": (
+                            "<p>Now that your system works, here are some ideas to make it even better.</p>"
+                            "<ul>"
+                            "<li>🔆 <strong>Make it more sensitive</strong> Lower the darkness number from 300 to something like 200, so the light waits for true darkness before turning on.</li>"
+                            "<li>⏱️ <strong>Speed it up or slow it down</strong> Change the 100 at the end to a bigger or smaller number to check the light more or less often.</li>"
+                            "<li>🔊 <strong>Add a buzzer</strong> Wire in a buzzer and make it beep once the moment the light turns on.</li>"
+                            "<li>🌈 <strong>Add a second light</strong> Wire up a second LED that turns on only when it gets extremely dark, using a lower darkness number than your first light.</li>"
+                            "<li>🎮 <strong>Build a light-up alarm</strong> Combine this with a button so the night light only runs after someone presses the button first, like a real security system.</li>"
+                            "</ul>"
+                            "<p>Experimenting is how real engineers improve their designs.</p>"
+                        )
+                    },
+                    "logic": {
+                        "label": "🧠 What You Learned",
+                        "content": (
+                            "<p>This project brought together everything you have been building.</p>"
+                            "<ul>"
+                            "<li>👁️ <strong>Sensing the world</strong> Your Arduino can read a number straight from a real sensor plug, not just from code you typed in.</li>"
+                            "<li>🔢 <strong>Reading a live number</strong> That sensor reading changes every moment, so your Arduino has to keep asking for a fresh one.</li>"
+                            "<li>📏 <strong>Setting a line to act on</strong> Picking one exact number to check against lets your Arduino make a clear yes-or-no decision.</li>"
+                            "<li>🔀 <strong>Choosing between two paths</strong> Your code can do one thing when a check is true and a completely different thing when it is false.</li>"
+                            "<li>🔁 <strong>Watching forever</strong> Wrapping all of this in a loop means your night light never stops paying attention.</li>"
+                            "</ul>"
+                            "<p>You are now thinking like an engineer.</p>"
+                        )
+                    },
+                    "sim": {
+                        "label": "🎮 Try It",
+                        "type": "sim",
+                        "sim_config": {
+                            "mode": "interpreted",
+                            "components": [
+                                {"type": "ldr", "id": "ldr1", "pin": 14, "label": "Light Sensor"},
+                                {"type": "led", "id": "led1", "color": "red", "pin": 13, "label": "Night Light"},
+                            ],
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}
+SKETCH_PRESET = {
+    'sketch': """//>> Program the Night Light 💡 | free | editor
+//## int lightSensor = A0;
+//## int nightLight = 13;
 
-<p>
-Have you ever noticed how streetlights turn on by themselves at night?
-</p>
+void setup() {
+  //## pinMode(nightLight, OUTPUT);
+  //## Serial.begin(9600);
+}
 
-<p>
-Today, you become the engineer 👷
-</p>
+void loop() {
+  //## int brightness = analogRead(lightSensor);
+  //## Serial.println(brightness);
+  //## if (brightness < 300) {
+  //##   digitalWrite(nightLight, HIGH);
+  //##   Serial.println("It's dark! Light ON \U0001F319");
+  //## }
+  //## else {
+  //##   digitalWrite(nightLight, LOW);
+  //##   Serial.println("Sun is up! Light OFF ☀️");
+  //## }
+  //## delay(100);
+}
 
-<p>
-Your mission:
-</p>
+//>> Mission Complete | open | editor | reset | fill:true
 
-<p>
-☀️ During the day → Light stays OFF<br>
-🌙 When it gets dark → Light turns ON
-</p>
-
-<p>
-Your Arduino will watch the light levels and decide what to do — automatically!
-</p>
-
-<p>
-No buttons. No switches.<br>
-Just smart thinking. 🧠✨
-</p>
-"""
-        },
-        "code": {
-            "label": "💻 Code",
-            "content": """
-<h3>The Night Light Program</h3>
-
-<pre>
 int lightSensor = A0;
 int nightLight = 13;
 
@@ -164,121 +248,7 @@ void loop() {
 
   if (brightness < 300) {
     digitalWrite(nightLight, HIGH);
-    Serial.println("It's dark! Light ON 🌙");
-  } else {
-    digitalWrite(nightLight, LOW);
-    Serial.println("Sun is up! Light OFF ☀️");
-  }
-
-  delay(100);
-}
-</pre>
-
-<p>
-This program reads light levels and controls the LED automatically.
-</p>
-"""
-        },
-        "logic": {
-            "label": "🧩 Logic",
-            "content": """
-<h3>How the System Thinks</h3>
-
-<p>
-The Arduino constantly:
-</p>
-
-<p>
-🔢 Reads the light level<br>
-🤔 Compares it to a number<br>
-💡 Turns the light ON or OFF<br>
-🔁 Repeats forever
-</p>
-
-<p>
-If it's dark → Light ON 🌙<br>
-If it's bright → Light OFF ☀️
-</p>
-
-<p>
-This is how automatic systems work in the real world!
-</p>
-"""
-        },
-        "translation": {
-            "label": "🧬 Translation",
-            "content": """
-<h3>Engineer Breakdown</h3>
-
-<p>
-<b>lightSensor = A0</b><br>
-This is where the sensor is connected 👁️
-</p>
-
-<p>
-<b>nightLight = 13</b><br>
-This is the light you are controlling 💡
-</p>
-
-<p>
-<b>analogRead(lightSensor)</b><br>
-Reads brightness 🔢<br>
-Lower number = darker<br>
-Higher number = brighter
-</p>
-
-<p>
-<b>if (brightness &lt; 300)</b><br>
-If it's dark → turn light ON 🌙
-</p>
-
-<p>
-<b>else</b><br>
-If it's bright → turn light OFF ☀️
-</p>
-
-<p>
-<b>Threshold (300)</b><br>
-This number decides when it becomes "night"
-</p>
-
-<p>
-<b>Input vs Output</b><br>
-Sensor = input 👁️<br>
-Light = output 💡
-</p>
-"""
-        },
-        "sim": {
-            "label": "🎮 Try It",
-            "type": "sim",
-            "sim_config": {
-                "mode": "interpreted",
-                "components": [
-                    {"type": "ldr", "id": "ldr1", "pin": 14, "label": "Light Sensor"},
-                    {"type": "led", "id": "led1", "color": "red", "pin": 13, "label": "Night Light"},
-                ],
-            }
-        }
-    }
-    }
-}
-SKETCH_PRESET = {
-    'sketch': """int lightSensor = A0;
-int nightLight = 13;
-
-void setup() {
-  pinMode(nightLight, OUTPUT);
-  Serial.begin(9600);
-}
-
-void loop() {
-  int brightness = analogRead(lightSensor);
-  Serial.println(brightness);
-
-  if (brightness < 300) {
-    digitalWrite(nightLight, HIGH);
-    Serial.println("It's dark! Light ON 🌙");
+    Serial.println("It's dark! Light ON \U0001F319");
   } else {
     digitalWrite(nightLight, LOW);
     Serial.println("Sun is up! Light OFF ☀️");

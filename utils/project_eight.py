@@ -1,10 +1,12 @@
 
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 8: The Dragon\'s Crystal Alarm',
     'circuit_image': 'static/graphics/project_eight_circuit.png',
     'banner_image': 'project_eight_banner.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [

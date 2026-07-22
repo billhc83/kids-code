@@ -1,4 +1,5 @@
 {% extends "lesson_base.html" %}
+{% from "lessons/_kit_callout.html" import kit_callout %}
 {% block title %}Project 5: Top Secret Mission — KidsCode{% endblock %}
 
 {% block lesson_content %}
@@ -16,6 +17,8 @@
     <p>This mission teaches you how the Arduino sends information, the computer receives messages, and engineers and spies share secret data.</p>
     <p>Get ready… Build the beam. Watch the screen. Crack the code! 🔐✨</p>
 </div>
+
+{{ kit_callout(required_kits) }}
 
 <hr>
 

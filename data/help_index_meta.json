@@ -1,8 +1,8 @@
 {
   "embedding_model": "text-embedding-3-small",
   "dimension": 1536,
-  "built_at": "2026-07-12T22:00:02.788409+00:00",
-  "corpus_hash_auto": "876bc41adf77dc4b2ff3bc2e6905b2e341dc49ef9215852ca8b388123e83658c",
+  "built_at": "2026-07-22T10:32:31.746216+00:00",
+  "corpus_hash_auto": "96435f1e5b8aca33eb721191adbaa0ac19a094f678778c370040b251bedda3cc",
   "corpus_hash_authored": "7eecd73401fdd48e37b3b4756131b6355e2fd4d8f5a591e6a83f9c72a3537001",
   "chunks": [
     {
@@ -646,23 +646,23 @@
       "tags": []
     },
     {
-      "id": "project_eleven:step0:mission",
+      "id": "project_eleven:step0:explain",
       "source": "auto",
       "project_key": "project_eleven",
       "step_index": 0,
-      "tab_key": "mission",
-      "title": "Project 11: Engine System Start — Step 1 — Build the Engine Control System 📘 (🧠 Mission)",
-      "text": "You are building an engine system with rules: - The switch controls the whole system. - The button starts the engine. - The engine keeps running until the switch turns OFF. - If the switch is OFF, nothing runs. - The \"If\" blocks are filled in already, no need to change them. Your job is to build these rules using blocks.",
+      "tab_key": "explain",
+      "title": "Project 11: Engine System Start — Step 1 — Wire Up Your Controls 🔌 (📖 What & Why)",
+      "text": "You're in the pilot seat! ✈️ Before your engine can do anything, the Arduino needs to know about each part on your dashboard. Two parts send information IN to the Arduino — the Arm Switch and the Engage Button. Two parts get commands sent OUT — the Engine Light and the Engine Buzzer. Without this step, the Arduino can't hear your switch flip, and it can't tell the light or buzzer what to do. Next up: you get to turn the light and buzzer ON for the very first time! 💡🔊",
       "tags": []
     },
     {
-      "id": "project_eleven:step0:wiring",
+      "id": "project_eleven:step0:howto",
       "source": "auto",
       "project_key": "project_eleven",
       "step_index": 0,
-      "tab_key": "wiring",
-      "title": "Project 11: Engine System Start — Step 1 — Build the Engine Control System 📘 (🔌 Wiring)",
-      "text": "Match each part to its pin: 🔘 Arm Switch → Pin 9 🔴 Engage Button → Pin 7 💡 Engine Light → Pin 2 🔊 Engine Buzzer → Pin 5 Find the part in the diagram. Follow the wire. Match it to the pin.",
+      "tab_key": "howto",
+      "title": "Project 11: Engine System Start — Step 1 — Wire Up Your Controls 🔌 (🔧 How To)",
+      "text": "Match each part to its pin: 🔘 Arm Switch → Pin 9 🔴 Engage Button → Pin 7 💡 Engine Light → Pin 2 🔊 Engine Buzzer → Pin 5 You'll place two blocks yourself: An input block for the Arm Switch on Pin 9 — this tells the Arduino \"listen to this pin.\" An output block for the Engine Light on Pin 2 — this tells the Arduino \"you control this pin.\" The Engage Button (Pin 7) and Engine Buzzer (Pin 5) are already locked in for you — they work exactly the same way, just for the other two parts. 🔘 Special rule: Both the switch and the button connect to GND on the diagram, so they both use a special input called INPUT_PULLUP . That's just how this wiring style talks to the Arduino.",
       "tags": []
     },
     {
@@ -671,18 +671,98 @@
       "project_key": "project_eleven",
       "step_index": 0,
       "tab_key": "logic",
-      "title": "Project 11: Engine System Start — Step 1 — Build the Engine Control System 📘 (🧩 Logic)",
-      "text": "🔘 Important Button Rule Look at the wiring diagram. If the button connects to GND, choose: INPUT_PULLUP That's how this wiring style works. Understanding The \"If\" statements: The Arduino sees HIGH when the switch is off or the button is not pressed The Arduino sees LOW when the switch is on or the button is pressed Think about the flow: IF switch is ON &nbsp;&nbsp;&nbsp;&nbsp;Light ON &nbsp;&nbsp;&nbsp;&nbsp;IF button pressed &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Engine ON IF switch is OFF (else) &nbsp;&nbsp;&nbsp;&nbsp;Everything OFF Remember: The switch is the boss.",
+      "title": "Project 11: Engine System Start — Step 1 — Wire Up Your Controls 🔌 (🧠 Logic)",
+      "text": "Think of a walkie-talkie. 📻 Some buttons let you talk — those are your outputs (the light, the buzzer). Some let you listen — those are your inputs (the switch, the button). Before you can use a walkie-talkie at all, you have to turn it on and set it to the right mode. That's exactly what this step does for every part on your dashboard.",
       "tags": []
     },
     {
-      "id": "project_eleven:step1:complete",
+      "id": "project_eleven:step1:explain",
       "source": "auto",
       "project_key": "project_eleven",
       "step_index": 1,
-      "tab_key": "complete",
-      "title": "Project 11: Engine System Start — Step 2 — Test Your Engine System 🚀 (🎉 Congratulations)",
-      "text": "You Built an Engine Control System! 🎉 Your logic system is ready. Now it's time to test it. 🔌 Connect your Arduino ⬆️ Upload your code 🔘 Turn the switch ON 🔴 Press the button to start the engine 💡 Observe the light and buzzer behavior Check your system: ✔️ Switch OFF → Everything stays OFF ✔️ Switch ON → System becomes active ✔️ Button Press → Engine activates ✔️ Switch OFF again → Everything shuts down If all of these work, your engine logic is correct!",
+      "tab_key": "explain",
+      "title": "Project 11: Engine System Start — Step 2 — Light the Engine 💡🔊 (📖 What & Why)",
+      "text": "Time for your first win, pilot! 🎉 Before you teach the engine any rules, let's prove the light and buzzer actually work. This step turns the Engine Light and Engine Buzzer ON — no switch, no button, no conditions. Just ON. Why start here? Because if something's wired wrong, you want to know now — before you bury it inside a bunch of rules. Next, you'll wrap these same two blocks inside your first rule so they only turn on when the engine is armed. 🎮 Try It: Open the sim tab. Watch the Engine Light and Engine Buzzer — they should both switch on immediately, with no switch or button needed. That's your proof the wiring works!",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step1:howto",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 1,
+      "tab_key": "howto",
+      "title": "Project 11: Engine System Start — Step 2 — Light the Engine 💡🔊 (🔧 How To)",
+      "text": "You'll place two blocks: Turn the engine light on. Use an output block set to the Engine Light pin, value HIGH . HIGH means \"full power\" — the light glows. Turn the engine buzzer on. Use an output block set to the Engine Buzzer pin, value HIGH . Same idea — HIGH means \"make sound.\" Result: as soon as your code runs, the light glows and the buzzer sounds — every single time, no conditions needed yet.",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step2:explain",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 2,
+      "tab_key": "explain",
+      "title": "Project 11: Engine System Start — Step 3 — Only Run When Armed 🔐 (📖 What & Why)",
+      "text": "Great work, pilot — the light and buzzer work. But right now they're on all the time , even if nobody armed the aircraft. That's not safe! This step adds your first rule: the light and buzzer should only run if the Arm Switch is ON . If it's OFF, everything should shut off instead. You're not writing new light/buzzer code — you're taking the two blocks you already built in Step 2 and wrapping them inside a rule. Next step teaches the engine one more rule: needing the Engage Button too. 🎮 Try It: Open the sim tab and flip the Arm Switch OFF. Watch the light and buzzer both go dark. Flip it back ON — they turn back on. That's a big change from Step 2, where they were always on no matter what — now the switch is the boss!",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step2:howto",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 2,
+      "tab_key": "howto",
+      "title": "Project 11: Engine System Start — Step 3 — Only Run When Armed 🔐 (🔧 How To)",
+      "text": "You'll place one new block, plus reuse two you already built: Check if the Arm Switch is on. Use an \"if\" block that checks the switch pin. Because of INPUT_PULLUP, ON actually reads as LOW — a little backwards, but that's how this wiring works. Inside that \"if,\" your Step 2 light-on and buzzer-on blocks slot right in — you already built them, just wrap them in here. Turn the light off and turn the buzzer off in the \"else\" part — these run only when the switch is OFF. Both use value LOW , which means \"no power.\"",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step3:explain",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 3,
+      "tab_key": "explain",
+      "title": "Project 11: Engine System Start — Step 4 — Press to Start 🔴 (📖 What & Why)",
+      "text": "One rule down, one to go! Right now, arming the switch turns the light and the buzzer on together. But a real engine shouldn't roar just because it's armed — it should wait for you to press Start. 🔴 This step adds a second rule inside the first one: the buzzer only sounds if the Engage Button is pressed too. The light stays simple — it just means \"armed.\" This is your last rule. After this, your whole engine system is complete! 🎮 Try It: Arm the switch — the light turns on, but now the buzzer stays silent. Press the Engage Button — the buzzer joins in! Release the button — buzzer stops, light stays on. Compare that to Step 3, where arming the switch was enough to sound the buzzer all by itself — now it needs your button press too.",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step3:howto",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 3,
+      "tab_key": "howto",
+      "title": "Project 11: Engine System Start — Step 4 — Press to Start 🔴 (🔧 How To)",
+      "text": "Everything from Steps 1–3 is already locked in place. You'll place one new block: Check if the Engage Button is pressed. Use an \"if\" block that checks the button pin. Just like the switch, pressed reads as LOW because of INPUT_PULLUP. Inside that \"if,\" the buzzer-on block is already locked for you — turning the buzzer to HIGH. Turn the buzzer off in the matching \"else\" — this runs when the switch is armed but the button isn't pressed. Value LOW means silent. Notice the Engine Light block from Step 3 stays right where it was — outside this new rule. The light only cares about the switch; the buzzer now cares about both.",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step4:explain",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 4,
+      "tab_key": "explain",
+      "title": "Project 11: Engine System Start — Mission Complete 🎉 (📖 What You Built)",
+      "text": "Mission complete, pilot! 🛫 You built a real engine control system from scratch. Your aircraft now: 🔘 Knows the exact moment the Arm Switch flips ON or OFF 💡 Lights up the Engine Light only while armed 🔴 Waits for your Engage Button before making a sound 🔊 Sounds the Engine Buzzer only when BOTH the switch and button say go 🛑 Shuts everything off the instant you disarm the switch You proved you can build rules that depend on more than one part working together — that's real pilot-level thinking!",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step4:howto",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 4,
+      "tab_key": "howto",
+      "title": "Project 11: Engine System Start — Mission Complete 🎉 (🔧 Try This Next)",
+      "text": "Now that your system works, here are some ideas to make it even better. 💡 Add a warning light — light up a second LED whenever the switch is armed but the button hasn't been pressed yet. ⏱️ Add a startup delay — make the buzzer wait half a second after the button press before sounding, like a real engine spinning up. 🔊 Change the buzzer pattern — instead of one steady tone, make it beep twice when the engine starts. 🎚️ Add a second switch — require TWO switches armed before the button does anything, like a real two-key launch system. 🚦 Build a shutdown sequence — when the switch turns OFF, flash the light three times before going dark instead of snapping off instantly. Experimenting is how real pilots improve their aircraft.",
+      "tags": []
+    },
+    {
+      "id": "project_eleven:step4:logic",
+      "source": "auto",
+      "project_key": "project_eleven",
+      "step_index": 4,
+      "tab_key": "logic",
+      "title": "Project 11: Engine System Start — Mission Complete 🎉 (🧠 What You Learned)",
+      "text": "This project brought together everything you've been building. 🔌 Inputs vs. outputs — some parts talk to the Arduino, some parts the Arduino controls. 🔘 INPUT_PULLUP — a wiring style where \"pressed\" or \"on\" actually reads as LOW. 🎁 Reward-first testing — proving your outputs work before wrapping them in rules. 🔐 Nested rules — a rule inside another rule, so the buzzer needs BOTH the switch AND the button. 🧩 Reusing blocks — wrapping code you already built into a bigger rule instead of rewriting it. You're now thinking like a real pilot — checking every system before you commit to launch. 🚀",
       "tags": []
     },
     {
@@ -692,7 +772,7 @@
       "step_index": 0,
       "tab_key": "explain",
       "title": "Project 15: Backup Alarm — Step 1 — System Memory 📦 (📖 What & Why)",
-      "text": "Before your backup alarm can work, it needs to know what parts it is using. We store this information in variables . Each variable acts like a label for a part of your system: 📡 trigPin → sends out a signal to measure distance - Pin 9 👂 echoPin → listens for the signal bouncing back - Pin 10 🔊 buzzerPin → makes sound when objects are close - Pin 3 💡 greenLED , yellowLED , redLED → show safe, warning, and danger zones - Pins 4, 5 and 6 ⏱ duration → stores how long the signal takes to return - Set to 0 📏 distance → stores how far away an object is - Set to 0 Without these, your system wouldn’t know what anything is!",
+      "text": "Every build starts with a parts list. Before your backup alarm can measure anything or light anything up, your program needs its own list — a set of variables (labels that hold a piece of information your program can look up and change later, similar to a labeled fuse box in a car). This step creates eight labels: one for each pin your sensor, buzzer, and LEDs are wired to, plus two more to store the readings your sensor will take later. Skip this step and every later step breaks — your code has no way to say \"turn on the buzzer\" without a label pointing at the right pin.",
       "tags": []
     },
     {
@@ -702,7 +782,7 @@
       "step_index": 0,
       "tab_key": "howto",
       "title": "Project 15: Backup Alarm — Step 1 — System Memory 📦 (🔧 How To)",
-      "text": "1. Create containers (variables) for each part of your system. 2. Give each one the exact name shown in the instructions. 3. Assign each pin a number so your board knows where things are connected. 4. Create containers for duration and distance to store sensor data. These variables will be used in almost every step, so they must be correct!",
+      "text": "Each variable needs a name, a type (what kind of value it holds), and a starting value. Here's all eight: trigPin — Sends the sensor's measuring pulse out. It's an integer (whole-number) variable, set to 9 to match Arduino pin 9 from your wiring. echoPin — Listens for the pulse bouncing back. Integer, set to 10 , matching pin 10. buzzerPin — Controls your alarm's sound. Integer, set to 3 , matching pin 3. greenLED — Your safe-zone light. Integer, set to 4 . yellowLED — Your warning light. Integer, set to 5 . redLED — Your danger light. Integer, set to 6 . duration — Will store how long the sensor's pulse takes to bounce back, in microseconds. It's a long variable (like an integer, but built for bigger numbers) since timing values can get large. Starts at 0 since no reading has happened yet. distance — Will store the calculated distance in centimeters once you do the math in a later step. Integer, starts at 0 .",
       "tags": []
     },
     {
@@ -712,7 +792,7 @@
       "step_index": 0,
       "tab_key": "logic",
       "title": "Project 15: Backup Alarm — Step 1 — System Memory 📦 (🧠 Logic)",
-      "text": "Think of this like labeling wires in a car. If everything is labeled clearly, the system can react quickly and correctly. If not, things get confusing fast!",
+      "text": "Think of this like a pit crew labeling every gauge on a race car's dashboard before the race starts. A crew that knows exactly which gauge shows fuel and which shows temperature can react instantly — your program needs the same clear labels before it can react to anything.",
       "tags": []
     },
     {
@@ -722,7 +802,7 @@
       "step_index": 1,
       "tab_key": "explain",
       "title": "Project 15: Backup Alarm — Step 2 — Activate the System ⚙️ (📖 What & Why)",
-      "text": "Now that your system knows the parts, you need to tell it how each one behaves using pin modes . There are two main types: 📤 OUTPUT → sends signals (LEDs, buzzer, trigger pin) 📥 INPUT → receives signals (echo pin) This step prepares your system so it can send and receive information properly.",
+      "text": "Your variables are labeled, but Arduino still doesn't know whether each pin should be sending signals out or listening for them. This step configures every pin's mode — OUTPUT for parts that send power (the buzzer, the LEDs, the sensor's trigger pin) and INPUT for the one part that receives a signal (the sensor's echo pin). This all happens inside setup() , a block of code that runs exactly once when your Arduino powers on — like a car's dashboard doing a quick systems check the moment you turn the key. Get a pin mode backwards here and that part simply won't work later, even if the rest of your code is perfect.",
       "tags": []
     },
     {
@@ -732,7 +812,7 @@
       "step_index": 1,
       "tab_key": "howto",
       "title": "Project 15: Backup Alarm — Step 2 — Activate the System ⚙️ (🔧 How To)",
-      "text": "1. Go into the setup section. 2. Set each pin to the correct mode: Trigger, buzzer, and LEDs → OUTPUT Echo pin → INPUT 3. Turn on communication with the screen so you can see information later. This step only runs once when the system starts.",
+      "text": "trigPin — Set its mode to OUTPUT , since your Arduino needs to send a pulse out through it. echoPin — Set its mode to INPUT , since this pin only ever receives the sensor's returning pulse. buzzerPin — OUTPUT , since Arduino sends power to it to make sound. greenLED — OUTPUT . yellowLED — OUTPUT . redLED — OUTPUT . You'll also see Serial.begin(9600) already in place — this turns on a communication channel between your Arduino and your computer, which some later steps use to double-check readings.",
       "tags": []
     },
     {
@@ -742,7 +822,7 @@
       "step_index": 1,
       "tab_key": "logic",
       "title": "Project 15: Backup Alarm — Step 2 — Activate the System ⚙️ (🧠 Logic)",
-      "text": "Imagine plugging in devices at home. Some devices send signals (like a remote), while others receive them (like a TV). If you mix them up, nothing works correctly!",
+      "text": "This is like a stage manager checking every microphone and speaker before a concert — deciding which ones will pick up sound (INPUT) and which ones will play sound (OUTPUT). Mix that up and the whole show falls apart.",
       "tags": []
     },
     {
@@ -751,8 +831,8 @@
       "project_key": "project_fifteen",
       "step_index": 2,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 3 — Prepare the Sensor 📡 (📖 What & Why)",
-      "text": "The ultrasonic sensor works by sending out a sound wave and listening for it to return. Before sending a new signal, we must make sure the trigger is turned OFF first. This clears any leftover signal so the next reading is accurate. We also wait a very tiny amount of time to let the sensor settle.",
+      "title": "Project 15: Backup Alarm — Step 3 — Light It Up ✨ (📖 What & Why)",
+      "text": "Before your alarm can react to anything, let's prove the wiring itself is solid. Real engineers do this too — before adding any decision-making logic, they run a basic test to confirm every part responds when powered. This step turns all three LEDs and the buzzer on at the same time, with no conditions attached. If your circuit is wired correctly, you'll see every light and hear the buzzer the moment this code runs. Don't worry that this isn't \"smart\" yet — you're about to spend the next several steps teaching your sensor to measure distance, and a few steps after that, you'll come back and turn this into a real reacting alarm. 🎮 Try It: Open the Try It tab now. You should see all three LEDs lit and the buzzer playing a steady 1000 Hz tone — no sensor involved yet, because you haven't wired one into the logic. If everything's lit, your circuit and this step's code both check out.",
       "tags": []
     },
     {
@@ -761,8 +841,8 @@
       "project_key": "project_fifteen",
       "step_index": 2,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 3 — Prepare the Sensor 📡 (🔧 How To)",
-      "text": "1. Inside the loop, turn the trigger pin OFF. 2. Add a very short delay so the sensor resets properly. Lets use 2 microseconds. This prepares the sensor for a clean measurement.",
+      "title": "Project 15: Backup Alarm — Step 3 — Light It Up ✨ (🔧 How To)",
+      "text": "Green LED ON — Turn greenLED to HIGH (this block sends full power to a pin, the opposite of LOW). You'll see the green light switch on. Yellow LED ON — Same block, applied to yellowLED. Red LED ON — Same block, applied to redLED. Buzzer ON — Use the tone block, which needs two values: the pin (buzzerPin) and a frequency in Hz (how fast the sound wave vibrates — higher numbers sound higher-pitched). Use 1000 Hz.",
       "tags": []
     },
     {
@@ -771,8 +851,8 @@
       "project_key": "project_fifteen",
       "step_index": 2,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 3 — Prepare the Sensor 📡 (🧠 Logic)",
-      "text": "Think of this like taking a deep breath before speaking. You reset first, then send a clear signal. Without resetting, your readings can get messy and unreliable.",
+      "title": "Project 15: Backup Alarm — Step 3 — Light It Up ✨ (🧠 Logic)",
+      "text": "This is exactly what a pit crew does before a race — floor every gauge and light to make sure the electrics are good, before worrying about how the car should react on track. Confirm the parts work, then teach them when to work.",
       "tags": []
     },
     {
@@ -781,8 +861,8 @@
       "project_key": "project_fifteen",
       "step_index": 3,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 4 — Send the Signal 🚀 (📖 What & Why)",
-      "text": "Now it's time for your sensor to send out a signal! The ultrasonic sensor works by sending a tiny burst of sound that travels through the air. To do this, we briefly turn the trigger pin ON , then turn it OFF again. This creates a short pulse — like a quick clap — that starts the measurement. The timing of this pulse is very important, so we only leave it on for a very tiny amount of time.",
+      "title": "Project 15: Backup Alarm — Step 4 — Prepare the Sensor 📡 (📖 What & Why)",
+      "text": "Your lights and buzzer are proven to work — now it's time to teach the system how to actually measure distance. Your ultrasonic sensor (a device that measures distance using sound waves too high-pitched for humans to hear) works by sending a burst of sound and timing how long it takes to bounce back. Before sending a fresh pulse, we need the trigger pin to start from a clean OFF state and give the sensor a tiny pause to settle. Skip this reset and leftover signal from a previous reading can throw off the next measurement. Your lights are still on in the background from the last step — we're not touching them again until the sensor's measurements are ready to control them.",
       "tags": []
     },
     {
@@ -791,8 +871,8 @@
       "project_key": "project_fifteen",
       "step_index": 3,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 4 — Send the Signal 🚀 (🔧 How To)",
-      "text": "1. Turn the trigger pin ON. 2. Wait a very short time (just enough for the signal to send). Lets use 10 microseconds. 3. Turn the trigger pin OFF again. This creates the pulse that tells the sensor to begin measuring distance.",
+      "title": "Project 15: Backup Alarm — Step 4 — Prepare the Sensor 📡 (🔧 How To)",
+      "text": "Set trigPin LOW — Use digitalWrite (a block that sets a pin's power level) with the value LOW, which means \"no power.\" This clears any leftover signal from the trigger pin. Small delay — Use delayMicroseconds (a pause measured in millionths of a second — much shorter than the delay block you may have used before, which pauses in milliseconds). Set it to 2 microseconds, just enough for the sensor to settle.",
       "tags": []
     },
     {
@@ -801,8 +881,8 @@
       "project_key": "project_fifteen",
       "step_index": 3,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 4 — Send the Signal 🚀 (🧠 Logic)",
-      "text": "Like using a walkie-talkie: You press the button and say something quickly, then you let go to listen If you hold the button down the whole time, you can’t hear the other person at all. 👉 The trigger pulse is like pressing the button quickly, then letting go so you can listen.",
+      "title": "Project 15: Backup Alarm — Step 4 — Prepare the Sensor 📡 (🧠 Logic)",
+      "text": "Think of this like a swimmer shaking out their arms right before diving in — a tiny reset that clears tension so the next move is clean. Your sensor needs the same brief pause before it can send an accurate signal.",
       "tags": []
     },
     {
@@ -811,8 +891,8 @@
       "project_key": "project_fifteen",
       "step_index": 4,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 5 — Listen for the Echo 👂 (📖 What & Why)",
-      "text": "After sending the signal, your sensor listens for it to come back. The sound wave travels forward, hits an object, and bounces back to the sensor. We measure how long this takes using a special function. This time is stored in a variable called duration . The longer the time, the farther away the object is.",
+      "title": "Project 15: Backup Alarm — Step 5 — Send the Signal 🚀 (📖 What & Why)",
+      "text": "With the trigger pin reset, it's time to actually send the measuring pulse. Your sensor sends a burst of sound by briefly switching the trigger pin ON, then quickly back OFF — a signal so short it's measured in millionths of a second. This tiny pulse is what starts the whole measurement: the moment it fires, the sensor begins listening for the sound to bounce off something and return.",
       "tags": []
     },
     {
@@ -821,8 +901,8 @@
       "project_key": "project_fifteen",
       "step_index": 4,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 5 — Listen for the Echo 👂 (🔧 How To)",
-      "text": "1. Use the echo pin to listen for the returning signal. 2. Store the time it takes in the duration variable. This value will be used to calculate distance in the next step.",
+      "title": "Project 15: Backup Alarm — Step 5 — Send the Signal 🚀 (🔧 How To)",
+      "text": "Set trigPin HIGH — digitalWrite, value HIGH. This fires the pulse. Wait 10 microseconds — delayMicroseconds, value 10 . This is the exact pulse width the HC-SR04 sensor (the sensor model wired into your circuit) needs to register a clean signal. Set trigPin LOW — digitalWrite, value LOW. This ends the pulse.",
       "tags": []
     },
     {
@@ -831,8 +911,8 @@
       "project_key": "project_fifteen",
       "step_index": 4,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 5 — Listen for the Echo 👂 (🧠 Logic)",
-      "text": "This is like yelling and waiting for your echo. If it comes back quickly, the wall is close. If it takes longer, the wall is farther away.",
+      "title": "Project 15: Backup Alarm — Step 5 — Send the Signal 🚀 (🧠 Logic)",
+      "text": "This is like a coach's short, sharp whistle blast to start a race — not a long note, just a quick, clear signal that kicks things off. Hold the whistle too long and you'd miss timing the runners; your sensor's pulse works the same way.",
       "tags": []
     },
     {
@@ -841,8 +921,8 @@
       "project_key": "project_fifteen",
       "step_index": 5,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 6 — Calculate Distance 📏 (📖 What & Why)",
-      "text": "Now we turn the time measurement into distance! Sound travels at a known speed through the air. By using this speed, we can convert the time into how far away something is. We divide the result by 2 because the sound travels to the object and back . But what if we don’t hear anything back? If no echo is received, it means nothing was detected. In that case, we treat the object as being very far away. This final value is stored in the distance variable.",
+      "title": "Project 15: Backup Alarm — Step 6 — Listen for the Echo 👂 (📖 What & Why)",
+      "text": "Your sensor sent its signal in the last step — now it needs to listen for that signal to return. The time between sending and receiving is the raw ingredient every distance sensor depends on: sound travels at a known, steady speed, so timing its round trip tells you how far it traveled. This measurement is precise enough that it's handled automatically rather than block-by-block — check the How To tab to see exactly what's happening.",
       "tags": []
     },
     {
@@ -851,8 +931,8 @@
       "project_key": "project_fifteen",
       "step_index": 5,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 6 — Calculate Distance 📏 (🔧 How To)",
-      "text": "1. Check if a duration was received. 2. If not, set distance to a large value (like 999). 3. Otherwise, convert duration into distance using the formula. 4. Store the result in the distance variable. This gives your system real-world information it can react to.",
+      "title": "Project 15: Backup Alarm — Step 6 — Listen for the Echo 👂 (🔧 How To)",
+      "text": "This step is handled automatically, because timing a returning sound wave to the microsecond isn't something you'd build block-by-block — Arduino has a purpose-built tool for exactly this. The locked code uses pulseIn , a block built specifically for this kind of ultrasonic sensor. It watches echoPin (the pin your sensor sends its return signal on) and waits for it to go HIGH — the moment the sound wave arrives back. It then measures exactly how long that HIGH signal lasted, in microseconds, and stores that number in duration , the variable you created back in Step 1. If nothing is close enough to bounce the sound back, pulseIn eventually gives up and returns 0 — you'll use that exact detail in the very next step. You now have a real, live measurement stored in duration. The next step turns that raw timing number into an actual distance in centimeters.",
       "tags": []
     },
     {
@@ -861,8 +941,8 @@
       "project_key": "project_fifteen",
       "step_index": 5,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 6 — Calculate Distance 📏 (🧠 Logic)",
-      "text": "Imagine timing how long it takes for a ball to bounce off a wall and come back. If you hear the bounce, you can calculate how far away the wall is. If you don’t hear anything , it probably means the wall is too far away — so you assume it's far.",
+      "title": "Project 15: Backup Alarm — Step 6 — Listen for the Echo 👂 (🧠 Logic)",
+      "text": "This is like timing an echo in a canyon — shout, count the seconds until it returns, and you can work out how far away the canyon wall is. Your sensor \"shouts\" with sound waves instead of a voice, but the idea is identical.",
       "tags": []
     },
     {
@@ -871,8 +951,8 @@
       "project_key": "project_fifteen",
       "step_index": 6,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 7 — Safe Zone Check 🟢 (📖 What & Why)",
-      "text": "Your system now knows the distance — but it needs to decide what that means. We use an if statement to check conditions. This lets the system ask a question like: “Is the object far enough away to be safe?” If the answer is YES, the system will enter the safe zone. This is the first decision your system makes.",
+      "title": "Project 15: Backup Alarm — Step 7 — Calculate Distance 📏 (📖 What & Why)",
+      "text": "You now have a raw timing number in duration — but \"4,706 microseconds\" doesn't mean much to a driver. This step converts that timing into an actual distance in centimeters, using the fact that sound travels through air at a known, steady speed. There's one edge case to handle first: if nothing was close enough to bounce the signal back, pulseIn returns exactly 0 (as you saw in the last step) — and 0 microseconds obviously doesn't mean \"the object is 0cm away.\" It means the opposite: nothing detected, so treat the object as very far away.",
       "tags": []
     },
     {
@@ -881,8 +961,8 @@
       "project_key": "project_fifteen",
       "step_index": 6,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 7 — Safe Zone Check 🟢 (🔧 How To)",
-      "text": "1. Create an if condition. 2. Check if the distance is greater than the safe value. We chose 50 because it’s a middle distance that makes the alarm react at a useful time — not too early and not too late. 3. Open the block where your safe actions will go. This tells your system when everything is safe.",
+      "title": "Project 15: Backup Alarm — Step 7 — Calculate Distance 📏 (🔧 How To)",
+      "text": "If no echo received — Use an if block (checks a condition, and only runs the code inside it when that condition is true) checking whether duration equals 0. Set distance to a far value — Inside that if, set distance to 999 — a placeholder far outside any real reading, so \"nothing detected\" always counts as safe. The locked else branch handles the normal case: distance = duration * 0.034 / 2 . 0.034 is the speed of sound in centimeters per microsecond, and dividing by 2 accounts for the sound traveling to the object and back — you only want the one-way distance.",
       "tags": []
     },
     {
@@ -891,8 +971,8 @@
       "project_key": "project_fifteen",
       "step_index": 6,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 7 — Safe Zone Check 🟢 (🧠 Logic)",
-      "text": "This is like checking your surroundings before stepping back. If nothing is close, you’re safe to move.",
+      "title": "Project 15: Backup Alarm — Step 7 — Calculate Distance 📏 (🧠 Logic)",
+      "text": "This is like a rally co-driver converting \"it took 3 seconds to hear the echo off that cliff\" into an actual distance in meters — same raw timing, just translated into units a driver can actually act on.",
       "tags": []
     },
     {
@@ -901,8 +981,8 @@
       "project_key": "project_fifteen",
       "step_index": 7,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Response 🟢 (📖 What & Why)",
-      "text": "When the system detects a safe distance, it should clearly show that everything is okay. We do this by: 💡 Turning the green LED ON ⚫ Turning the other LEDs OFF 🔇 Keeping the buzzer silent This gives clear feedback to the driver: no danger detected.",
+      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Check 🟢 (📖 What & Why)",
+      "text": "Your system now knows the real distance to whatever's behind the car — but knowing a number isn't the same as reacting to it. This step adds your first real decision: an if block that asks \"is the object far enough away to be safe?\" Right now this decision doesn't do anything yet — the block's body is empty. In the very next step, you'll reconnect it to your lights and buzzer from Step 3, so hang on for that.",
       "tags": []
     },
     {
@@ -911,8 +991,8 @@
       "project_key": "project_fifteen",
       "step_index": 7,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Response 🟢 (🔧 How To)",
-      "text": "1. Turn the buzzer OFF so there is no sound. 2. Turn the green LED ON. 3. Turn the yellow and red LEDs OFF. Make sure every light is controlled so there is no confusion.",
+      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Check 🟢 (🔧 How To)",
+      "text": "If distance greater than 50 — Use an if block checking whether distance is greater than 50 (centimeters). 50cm is roughly arm's length — close enough to react to, far enough that there's no rush yet. Nothing goes inside it yet — you're just building the question. The answer comes next.",
       "tags": []
     },
     {
@@ -921,8 +1001,8 @@
       "project_key": "project_fifteen",
       "step_index": 7,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Response 🟢 (🧠 Logic)",
-      "text": "Think of a traffic light. Green means go — everything is clear. No sound, no warning, just safe movement.",
+      "title": "Project 15: Backup Alarm — Step 8 — Safe Zone Check 🟢 (🧠 Logic)",
+      "text": "This is like a driver's mirror check before reversing — glancing back and asking \"is anything close?\" before deciding whether to worry. Right now your system is only asking the question; it hasn't decided how to react yet.",
       "tags": []
     },
     {
@@ -931,8 +1011,8 @@
       "project_key": "project_fifteen",
       "step_index": 8,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 9 — Warning Zone Check 🟡 (📖 What & Why)",
-      "text": "Not everything is either safe or dangerous — sometimes you're getting close. We use an else if statement to check a second condition. This only runs if the first condition (safe zone) was NOT true. Now the system asks: “Is the object getting close, but not too close?” This creates a middle warning zone.",
+      "title": "Project 15: Backup Alarm — Step 9 — Reconnect the Lights 🟢 (📖 What & Why)",
+      "text": "Remember Step 3, where you turned all three LEDs and the buzzer on permanently, just to prove the wiring worked? Those lines of code are still sitting in your program, running every single time through the loop — they just haven't been touched since. This step moves them inside the \"is it safe?\" question you built in Step 8. Once they're inside, they'll only run when the condition is actually true — which means your lights finally start reacting to something instead of just sitting on forever. There's a change to make while you move them: \"safe\" shouldn't mean all three lights on — it should mean only the green light on. So the yellow and red lights, and the buzzer, need to flip from ON to OFF inside this block. 🎮 Try It: Slide the distance sensor to somewhere past 50cm — you should see only the green light on, buzzer silent. That's a big change from Step 3's \"everything on\" test! Now slide it in close, under 50cm — notice everything goes dark. That's not a bug: you haven't taught your alarm what \"close\" or \"very close\" means yet. That's exactly what the next few steps build.",
       "tags": []
     },
     {
@@ -941,8 +1021,8 @@
       "project_key": "project_fifteen",
       "step_index": 8,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 9 — Warning Zone Check 🟡 (🔧 How To)",
-      "text": "1. Add an else if after your first condition. 2. Check if the distance is greater than the warning threshold. 3. Let use 20 for this number. That means its closer than 50 but not too close. This creates a second level of awareness in your system.",
+      "title": "Project 15: Backup Alarm — Step 9 — Reconnect the Lights 🟢 (🔧 How To)",
+      "text": "Turn buzzer OFF — Use the noTone block (the opposite of tone) on buzzerPin. When it's safe, there's nothing to warn about. Green LED stays ON — This line carries over unchanged from Step 3 — green already meant \"good,\" so it doesn't need to flip. Turn yellow LED OFF — digitalWrite, value LOW. In Step 3 this was HIGH; now that it's inside the safe-zone condition, it needs to flip to LOW so only green shows. Turn red LED OFF — digitalWrite, value LOW, same reasoning as yellow.",
       "tags": []
     },
     {
@@ -951,8 +1031,8 @@
       "project_key": "project_fifteen",
       "step_index": 8,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 9 — Warning Zone Check 🟡 (🧠 Logic)",
-      "text": "This is like a yellow traffic light. You’re not in danger yet, but you need to pay attention and slow down.",
+      "title": "Project 15: Backup Alarm — Step 9 — Reconnect the Lights 🟢 (🧠 Logic)",
+      "text": "This is like a race car's pit board — the crew doesn't hold up every signal at once, they show the driver exactly one message that matches the current situation. Your lights are learning the same lesson: show one true answer, not everything at once.",
       "tags": []
     },
     {
@@ -961,8 +1041,8 @@
       "project_key": "project_fifteen",
       "step_index": 9,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 10 — Warning Response 🟡 (📖 What & Why)",
-      "text": "When an object is getting close, the system should warn the driver — but not panic yet. We do this using a buzzer that turns ON and OFF repeatedly. This creates a beeping sound. The pattern works like this: 🔊 Turn sound ON ⏳ Wait 🔇 Turn sound OFF ⏳ Wait again This repeating pattern creates the familiar \"beep... beep...\" warning sound. We also turn on the yellow LED to show caution.",
+      "title": "Project 15: Backup Alarm — Step 10 — Warning Zone Check 🟡 (📖 What & Why)",
+      "text": "Not every distance is either perfectly safe or full-blown danger — there's a middle zone where a driver should start paying attention. This step adds a second question using else if (a block that only gets checked when the first if's condition was false), asking \"is the object getting close, but not too close yet?\" Just like Step 8, this step only builds the question — the reaction comes in the next step.",
       "tags": []
     },
     {
@@ -971,8 +1051,8 @@
       "project_key": "project_fifteen",
       "step_index": 9,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 10 — Warning Response 🟡 (🔧 How To)",
-      "text": "1. Turn the buzzer ON using a tone. We will use a frequency of 1000 Hz. This frequency decided the tone the buzzer will make. 2. Wait for a short amount of time. 300 ms. 3. Turn the buzzer OFF. 4. Wait again. 300 ms. 5. Set the LEDs so only the yellow light is ON. and the other two are off. This creates a repeating warning signal.",
+      "title": "Project 15: Backup Alarm — Step 10 — Warning Zone Check 🟡 (🔧 How To)",
+      "text": "Else if distance greater than 20 — Use an else if block checking whether distance is greater than 20 centimeters. Since this only gets checked when the safe-zone condition was false, it effectively means \"between 20 and 50cm.\"",
       "tags": []
     },
     {
@@ -981,8 +1061,8 @@
       "project_key": "project_fifteen",
       "step_index": 9,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 10 — Warning Response 🟡 (🧠 Logic)",
-      "text": "This is like a car slowly getting closer to something. The system says: \"Be careful… something is getting close.\" The repeating sound grabs attention without causing panic.",
+      "title": "Project 15: Backup Alarm — Step 10 — Warning Zone Check 🟡 (🧠 Logic)",
+      "text": "This is like a video game giving you a warning beep when your health drops below a threshold, but before it's actually critical — a heads-up zone between \"fine\" and \"danger,\" giving you a chance to react early.",
       "tags": []
     },
     {
@@ -991,8 +1071,8 @@
       "project_key": "project_fifteen",
       "step_index": 10,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 11 — Danger Zone 🚨 (📖 What & Why)",
-      "text": "If the object is very close, the system must react immediately. This is the danger zone . Instead of beeping, the buzzer stays ON continuously to create urgency. We also turn on the red LED to clearly show danger. This tells the driver: STOP NOW!",
+      "title": "Project 15: Backup Alarm — Step 11 — Warning Zone Response 🟡 (📖 What & Why)",
+      "text": "Now let's give the warning zone an actual reaction. Unlike the danger zone (which you'll build soon), a warning shouldn't be a constant, urgent sound — it should be a noticeable but calmer repeating beep, paired with the yellow light. You'll build this beep using tone, a short pause, noTone, another short pause — on, off, on, off — which is exactly how a real \"beep… beep… beep…\" warning sound is built. 🎮 Try It: Head back to Try It and slide the sensor into the 20–50cm range — you'll hear a repeating beep and see the yellow light, right alongside the green-only behavior you already built for anything past 50cm. Notice the safe zone still works exactly like it did last time — you've added a whole new zone without breaking the one before it.",
       "tags": []
     },
     {
@@ -1001,8 +1081,8 @@
       "project_key": "project_fifteen",
       "step_index": 10,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 11 — Danger Zone 🚨 (🔧 How To)",
-      "text": "1. Add an else block for when no other conditions are true. 2. Turn the buzzer ON and keep it ON. Lets use a frequency of 1500 now so our buzzer makes a higher pitched sound. 3. Turn the red LED ON. 4. Turn the other LEDs OFF. This creates a strong, clear danger signal.",
+      "title": "Project 15: Backup Alarm — Step 11 — Warning Zone Response 🟡 (🔧 How To)",
+      "text": "Turn buzzer ON (1000 Hz) — tone block, buzzerPin, frequency 1000 Hz. Delay 300ms — delay (a pause measured in milliseconds — a thousand times longer than the microsecond delays from your sensor steps), value 300 . Turn buzzer OFF — noTone, buzzerPin. Delay 300ms — delay, value 300 again, completing the \"on, pause, off, pause\" beep cycle. Turn green LED OFF — digitalWrite, value LOW. Turn yellow LED ON — digitalWrite, value HIGH. Turn red LED OFF — digitalWrite, value LOW.",
       "tags": []
     },
     {
@@ -1011,8 +1091,8 @@
       "project_key": "project_fifteen",
       "step_index": 10,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 11 — Danger Zone 🚨 (🧠 Logic)",
-      "text": "This is like a loud alarm going off when you're about to hit something. No more warnings — it’s time to stop immediately!",
+      "title": "Project 15: Backup Alarm — Step 11 — Warning Zone Response 🟡 (🧠 Logic)",
+      "text": "This is like a car's turn signal — not a constant sound, but a steady, repeating pulse designed to catch your attention without being alarming. A warning should feel different from an emergency, and the repeating beep does exactly that.",
       "tags": []
     },
     {
@@ -1021,8 +1101,8 @@
       "project_key": "project_fifteen",
       "step_index": 11,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 12 — System Loop 🔁 (📖 What & Why)",
-      "text": "Your system runs over and over again inside a loop. Without a small pause, it would run too fast and could cause unstable readings. We add a short delay to give the system time to reset before the next measurement. This makes the sensor more stable and reliable.",
+      "title": "Project 15: Backup Alarm — Step 12 — Danger Zone 🚨 (📖 What & Why)",
+      "text": "This is the final zone — and the moment your alarm becomes a complete, working system. Anything not caught by the safe or warning conditions falls into this last case, using else (the block that runs when every earlier if/else if condition was false) — meaning you don't even need to check a number here, since anything this close has already failed both earlier tests. Unlike the warning beep, danger needs urgency: a constant tone instead of a repeating one, and the red light instead of yellow. 🎮 Try It: This is the big one — slide the sensor through the full range. Past 50cm: green only. Between 20–50cm: yellow, beeping. Under 20cm: red, with a steady higher-pitched tone. All three zones, working together for the first time, exactly like a real car's backup sensor.",
       "tags": []
     },
     {
@@ -1031,8 +1111,8 @@
       "project_key": "project_fifteen",
       "step_index": 11,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 12 — System Loop 🔁 (🔧 How To)",
-      "text": "1. At the end of the loop, add a small delay. Lets use 50 ms. 2. This delay should be short — just enough to stabilize the system. 3. The loop will then repeat automatically. This keeps your system running smoothly.",
+      "title": "Project 15: Backup Alarm — Step 12 — Danger Zone 🚨 (🔧 How To)",
+      "text": "Turn buzzer ON (1500 Hz) — tone block, buzzerPin, frequency 1500 Hz — higher-pitched than the warning zone's 1000 Hz, so it's instantly distinguishable by ear. Turn green LED OFF — digitalWrite, LOW. Turn yellow LED OFF — digitalWrite, LOW. Turn red LED ON — digitalWrite, HIGH. Notice there's no delay/noTone pattern here like the warning zone had — the tone just stays on continuously, which is exactly what makes it read as more urgent.",
       "tags": []
     },
     {
@@ -1041,8 +1121,8 @@
       "project_key": "project_fifteen",
       "step_index": 11,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 12 — System Loop 🔁 (🧠 Logic)",
-      "text": "Think of this like blinking your eyes. You don’t constantly stare without pause — small breaks help everything stay clear and stable.",
+      "title": "Project 15: Backup Alarm — Step 12 — Danger Zone 🚨 (🧠 Logic)",
+      "text": "This is like the difference between a car's turn signal and its collision-warning alarm — one is a calm, repeating pulse, the other is a constant, impossible-to-ignore tone. Same buzzer, same LEDs, but the pattern itself communicates how serious the situation is.",
       "tags": []
     },
     {
@@ -1051,8 +1131,8 @@
       "project_key": "project_fifteen",
       "step_index": 12,
       "tab_key": "explain",
-      "title": "Project 15: Backup Alarm — Step 13 — Mission Complete 🎉 (📖 What You Built)",
-      "text": "🚗 Congratulations, Engineer! You successfully designed and built a smart backup alarm system — just like the ones used in real cars. Your system can: 📡 Measure distance using an ultrasonic sensor 🧠 Make decisions based on that distance 💡 Show safe, warning, and danger zones using LEDs 🔊 Alert the driver using sound patterns You didn’t just write code — you built a real-world system that senses, thinks, and reacts.",
+      "title": "Project 15: Backup Alarm — Step 13 — System Loop 🔁 (📖 What & Why)",
+      "text": "Your alarm's logic is complete — this last step just makes it run smoothly. Right now your loop repeats as fast as Arduino can possibly execute it, which can make sensor readings jittery and unstable. A short pause at the end of each loop gives the sensor time to settle before the next measurement, the same way you gave it a tiny pause back in Step 4.",
       "tags": []
     },
     {
@@ -1061,8 +1141,8 @@
       "project_key": "project_fifteen",
       "step_index": 12,
       "tab_key": "howto",
-      "title": "Project 15: Backup Alarm — Step 13 — Mission Complete 🎉 (🔧 Try This Next)",
-      "text": "Now that your system works, try improving it! Here are some ideas: ⚡ Change the distance values to make the system more or less sensitive 🔊 Make the beeping faster as objects get closer 🌈 Add more LEDs for smoother distance levels 📺 Display the distance on a screen 🎮 Turn it into a game or challenge system Experimenting is how real engineers improve their designs!",
+      "title": "Project 15: Backup Alarm — Step 13 — System Loop 🔁 (🔧 How To)",
+      "text": "Small delay for stability — delay block, value 50 milliseconds, added at the very end of loop(). Short enough that the alarm still feels instant to a driver, long enough to steady the readings.",
       "tags": []
     },
     {
@@ -1071,8 +1151,38 @@
       "project_key": "project_fifteen",
       "step_index": 12,
       "tab_key": "logic",
-      "title": "Project 15: Backup Alarm — Step 13 — Mission Complete 🎉 (🧠 What You Learned)",
-      "text": "This project brought together everything you’ve been learning: 📦 Variables to store important information ⚙️ Setup to prepare your system 📡 Sensors to collect real-world data 🧠 Logic to make decisions (if / else if / else) 💡 Outputs to respond with lights and sound 🔁 Loops to keep everything running continuously This is how real systems work — input → thinking → output. You are now thinking like an engineer. 🚀",
+      "title": "Project 15: Backup Alarm — Step 13 — System Loop 🔁 (🧠 Logic)",
+      "text": "This is like a car's suspension smoothing out small bumps in the road — the system underneath is already working, this step just takes the jitter out of it.",
+      "tags": []
+    },
+    {
+      "id": "project_fifteen:step13:explain",
+      "source": "auto",
+      "project_key": "project_fifteen",
+      "step_index": 13,
+      "tab_key": "explain",
+      "title": "Project 15: Backup Alarm — Step 14 — Mission Complete 🎉 (📖 What You Built)",
+      "text": "🚗 Congratulations, Engineer! You designed and built a complete smart backup alarm — sensing distance, making decisions, and reacting with lights and sound, just like a real car's system. Your system can now: 📡 Measure real-world distance using an ultrasonic sensor 🧠 Make three-way decisions using if / else if / else 💡 Show safe, warning, and danger zones using LEDs 🔊 Alert the driver with two different sound patterns ✨ Start from a proven-working circuit and build logic on top of it, one working piece at a time You didn't just copy code — you tested your wiring first, then taught your system to think.",
+      "tags": []
+    },
+    {
+      "id": "project_fifteen:step13:howto",
+      "source": "auto",
+      "project_key": "project_fifteen",
+      "step_index": 13,
+      "tab_key": "howto",
+      "title": "Project 15: Backup Alarm — Step 14 — Mission Complete 🎉 (🔧 Try This Next)",
+      "text": "Now that your system works, here are some ideas to make it even better: ⚡ Change the zone distances — try 40cm and 15cm instead of 50 and 20, and see how it changes the feel. 🔊 Speed up the warning beep — shrink the 300ms delays as distance decreases, so the beep gets faster the closer you get. 🌈 Add a fourth LED — split the warning zone into \"getting close\" and \"really close\" with an extra color. 📟 Print the distance to Serial — use Serial.println(distance) so you can watch the exact numbers as you test. 🎮 Turn it into a game — build a \"don't get caught\" challenge where a player tries to stay in the safe zone as long as possible. Experimenting is how real engineers improve their designs.",
+      "tags": []
+    },
+    {
+      "id": "project_fifteen:step13:logic",
+      "source": "auto",
+      "project_key": "project_fifteen",
+      "step_index": 13,
+      "tab_key": "logic",
+      "title": "Project 15: Backup Alarm — Step 14 — Mission Complete 🎉 (🧠 What You Learned)",
+      "text": "This project brought together everything you've been building toward: 📦 Variables — labels that store and update information your program needs. ⚙️ Setup — configuring your hardware once, before the real logic runs. 📡 Sensors — turning a real-world signal (sound timing) into a usable number. 🧠 Conditional logic — if / else if / else, letting your program choose between multiple reactions. 💡 Outputs — controlling LEDs and a buzzer to communicate a decision. 🔁 Loops — running the same logic continuously, the way a real system never really \"finishes.\" You built something that senses, thinks, and reacts — you're thinking like an engineer now. 🚀",
       "tags": []
     },
     {
@@ -1766,33 +1876,63 @@
       "tags": []
     },
     {
-      "id": "project_seven:story",
+      "id": "project_seven:step0:explain",
       "source": "auto",
       "project_key": "project_seven",
-      "step_index": null,
-      "tab_key": "story",
-      "title": "Project 7: The Automagic Night Light (👷 Mission)",
-      "text": "Build Your Smart Night Light 🌙💡 Have you ever noticed how streetlights turn on by themselves at night? Today, you become the engineer 👷 Your mission: ☀️ During the day → Light stays OFF 🌙 When it gets dark → Light turns ON Your Arduino will watch the light levels and decide what to do — automatically! No buttons. No switches. Just smart thinking. 🧠✨",
+      "step_index": 0,
+      "tab_key": "explain",
+      "title": "Project 7: The Automagic Night Light — Program the Night Light 💡 (📖 What & Why)",
+      "text": "Streetlights never need someone to flip their switch. They watch the sky and decide on their own. 🌙 Today you build that same trick into your night light, using the sensor plug and the light plug on your Arduino. Without this step, your light would just sit there forever. It would never check the light number, so it could never decide anything on its own. Once this step runs, your Arduino checks the light number by itself, over and over, forever.",
       "tags": []
     },
     {
-      "id": "project_seven:logic",
+      "id": "project_seven:step0:howto",
       "source": "auto",
       "project_key": "project_seven",
-      "step_index": null,
+      "step_index": 0,
+      "tab_key": "howto",
+      "title": "Project 7: The Automagic Night Light — Program the Night Light 💡 (🔧 How To)",
+      "text": "This whole program is built for you and locked in place, because getting a light sensor and a light to work together takes many exact steps in the right order. 🔒 The first two lines set up the light plug and turn on the messages your Arduino sends back to you, so you can watch what it is thinking. 💬 Then your Arduino asks the sensor plug one question: how much light is hitting it right now? It stores the answer as the light number and prints it so you can see it too. 🔢 Next it checks the light number against 300, the darkness number for this exact sensor and resistor pair. Your 10k resistor and photoresistor were picked so daylight always lands above 300 and true darkness always lands below it. 🌗 If the light number is under 300, the light plug switches on and it prints \"It's dark! Light ON.\" If it is 300 or higher, the light plug switches off and it prints \"Sun is up! Light OFF.\" instead. 💡 Last, it waits a tenth of a second before checking again, so it is always watching. ⏱️ Everything you just read is now running for real. In the next step, you get to reach in and start changing it yourself. 🛠️",
+      "tags": []
+    },
+    {
+      "id": "project_seven:step0:logic",
+      "source": "auto",
+      "project_key": "project_seven",
+      "step_index": 0,
       "tab_key": "logic",
-      "title": "Project 7: The Automagic Night Light (🧩 Logic)",
-      "text": "How the System Thinks The Arduino constantly: 🔢 Reads the light level 🤔 Compares it to a number 💡 Turns the light ON or OFF 🔁 Repeats forever If it's dark → Light ON 🌙 If it's bright → Light OFF ☀️ This is how automatic systems work in the real world!",
+      "title": "Project 7: The Automagic Night Light — Program the Night Light 💡 (🧠 Logic)",
+      "text": "Think of the sensor as a scout standing outside every second, holding up a number to show how bright it is right now. 🔦 The darkness number, 300, is a line drawn in the sand. Any number below that line means dark, any number at or above it means bright. 📏 Your Arduino checks the scout's number against that line again and again, so the moment it crosses the line, the light flips right away. ⚡",
       "tags": []
     },
     {
-      "id": "project_seven:translation",
+      "id": "project_seven:step1:explain",
       "source": "auto",
       "project_key": "project_seven",
-      "step_index": null,
-      "tab_key": "translation",
-      "title": "Project 7: The Automagic Night Light (🧬 Translation)",
-      "text": "Engineer Breakdown lightSensor = A0 This is where the sensor is connected 👁️ nightLight = 13 This is the light you are controlling 💡 analogRead(lightSensor) Reads brightness 🔢 Lower number = darker Higher number = brighter if (brightness &lt; 300) If it's dark → turn light ON 🌙 else If it's bright → turn light OFF ☀️ Threshold (300) This number decides when it becomes \"night\" Input vs Output Sensor = input 👁️ Light = output 💡",
+      "step_index": 1,
+      "tab_key": "explain",
+      "title": "Project 7: The Automagic Night Light — Mission Complete 🎉 (📖 What You Built)",
+      "text": "🎉 Great work, Engineer! You just finished a night light that runs entirely on its own. Your circuit and code work together to watch the world and react to it, no buttons needed. 🌙 Turns the light ON the moment it gets dark ☀️ Turns the light OFF the moment it gets bright again 👁️ Reads the light number from your sensor plug every tenth of a second 💬 Prints what it sees so you can watch it think in real time You proved you can build a system that senses, decides, and acts, all by itself.",
+      "tags": []
+    },
+    {
+      "id": "project_seven:step1:howto",
+      "source": "auto",
+      "project_key": "project_seven",
+      "step_index": 1,
+      "tab_key": "howto",
+      "title": "Project 7: The Automagic Night Light — Mission Complete 🎉 (🔧 Try This Next)",
+      "text": "Now that your system works, here are some ideas to make it even better. 🔆 Make it more sensitive Lower the darkness number from 300 to something like 200, so the light waits for true darkness before turning on. ⏱️ Speed it up or slow it down Change the 100 at the end to a bigger or smaller number to check the light more or less often. 🔊 Add a buzzer Wire in a buzzer and make it beep once the moment the light turns on. 🌈 Add a second light Wire up a second LED that turns on only when it gets extremely dark, using a lower darkness number than your first light. 🎮 Build a light-up alarm Combine this with a button so the night light only runs after someone presses the button first, like a real security system. Experimenting is how real engineers improve their designs.",
+      "tags": []
+    },
+    {
+      "id": "project_seven:step1:logic",
+      "source": "auto",
+      "project_key": "project_seven",
+      "step_index": 1,
+      "tab_key": "logic",
+      "title": "Project 7: The Automagic Night Light — Mission Complete 🎉 (🧠 What You Learned)",
+      "text": "This project brought together everything you have been building. 👁️ Sensing the world Your Arduino can read a number straight from a real sensor plug, not just from code you typed in. 🔢 Reading a live number That sensor reading changes every moment, so your Arduino has to keep asking for a fresh one. 📏 Setting a line to act on Picking one exact number to check against lets your Arduino make a clear yes-or-no decision. 🔀 Choosing between two paths Your code can do one thing when a check is true and a completely different thing when it is false. 🔁 Watching forever Wrapping all of this in a loop means your night light never stops paying attention. You are now thinking like an engineer.",
       "tags": []
     },
     {
@@ -2176,13 +2316,23 @@
       "tags": []
     },
     {
-      "id": "project_thirteen:step0:story",
+      "id": "project_thirteen:step0:explain",
       "source": "auto",
       "project_key": "project_thirteen",
       "step_index": 0,
-      "tab_key": "story",
-      "title": "Project 13: The Reaction Timer — Step 1 — Build the Reaction Timer ⏱️ (🧪 Mission)",
-      "text": "Welcome to the Arduino Reaction Lab! 🧪 Today, you will build a reaction timer — just like scientists use to measure reflexes. Your mission: 🔘 Press the button as fast as you can ⏱️ The Arduino will measure your reaction time 💻 Watch the results on your computer Ready… Set… React!",
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 1 — Set Up the Lab's Memory 📦 (📖 What & Why)",
+      "text": "Every stopwatch needs somewhere to keep track of what it is doing before it can time anything at all. Right now your Reaction Lab has the Timer Button wired in, but your program has no place to remember the moment someone pressed it, and no place to hold the final answer once the reaction time is worked out. This step builds two memory boxes for your program to use. Think of them like two small boxes with labels taped on the front. The first box is labeled \"when it started.\" The second box is labeled \"the answer.\" Both boxes start out empty, so you will fill them with the number zero for now. If you skipped this step, your program would have no boxes to put anything into later on. It could not remember when the timer started, and it would have nothing new to show on the screen when you pressed the button a second time. Next, you will turn the Timer Button on and open the connection to your computer screen, so your Reaction Lab can finally start talking to you.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step0:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 0,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 1 — Set Up the Lab's Memory 📦 (🔧 How To)",
+      "text": "Your Reaction Lab needs two places to keep track of time, so the first thing to build here is a pair of memory boxes. The first box remembers the exact moment the timer starts. You'll place a memory box built for very large numbers, since a running clock can climb into the millions before long. Give it the name startTime , and start it at 0 , since no round has begun yet. The second box holds the finished reaction time once it's worked out. It uses that same large-number box. Name this one time , and start it at 0 too, just like an empty scoreboard before a game begins. You'll notice a third box already sitting above these two, holding the number 2. That one is already built for you. It simply remembers which pin your Timer Button is wired to, so the rest of your program can call it \"button\" instead of having to remember the number 2 every time.",
       "tags": []
     },
     {
@@ -2191,28 +2341,188 @@
       "project_key": "project_thirteen",
       "step_index": 0,
       "tab_key": "logic",
-      "title": "Project 13: The Reaction Timer — Step 1 — Build the Reaction Timer ⏱️ (🧩 Logic)",
-      "text": "How the Timer Thinks The Arduino is constantly running a simple decision loop: 🔘 Check the button 🤔 Is this the first press or second press? ⏱️ Start or stop timing 💻 Send result to the computer 🔁 Repeat Flow: First press → Start timer Second press → Stop timer and record reaction",
+      "title": "Project 13: The Reaction Timer — Step 1 — Set Up the Lab's Memory 📦 (🧠 Logic)",
+      "text": "Think of a scientist's lab notebook with two blank labels already printed on the page. One says \"Start Time,\" and the other says \"The Answer.\" Nothing is written on either line yet, but the notebook is ready the moment an experiment begins. Your two memory boxes work exactly the same way. They are empty right now, but they are ready to be filled the instant your timer springs into action.",
       "tags": []
     },
     {
-      "id": "project_thirteen:step0:translation",
-      "source": "auto",
-      "project_key": "project_thirteen",
-      "step_index": 0,
-      "tab_key": "translation",
-      "title": "Project 13: The Reaction Timer — Step 1 — Build the Reaction Timer ⏱️ (🧬 Translation)",
-      "text": "Key Code Meanings pinMode(button, INPUT_PULLUP) Prepares the button input with a stable signal digitalRead(button) Checks if the button is pressed running Tracks whether the timer is active millis() Gives the current time in milliseconds time = millis() - startTime Calculates reaction time Serial.println(time) Sends the result to the computer delay(300) Prevents multiple accidental presses",
-      "tags": []
-    },
-    {
-      "id": "project_thirteen:step1:complete",
+      "id": "project_thirteen:step1:explain",
       "source": "auto",
       "project_key": "project_thirteen",
       "step_index": 1,
-      "tab_key": "complete",
-      "title": "Project 13: The Reaction Timer — Step 2 — Test Your Reaction Timer 🚀 (🎉 Congratulations)",
-      "text": "You Built a Reaction Timer! 🎉 Your system is ready. Now it's time to test it. 🔌 Connect your Arduino ⬆️ Upload your code 💻 Open the Serial Monitor 🔘 Press the button twice to measure your reaction time Try multiple times and see how fast you can react!",
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 2 — Wire the Button & Open Comms 📡 (📖 What & Why)",
+      "text": "Your Reaction Lab now has two memory boxes ready to use, but the Arduino still cannot hear the Timer Button, and it has no way to show you anything on your screen yet. This step happens once, the very moment your Arduino turns on. It tells the Arduino to listen to the Timer Button, and it turns on the connection to your computer screen, called the Serial Monitor. That screen is where every reaction time will show up later. Without this step, pressing the button would do nothing at all, even if the rest of your program were perfect. The Arduino simply would not be listening yet, and it would have no screen to talk to even if it were. Next, you will press the button for the very first time, and prove that your Arduino really is paying attention.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step1:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 1,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 2 — Wire the Button & Open Comms 📡 (🔧 How To)",
+      "text": "A pin can only do one job at a time for the Arduino: either it listens for a signal coming in, or it sends a signal out. Right now, the Arduino has no idea which job the Timer Button's pin is supposed to do, so it can't hear anything yet. This step tells the Arduino that the Timer Button's pin should listen, not speak. You'll set the pin's mode to INPUT_PULLUP. Your Timer Button is wired straight to the Arduino, with nothing extra there to keep its signal calm when it isn't being pressed. INPUT_PULLUP tells the Arduino to quietly hold that signal steady all by itself, so the button only causes a change the moment you actually press it. The one thing to remember: because of this mode, a real press will actually show up as LOW instead of HIGH, the opposite of what you might expect. The line below it, Serial.begin(9600) , is already set up for you. It's a standard line that opens the connection to your computer screen at a fixed speed, the same in almost every Arduino project that prints anything.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step1:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 1,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Step 2 — Wire the Button & Open Comms 📡 (🧠 Logic)",
+      "text": "Think of a mission control room before a launch. Someone has to flip the switch that turns on the radio channel before anyone can hear \"all systems go\" from the capsule. This step does the same job for your Reaction Lab. It flips the switches so the button can be heard and the results can be seen, before any real countdown begins.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step2:explain",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 2,
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 3 — Prove the Signal Works 📶 (📖 What & Why)",
+      "text": "Before you teach your timer any real rules, it is worth proving that the button and the screen actually work together. This is exactly what real scientists do before running an experiment. They test that their tools work before trusting any of the readings. This step makes your program print a number to the screen every single time you press the Timer Button. There are no rules yet, and no memory of earlier presses. It is simply proof that a press really does reach your screen. Starting this way matters. If a wire were loose, or a part were wired to the wrong pin, you would want to find that out right now, before building anything more complicated on top of it. Next, you will start teaching your timer to actually remember the moment it began, and you will watch this simple number turn into something real. 🎮 Try It: Open the sim tab and press the Timer Button a few times. A number appears on the screen every single time. That number only tells you how long the Arduino has been turned on, not a real reaction time yet, but it proves your button and your screen are both working.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step2:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 2,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 3 — Prove the Signal Works 📶 (🔧 How To)",
+      "text": "An \"if\" check only runs the things inside it when a specific question is true. Here, \"if\" is asking one exact question: is the Timer Button being pressed down right at this instant? You need that question answered first, because everything else in this step should only happen at the exact moment of a press, not constantly while the Arduino sits there running. You'll place a check comparing the button's reading to LOW, since you learned last step that INPUT_PULLUP flips things around: a real press actually reads as LOW, not HIGH. Once that question is true, two more things need to happen so you can actually see proof the press worked. First, your program needs to grab a snapshot of the current moment: place a line that sets your time memory box using millis(), a built-in tool that tells you how many milliseconds have passed since the Arduino turned on. Then it needs to actually show you that number, or the whole test would prove nothing: place a line that prints time using \"println\" mode, which prints the number and then starts a new line, so the next one appears underneath it instead of running together. The delay(300) sitting underneath all of this is already built for you. It's a short pause after every press, so one quick tap of the button doesn't accidentally get counted as several presses in a row.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step2:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 2,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Step 3 — Prove the Signal Works 📶 (🧠 Logic)",
+      "text": "Think of testing a walkie-talkie by just pressing \"talk\" and saying \"testing, testing.\" You are not having a real conversation yet. You are only proving the signal gets through at all. That is this whole step. Press the button, see a number appear, and know the connection between your hand and your screen is solid.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step3:explain",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 3,
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 4 — Teach It to Remember 🧠 (📖 What & Why)",
+      "text": "Your button and your screen have both proven that they work, but your timer still cannot remember anything. Every press only shows how long the Arduino has been turned on, which is not a real reaction time at all. A real timer needs to remember the moment you first pressed the button, so it can measure how long it takes until you press it again. This step gives your program a way to remember whether the timer is already running. Think of it like a small flag that starts down and gets raised the moment you press the button. The same moment the flag goes up, your program also remembers exactly when that happened. Here is the important part, and it is done on purpose. This step only teaches your timer what to do the first time you press the button. It does not yet know what to do the second time. So instead of showing a number like the last step did, pressing the button now shows nothing at all. Next, you will teach your timer what to do on that second press, and that is when your real reaction time finally appears. 🎮 Try It: Open the sim tab and press the Timer Button. Nothing appears on the screen. Press it again, and again, and still nothing shows up, no matter how many times you press it. That is a big change from the last step, where every single press showed a number. Do not worry, nothing is broken. Your timer is quietly remembering that it has started, it just has not been taught how to react to a second press yet.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step3:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 3,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 4 — Teach It to Remember 🧠 (🔧 How To)",
+      "text": "An \"if\" check only runs the things inside it when a specific question is true. Ask it something true, and everything inside happens. Ask it something false, and everything inside gets skipped completely, as if it weren't there at all. Your reaction timer needs exactly this kind of check right now, because it has to treat two different moments completely differently. The very first press of a round should start the clock. Any press after that, until the round finishes, should not start the clock all over again. The only way your program can tell these two moments apart is by remembering whether a round is already underway, which is exactly why you built the running flag in this step. So you'll place a check that asks: is running still equal to 0? In other words, is this genuinely the first press since the flag was last reset? This check goes right inside the button-press check from Step 3, so it only ever gets asked at the moment of a press, not constantly. If the answer is yes, meaning no round has started yet, two things need to happen right then. Your program needs to remember exactly what moment it is right now, so place a line that sets startTime using millis(), the same time-reading tool you used back in Step 3. And your program needs to raise the flag, so the next press gets treated differently. Place a line that sets running to 1. If the answer is no, meaning a round is already underway, neither of those two lines runs this time, because a round is already timing and shouldn't be restarted. What should happen instead on that second press is exactly what the next step teaches. The outer button check and the delay(300) pause both carry over unchanged from Step 3. You are not rebuilding them. You are only adding this new check inside.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step3:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 3,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Step 4 — Teach It to Remember 🧠 (🧠 Logic)",
+      "text": "Think of a stopwatch with a single start button that has no stop button wired in yet. Pressing it quietly starts the internal clock, but nothing on the display changes, because nobody has told it what \"stop\" means. Your timer is in that exact spot right now. It is secretly keeping time. It just cannot tell you about it yet.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step4:explain",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 4,
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 5 — Clock the Reaction ⏱️ (📖 What & Why)",
+      "text": "This is the step where your Reaction Lab finally comes together. Right now, the first press starts your timer quietly in the background, and every press after that does nothing at all. You built it that way on purpose, so you could focus on one small piece at a time. This step teaches your timer what to do once it is already running. It works out how much time has passed since the first press, shows that real reaction time on your screen, and then lowers the flag from the last step, so the very next press can start a brand new round. Without this step, your timer would keep starting new rounds forever, but it would never once tell you the result. That is exactly what you saw happen in the last step. 🎮 Try It: Open the sim tab. Press the Timer Button once, and the screen stays quiet, just like before. Wait a moment, then press it again, and a real number appears. That number is how long you waited between your two presses, not how long the Arduino has been turned on like the very first test showed. Press it a few more times and watch the number change depending on how long you wait. That is a real, working reaction timer.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step4:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 4,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 5 — Clock the Reaction ⏱️ (🔧 How To)",
+      "text": "Step 4 only taught your timer what to do when the answer to \"has this round already started?\" is yes. But every single time you press the button after that, the answer is no, since the flag is already raised, and right now nothing has been built for that case at all. That's exactly the silence you saw in the last step. This step fills in that missing case, using an \"else,\" which only runs when the check right before it turned out to be false. Everything you place here only happens on the press that follows the very first one. First, your program needs to know exactly what moment it is right now, so it can figure out how much time has gone by. Place a line that sets a new, temporary memory box called now using millis(), the exact same time-reading tool from before. Next comes the actual point of this whole project: turning two raw moments into a single, meaningful gap. Place a line that sets time to now minus startTime . Subtracting the moment you started from the moment you finished leaves just the difference between them, which is your real reaction time, in milliseconds. Then, place a line that prints time to the screen, the same kind of print line you built back in Step 3. This time, though, it's printing a real answer instead of a raw, ever-growing number. Finally, lower the flag by placing a line that sets running back to 0. Without this, your program would think a round was still underway forever, and the very next press would be treated as if it were the second press of an already-finished round instead of the start of a brand new one.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step4:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 4,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Step 5 — Clock the Reaction ⏱️ (🧠 Logic)",
+      "text": "Think of a real stopwatch at a race. Press once and it starts counting silently in the background. Press again, and it doesn't just make a noise. It shows you the exact time on the display, then resets itself, ready for the next runner. That is exactly the two-press rhythm you just built. Start silently, then reveal the result, then reset.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step5:explain",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 5,
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Step 6 — Polish Mission Control's Readout 🖥️ (📖 What & Why)",
+      "text": "Your Reaction Lab's thinking is completely finished. The last step already works out a real, correct reaction time. Right now, though, your screen only ever shows plain numbers, with nothing to explain what they mean. This step does not change how your timer thinks at all. It only adds a few friendly messages around the exact same thinking you already built, so your screen reads like a real instrument instead of a stream of bare numbers. Since this step is only about making the screen easier to read, every part of it is already built for you. There is nothing new to place. Read through the How To tab to see exactly what was added and why. 🎮 Try It: Open the sim tab and press the Timer Button once. Instead of silence like before, you will now see the words \"Timer started! Press again to stop.\" Press it again, and instead of a bare number, you will see \"Your time was:\" followed by the number and the letters \"ms.\" The timing underneath has not changed one bit. Only the screen got easier to read.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step5:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 5,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Step 6 — Polish Mission Control's Readout 🖥️ (🔧 How To)",
+      "text": "Every line in this step is already built for you, since nothing here is new logic, just a clearer way of showing the same result. Right after the timer starts (the same running = 1 line from Step 4), a new line now prints \"Timer started! Press again to stop.\" That single message finally gives you visible confirmation the moment a round begins, instead of the silence you sat through back in Step 4. The single bare number print from Step 5 has also changed. Instead of printing just the number, it now prints three separate pieces in a row: \"Your time was: \" , then the number itself, then \" ms\" right after it. Spelling out the units means nobody has to guess whether a result is milliseconds, seconds, or something else entirely. Everything else, the flag, the subtraction, the reset, is exactly what you built in Steps 4 and 5. This step only ever adds messages around that thinking. It never changes what gets calculated.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step5:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 5,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Step 6 — Polish Mission Control's Readout 🖥️ (🧠 Logic)",
+      "text": "Think of the difference between a stopwatch that just flashes a bare number and one with a little screen that says \"GO!\" and then \"Your time: 4.12 seconds.\" Same internal clock, same accuracy. Just a display that actually talks to you.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step6:explain",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 6,
+      "tab_key": "explain",
+      "title": "Project 13: The Reaction Timer — Mission Complete 🎉 (📖 What You Built)",
+      "text": "Mission complete! 🧪 You built a real reaction timer from scratch. It starts quietly, works out how long you took to react, and shows you the answer in plain, friendly words. Your Reaction Lab now: 🔘 Reads the Timer Button reliably, every single press 🧠 Remembers whether a round is already running, using a flag inside your program ⏱️ Works out the real gap between two presses, instead of just showing a clock that never stops counting 📟 Shows friendly, labeled messages on the screen instead of bare numbers 🔁 Resets itself automatically after every round, ready for the very next press You proved you can build something that goes from \"does this even work?\" all the way to \"this measures something real,\" one small, honest step at a time.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step6:howto",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 6,
+      "tab_key": "howto",
+      "title": "Project 13: The Reaction Timer — Mission Complete 🎉 (🔧 Try This Next)",
+      "text": "Now that your system works, here are some ideas to make it even better. ⏱️ Change the debounce pause. Try shrinking delay(300) to 100ms and see if extra-fast double-presses start sneaking through. 🎯 Add a \"best time\" tracker. Create a new memory box that remembers your fastest reaction time so far, and only overwrite it when you beat it. 🔴 Add an LED. Light one up while the timer is running, so you get a visual cue on top of the Serial Monitor's silence in Step 4's stage. 🔢 Count your rounds. Add a counter that increases every time a reaction time is printed, and show it alongside each result. 🎮 Build a reflex game. Combine this with another project's sensor so the timer only starts once a random light or sound goes off, measuring true reflex speed instead of a second deliberate press. Experimenting is how real engineers improve their instruments.",
+      "tags": []
+    },
+    {
+      "id": "project_thirteen:step6:logic",
+      "source": "auto",
+      "project_key": "project_thirteen",
+      "step_index": 6,
+      "tab_key": "logic",
+      "title": "Project 13: The Reaction Timer — Mission Complete 🎉 (🧠 What You Learned)",
+      "text": "This project brought together everything you've been building. 📦 Variables. Labeled memory boxes that store a number your program can read and change later. 🎁 Reward-first testing. Proving your button and Serial Monitor work before building any real timing logic on top. 🧠 The running flag. A flag that lets your program remember something between one press and the next, not just react in the moment. ⏱️ millis() and subtraction. Turning two raw time readings into a meaningful gap of time. 🔐 Building in isolated steps. Teaching the \"first press\" behavior completely, watching it go silent on purpose, then adding the \"second press\" behavior separately. 📟 Serial output as an instrument. The difference between a bare debug number and a labeled, readable result. You're now thinking like a real lab engineer, proving each piece before trusting the whole system. 🚀",
       "tags": []
     },
     {
@@ -2316,23 +2626,23 @@
       "tags": []
     },
     {
-      "id": "project_twelve:step0:mission",
+      "id": "project_twelve:step0:explain",
       "source": "auto",
       "project_key": "project_twelve",
       "step_index": 0,
-      "tab_key": "mission",
-      "title": "Project 12: Night Patrol Alarm — Step 1 — Build the Light Bar System 📘 (🧠 Mission)",
-      "text": "You are building the patrol vehicle light bar system. The light bar must flash in a clear pattern so people can see the vehicle at night. - The switch controls the whole system. - If the button is OFF → all lights stay OFF. - If the button is ON (pressed) → the flashing pattern begins. - The lights flash one at a time. - The pattern repeats again and again. Each light flash must use a short pause. At Night Patrol Academy we use: delay(150) Use this delay after each light turns ON and turns OFF. Your job is to build the flashing pattern using blocks.",
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 1 — Wire Up the Dashboard 🔌 (📖 What & Why)",
+      "text": "Welcome back to the Emergency Systems Lab, trainee. 🚓 Tonight's cruiser has a Master Power Button and three lights on its light bar — Red, Blue, and a Clear Strobe. Before any of it can work, the Arduino needs a map of the dashboard. This step gives every part a name and tells the Arduino how to treat it: the button is something the Arduino listens to, and the three lights are things the Arduino controls . Skip this step and none of it works later — digitalRead and digitalWrite would have no pin numbers to act on, and the whole light bar stays dark no matter what code you write after this. Next up: your first win. You'll turn all three lights on and prove the wiring works before writing a single rule.",
       "tags": []
     },
     {
-      "id": "project_twelve:step0:wiring",
+      "id": "project_twelve:step0:howto",
       "source": "auto",
       "project_key": "project_twelve",
       "step_index": 0,
-      "tab_key": "wiring",
-      "title": "Project 12: Night Patrol Alarm — Step 1 — Build the Light Bar System 📘 (🔌 Wiring)",
-      "text": "Match each part to its pin: 🔘 Master Button → Pin 12 🔴 Red Light → Pin 8 🔵 Blue Light → Pin 6 ⚪ Clear Strobe Light → Pin 4 Find the part in the diagram. Follow the wire. Match it to the pin.",
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 1 — Wire Up the Dashboard 🔌 (🔧 How To)",
+      "text": "First, name each part. You'll place four variable blocks — one per part on the dashboard: Intent: give each pin a plain-English name instead of a bare number, so later blocks read like \"redLED\" instead of \"8.\" Block: a variable block that stores a whole number. Values: buttonPin = 12 , redLED = 8 , blueLED = 6 , clearLED = 4 — these match exactly where you wired each part on the breadboard. Result: nothing happens yet — this only introduces the names the rest of the project will use. Then, set each pin's mode inside Setup. Four more blocks, same pattern: Intent: tell the Arduino whether each pin should listen for a signal or send one out. Block: a pinMode block, placed inside setup() . Values: buttonPin → INPUT_PULLUP (it listens; because of this wiring style, \"pressed\" will actually read as LOW, not HIGH). redLED , blueLED , and clearLED → OUTPUT (the Arduino sends power to each one). Result: Setup finishes quietly — still no visible change, but the Arduino now fully understands the dashboard.",
       "tags": []
     },
     {
@@ -2341,18 +2651,278 @@
       "project_key": "project_twelve",
       "step_index": 0,
       "tab_key": "logic",
-      "title": "Project 12: Night Patrol Alarm — Step 1 — Build the Light Bar System 📘 (🧩 Logic)",
-      "text": "🔘 Button Input Rule If the Button connects to GND, choose: INPUT_PULLUP Understanding the Button: HIGH = Button OFF (not pressed) LOW = Button ON (pressed) Think about the pattern: IF button is ON (pressed) &nbsp;&nbsp;&nbsp;&nbsp;Red ON → delay → Red OFF &nbsp;&nbsp;&nbsp;&nbsp;Blue ON → delay → Blue OFF &nbsp;&nbsp;&nbsp;&nbsp;Clear ON → delay → Clear OFF IF button is OFF (else) &nbsp;&nbsp;&nbsp;&nbsp;All lights OFF Remember: The button controls everything.",
+      "title": "Project 12: Night Patrol Alarm — Step 1 — Wire Up the Dashboard 🔌 (🧠 Logic)",
+      "text": "Think of a new officer's first night learning the dashboard of a patrol car. Before they can flip anything, they have to know which switch is the siren, which is the light bar, and which pedal does what. That's exactly what this step does for the Arduino — it's memorizing the dashboard before the shift starts.",
       "tags": []
     },
     {
-      "id": "project_twelve:step1:complete",
+      "id": "project_twelve:step1:explain",
       "source": "auto",
       "project_key": "project_twelve",
       "step_index": 1,
-      "tab_key": "complete",
-      "title": "Project 12: Night Patrol Alarm — Step 2 — Test Your Light Bar 🚨 (🎉 Congratulations)",
-      "text": "You Built a Patrol Light Bar System! 🎉 Your light system is ready. Now it's time to test it. 🔌 Connect your Arduino ⬆️ Upload your code 🔘 Press the master button 🚨 Watch the light sequence Check your system: ✔️ Button OFF → All lights stay OFF ✔️ Button ON → Lights begin flashing ✔️ Red → Blue → Clear sequence runs in order ✔️ Each light turns ON and OFF with a delay ✔️ Pattern repeats continuously If all of these work, your patrol light bar is operating correctly!",
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 2 — Lights On 💡 (📖 What & Why)",
+      "text": "Time for your first win, trainee! Before you teach the light bar any rules, prove the wiring actually works. This step turns the Red, Blue, and Clear lights ON — no button, no conditions, just on. If a wire is loose or a pin number is wrong, you want to catch it right now, not after burying it inside a bunch of rules. Next, you'll wrap these same three blocks in a timer so each light flashes instead of staying lit. 🎮 Try It: Open the sim tab. All three lights should switch on immediately, with no button press needed. That's your proof the wiring is good.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step1:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 1,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 2 — Lights On 💡 (🔧 How To)",
+      "text": "You'll place three blocks — one per light: Turn on the Red light. Intent: prove Pin 8 is wired correctly. Block: an output block. Values: redLED , set to HIGH — full power. Result: the red light glows immediately. Turn on the Blue light. Same block, values: blueLED , HIGH . Result: blue glows too. Turn on the Clear Strobe. Same block, values: clearLED , HIGH . Result: all three lights are now lit at once.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step1:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 1,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 2 — Lights On 💡 (🧠 Logic)",
+      "text": "Think of an electrician testing a new room by flipping the master breaker and checking every bulb lights up — before wiring in any switches or dimmers. That's this step exactly: prove the raw connections work before adding any behavior on top.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step2:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 2,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 3 — Add the Delay ⏱️ (📖 What & Why)",
+      "text": "Good work — the lights are wired correctly. But right now all three just sit there lit up together, which isn't a patrol pattern, it's just a nightlight. This step makes each light turn back off after a brief flash, one after another — Red flashes, then Blue, then Clear. That's the real timed \"chase\" a patrol light bar is known for. Without this, there's no way to tell the difference between \"the wiring works\" and \"an actual signal pattern\" — every light would just stay stuck on forever. Next: you'll wrap this whole chase in a rule so it only runs while the Master Button is held. 🎮 Try It: Open the sim tab. Instead of Step 2's \"all on and stay on,\" watch each light flash once, in order, then go dark before the next one lights up.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step2:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 2,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 3 — Add the Delay ⏱️ (🔧 How To)",
+      "text": "Your Step 2 blocks (each light turning HIGH) are already locked in place. For each light, you'll add two new blocks: Red: Intent — make red turn back off after a moment. Block — a delay block, then an output block. Values — delay(150) (the Academy's official flash timing, in milliseconds), then redLED set to LOW (no power). Result — red flashes once, then goes dark. Blue: same pair of blocks. Values — delay(150) , then blueLED set to LOW . Result — blue flashes right after red goes dark. Clear: same pair again. Values — delay(150) , then clearLED set to LOW . Result — the full chase completes: red, then blue, then clear, each on its own beat.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step2:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 2,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 3 — Add the Delay ⏱️ (🧠 Logic)",
+      "text": "Picture a lighthouse: the beam flashes for a set moment, then rests in the dark before the next flash — never staying lit the whole time. Your light bar now works the same way, one light at a time, on its own timed beat.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step3:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 3,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 4 — Gate with the Master Button 🔘 (📖 What & Why)",
+      "text": "Right now the light bar chases nonstop, the moment the Arduino powers on — no officer has to touch anything. A real patrol cruiser doesn't work that way; someone has to hold the Master Power Button for the light bar to run at all. This step doesn't rewrite your chase — it takes the exact three-light pattern you already built in Steps 2 and 3 and moves it inside a rule that checks the button first. Without this, the light bar can't ever be turned off, which isn't just annoying — a real patrol light bar left running all the time would drain the battery and give away the cruiser's position when it should be dark. Next: you'll try tuning the chase's speed. 🎮 Try It: Open the sim tab. Nothing happens until you press and hold the Master Button — then the same chase from Step 3 runs. Release the button and the whole bar snaps dark immediately. That's a big change from Step 3, where the chase ran on its own with no button at all.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step3:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 3,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 4 — Gate with the Master Button 🔘 (🔧 How To)",
+      "text": "Everything from Steps 2–3 is already locked in place. You'll place two new pieces: Check if the button is pressed. Intent — only run the chase while the Master Button is actually held down. Block — an \"if\" block. Values — digitalRead(buttonPin) == LOW . Because of the INPUT_PULLUP wiring from Step 1, \"pressed\" reads backwards, as LOW instead of HIGH. Result — your whole Step 2/3 chase now sits inside this if, unchanged, and only runs while it's true. Turn everything off when it's not pressed. Intent — make sure the light bar goes fully dark the instant the button is released, instead of freezing mid-blink. Block — an \"else\" block attached to the if above. Values — no new values; it turns Red, Blue, and Clear to LOW all at once. Result — release the button and the bar goes dark immediately, every time.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step3:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 3,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 4 — Gate with the Master Button 🔘 (🧠 Logic)",
+      "text": "A real patrol light bar doesn't run itself — an officer has to hold the master switch for it to do anything at all, and letting go stops it instantly, no delay. That's exactly the rule you just built: the button is the boss, and the chase only exists while it says so.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step4:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 4,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 5 — Change the Delay ⚡ (📖 What & Why)",
+      "text": "Your gated chase works — now Patrol Command wants to see it run faster. This step proves something important: the timing numbers you used in Step 3 aren't fixed rules, they're just settings you can tune. You're not adding any new blocks here — you're changing one number, three times, inside the chase you already built and gated behind the button. If you couldn't change this, every project would be stuck at whatever speed it was first built at — real patrol equipment gets tuned constantly for different situations. Next: you'll rearrange the order the lights fire in. 🎮 Try It: Hold the Master Button and compare this to Step 4 — the same red-blue-clear pattern now snaps by noticeably faster.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step4:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 4,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 5 — Change the Delay ⚡ (🔧 How To)",
+      "text": "The whole chase is already locked in place from Steps 2–4. You're only swapping the value inside three existing delay blocks: Intent: make the whole chase noticeably snappier. Block: the same delay block from Step 3 — you're not adding a new one. Values: change all three from 150 down to 60 milliseconds. Result: the fully-gated chase from Step 4 now runs at a faster tempo — same order, same button, just quicker.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step4:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 4,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 5 — Change the Delay ⚡ (🧠 Logic)",
+      "text": "Think of turning the speed dial on a strobe light at a concert — same bulb, same wiring, just a different number telling it how long to wait between flashes. That's all a delay value ever is: a dial you're allowed to turn.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step5:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 5,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 6 — Rearrange the Sequence 🔄 (📖 What & Why)",
+      "text": "Patrol Command has a new request: lead with Blue instead of Red. This step proves that the order you place blocks in is what defines the pattern — not some hidden rule about which light has to go first. You're reusing the exact same three on-wait-off block groups from Steps 2, 3, and 5 — just placing them in a new order: Blue, then Red, then Clear. Without this flexibility, every lesson's pattern would be locked to whatever order it was first written in — real patrol light bars support multiple sequences for exactly this reason. Next: you'll add a counter so the pattern can start making decisions, not just repeat. 🎮 Try It: Hold the Master Button. Step 5's order was red, blue, clear — now watch it fire blue, red, clear instead. Same three blocks, same 60ms pace, new order.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step5:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 5,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 6 — Rearrange the Sequence 🔄 (🔧 How To)",
+      "text": "You already know these blocks — they're the same on/wait/off trio you've built twice now, just placed for a different light each time and in a new order: Blue first. Intent — move blue to the front of the chase. Block — the same on/delay/off trio. Values — blueLED HIGH, delay(60) , blueLED LOW. Result — blue fires first now. Red second. Same trio. Values — redLED HIGH, delay(60) , redLED LOW. Result — red fires right after blue. Clear third. Same trio. Values — clearLED HIGH, delay(60) , clearLED LOW. Result — clear finishes the pattern, same as before, just last in this new order. The button check and the \"everything off\" else from Step 4 stay exactly where they were — only the order of the three light groups changed.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step5:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 5,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 6 — Rearrange the Sequence 🔄 (🧠 Logic)",
+      "text": "Think of a drill sergeant swapping the order of moves in a routine — same three moves, same timing between them, but the sequence itself is what changes the whole feel of the drill. The blocks don't know or care what order they're in — the order is entirely up to you.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step6:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 6,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 7 — Count the Blinks 🔢 (📖 What & Why)",
+      "text": "New mission upgrade, trainee: Command wants Red to join the pattern only once every two Blue blinks — a real backup-request signal, not just another light in the rotation. Before the Arduino can make that decision, it needs somewhere to keep count. This step creates exactly one thing: a memory slot named blueCount , starting at zero. Without a place to store the tally, there's nothing for a later rule to check — \"has blue blinked twice yet?\" is meaningless if the Arduino has no memory of past blinks at all. Next: you'll wrap Red's existing blink in a check against this counter.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step6:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 6,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 7 — Count the Blinks 🔢 (🔧 How To)",
+      "text": "Intent: reserve a memory slot that remembers how many times blue has blinked so far. Block: a variable block, storing a whole number, placed above setup() so it's global — it will carry its value forward across every pass of the loop. Values: blueCount , starting value 0 — zero blinks counted yet. Result: nothing visible happens. This step only reserves the slot; nothing reads or changes it until Step 8.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step6:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 6,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 7 — Count the Blinks 🔢 (🧠 Logic)",
+      "text": "Think of a dispatcher keeping a tally on a notepad every time a certain type of call comes in. The tally by itself doesn't do anything — but it's what lets a later rule say \"once we hit 3 of these, call for backup.\" blueCount is that notepad. This step just hands the Arduino the pad and the pencil.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step7:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 7,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 8 — Guard the Red Light 🚦 (📖 What & Why)",
+      "text": "Time to put that counter to work. This step wraps Red's blink — already built back in Step 6 — inside a check: only run it once blueCount has reached 2 . Once red fires, the counter resets to zero so the cycle can start over. Here's the deliberate catch: nothing increases blueCount yet. Blue and Clear will keep chasing exactly like before, but Red will stay dark no matter how long you hold the button — because the counter never moves off zero. That's not a bug. It's proof the guard itself is working correctly before you connect the piece that feeds it. Command also bumped every delay in this chase up to 1,500 milliseconds for this test — that's slow on purpose, so you have time to actually count the blue blinks out loud while you watch for red to join in. Those timing blocks are locked in for you. Next: one line connects blue's blink to the counter, and the full pattern clicks into place. 🎮 Try It: Hold the Master Button and watch closely. Blue and Clear keep chasing, just like Step 6 — but Red never lights up, no matter how long you hold it. That's exactly the point: the guard is in place, but nothing is feeding the counter yet.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step7:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 7,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 8 — Guard the Red Light 🚦 (🔧 How To)",
+      "text": "The button check, the full blue/clear chase, and Red's on/wait/off blocks are all already locked in place from earlier steps. You'll place three new pieces: Check the counter before letting Red fire. Intent — only let Red join the pattern once two blue blinks have actually been counted. Block — an \"if\" block, nested inside the button's if. Values — blueCount == 2 , checking the memory slot from Step 7. Result — Red's existing blink blocks now only run when this is true. Reset the count after Red fires. Intent — start the tally over so the pattern can repeat. Block — an assignment block (sets a variable to a new value). Values — blueCount = 0 . Result — right after Red flashes, the counter is back at zero, ready to count the next two blue blinks. Run the normal chase otherwise. Intent — everything that used to run every single pass (blue then clear) now only runs when the counter hasn't reached 2 yet. Block — an \"else\" block attached to the counter check. Values — none new; it's the same blue-then-clear chase from Steps 2, 3, and 6, just moved inside this else. Result — for now, blue and clear fire every pass since nothing increases blueCount — exactly what Step 9 fixes.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step7:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 7,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 8 — Guard the Red Light 🚦 (🧠 Logic)",
+      "text": "Think of a security guard who only radios \"all clear\" once they've completed exactly two full rounds of the building — one round by itself doesn't earn the report. Red is that report. The guard (your counter check) is standing by, but nothing has told it a round finished yet.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step8:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 8,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Step 9 — Make Blue Count Itself 🎯 (📖 What & Why)",
+      "text": "One line left, trainee — the piece Step 8 was missing. Right now blue blinks but never tells the counter about it. This step adds exactly that: every time blue blinks, blueCount goes up by one. With this in place, your Night Patrol Alarm is complete: blue, clear, blue, clear — and once that's happened twice, red joins in, then the counter resets and the whole pattern starts again. Without this line, blueCount would sit at zero forever, and Red would never fire — exactly the frozen behavior you saw in Step 8.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step8:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 8,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Step 9 — Make Blue Count Itself 🎯 (🔧 How To)",
+      "text": "Everything else is already locked in place. You'll place one block, right after blue's existing on/wait/off blocks: Intent: make the counter actually go up every time blue blinks. Block: an assignment block that sets a variable using its own current value. Values: blueCount = blueCount + 1 — take whatever the tally currently holds and add one. Result: after two blue blinks, blueCount reaches 2, Step 8's guard opens, and Red joins the pattern — then the reset sends it back to zero and the whole cycle repeats.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step8:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 8,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Step 9 — Make Blue Count Itself 🎯 (🧠 Logic)",
+      "text": "Think of a guard's hand-clicker — each completed round clicks the count up by one. Once it reads 2, that's the guard's own cue to radio in, without anyone else telling them to. That single click is all blue was missing — it just needed to report its own progress.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step9:explain",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 9,
+      "tab_key": "explain",
+      "title": "Project 12: Night Patrol Alarm — Mission Complete 🎉 (📖 What You Built)",
+      "text": "Mission complete, trainee! 🚓 You built a real patrol light bar with a working counting rule — the kind of system a real cruiser depends on every night. Your light bar now: 🔘 Stays completely dark until the Master Button is actually held 💡 Chases Blue, then Clear, in a tuned, timed pattern 🔢 Keeps a running count of every blue blink, using memory that persists across the whole patrol 🔴 Brings Red into the pattern only once two blue blinks have been counted 🔁 Resets the count automatically so the pattern repeats on its own 🛑 Shuts every light off instantly the moment the button is released You proved you can build a system that doesn't just react — it remembers. That's real patrol-tech thinking.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step9:howto",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 9,
+      "tab_key": "howto",
+      "title": "Project 12: Night Patrol Alarm — Mission Complete 🎉 (🔧 Try This Next)",
+      "text": "Now that your system works, here are some ideas to make it even better. ⏱️ Change the delay again — try 800ms or 2,000ms and see how it changes the feel of the countdown to red. 🔄 Reorder the chase again — try Clear first, then Blue, then see where Red should slot in. 🔢 Change the count — make Red wait for 3 blue blinks instead of 2, or fire after just 1. 🚨 Add a second counter — track how many times Red has fired total, and do something special on the 5th time. 🔘 Add a second button — a siren toggle that runs independently of the light bar's button. 🎮 Combine with another project — pair this counting pattern with a sensor from another mission to trigger the alarm automatically instead of by button press. Experimenting is how real patrol engineers improve their equipment.",
+      "tags": []
+    },
+    {
+      "id": "project_twelve:step9:logic",
+      "source": "auto",
+      "project_key": "project_twelve",
+      "step_index": 9,
+      "tab_key": "logic",
+      "title": "Project 12: Night Patrol Alarm — Mission Complete 🎉 (🧠 What You Learned)",
+      "text": "This project brought together everything you've been building. 🎁 Reward-first testing — proving your lights work before wrapping them in any rules. 🔐 Capture — taking code you already built and wrapping it inside a new condition, without rewriting it. 🔘 INPUT_PULLUP — a wiring style where \"pressed\" actually reads as LOW. 🎛️ Tunable parameters — delay values and block order aren't fixed rules, they're settings you control. 🔢 Global counters — a variable that remembers a running tally across every pass of the loop, not just the current one. 🧩 Nested conditions — a rule inside another rule, so Red depends on both the button and the counter. You're now thinking like a real systems engineer — building equipment that remembers, not just reacts. 🚨",
       "tags": []
     },
     {

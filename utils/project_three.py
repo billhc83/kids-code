@@ -1,9 +1,11 @@
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 3: Mad Scientist Button Machine',
     'circuit_image': 'static/graphics/project_three_circuit.png',
     'banner_image': 'project_three_banner.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [

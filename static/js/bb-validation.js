@@ -33,13 +33,13 @@
       if (currentBlock.type === 'ifblock') {
         var c = currentBlock.condition;
         if (c) {
-          if (!c.leftExpr) n++; if (!c.rightExpr) n++;
-          if (c.joiner !== 'none') { if (!c.leftExpr2) n++; if (!c.rightExpr2) n++; }
+          if (!c.left) n++; if (!c.right) n++;
+          if (c.joiner !== 'none') { if (!c.left2) n++; if (!c.right2) n++; }
         }
         n += BB.countIncomplete(currentBlock.ifbody);
         currentBlock.elseifs.forEach(function (ei) {
           var ec = ei.condition;
-          if (ec) { if (!ec.leftExpr) n++; if (!ec.rightExpr) n++; }
+          if (ec) { if (!ec.left) n++; if (!ec.right) n++; }
           n += BB.countIncomplete(ei.body);
         });
         if (currentBlock.elsebody) n += BB.countIncomplete(currentBlock.elsebody);
@@ -47,7 +47,7 @@
       }
       if (currentBlock.type === 'whileloop') {
         var c = currentBlock.condition;
-        if (c) { if (!c.leftExpr) n++; if (!c.rightExpr) n++; }
+        if (c) { if (!c.left) n++; if (!c.right) n++; }
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       if (currentBlock.type === 'forloop') {
@@ -55,7 +55,7 @@
       }
       if (currentBlock.type === 'elseifclause') {
         var c = currentBlock.condition;
-        if (c) { if (!c.leftExpr) n++; if (!c.rightExpr) n++; }
+        if (c) { if (!c.left) n++; if (!c.right) n++; }
         if (currentBlock.body) n += BB.countIncomplete(currentBlock.body); return;
       }
       if (currentBlock.type === 'elseclause') {
@@ -79,6 +79,15 @@
     if (!u && !t) return true; if (!u || !t) return false;
     if (u.type !== t.type) return false;
     if (u.type === 'value') { return (u.params[0] || '').trim() === (t.params[0] || '').trim(); }
+    if (u.type === 'math') {
+      var ut = u.terms || [], tt = t.terms || [];
+      if (ut.length !== tt.length) return false;
+      for (var i = 0; i < ut.length; i++) if ((ut[i] || '').trim() !== (tt[i] || '').trim()) return false;
+      var uo = u.ops || [], to = t.ops || [];
+      if (uo.length !== to.length) return false;
+      for (var i = 0; i < uo.length; i++) if (uo[i] !== to[i]) return false;
+      return true;
+    }
     for (var i = 0; i < (u.params || []).length; i++) if ((u.params[i] || '').trim() !== (t.params[i] || '').trim()) return false;
     var uc = u.children || [], tc = t.children || [];
     if (uc.length !== tc.length) return false;
@@ -89,13 +98,13 @@
   BB.compareCondition = function (u, t) {
     if (!u && !t) return true; if (!u || !t) return false;
     if (u.op !== t.op) return false;
-    if (!BB.compareExpr(u.leftExpr, t.leftExpr)) return false;
-    if (!BB.compareExpr(u.rightExpr, t.rightExpr)) return false;
+    if ((u.left || '').trim() !== (t.left || '').trim()) return false;
+    if ((u.right || '').trim() !== (t.right || '').trim()) return false;
     if (u.joiner !== t.joiner) return false;
     if (u.joiner !== 'none') {
       if (u.op2 !== t.op2) return false;
-      if (!BB.compareExpr(u.leftExpr2, t.leftExpr2)) return false;
-      if (!BB.compareExpr(u.rightExpr2, t.rightExpr2)) return false;
+      if ((u.left2 || '').trim() !== (t.left2 || '').trim()) return false;
+      if ((u.right2 || '').trim() !== (t.right2 || '').trim()) return false;
     }
     return true;
   };
@@ -109,6 +118,20 @@
     if (u.type === 'value') {
       var uv = (u.params[0] || '').trim(), tv = (t.params[0] || '').trim();
       if (uv !== tv) return tier === 3 ? 'Value should be ' + tv : 'Check value';
+    }
+    if (u.type === 'math') {
+      var ut = u.terms || [], tt = t.terms || [];
+      if (ut.length !== tt.length) return 'Structure mismatch';
+      for (var i = 0; i < ut.length; i++) {
+        if ((ut[i] || '').trim() !== (tt[i] || '').trim()) {
+          return tier === 3 ? 'Term ' + (i + 1) + ' should be ' + tt[i] : 'Check term ' + (i + 1);
+        }
+      }
+      var uo = u.ops || [], to = t.ops || [];
+      for (var i = 0; i < uo.length; i++) {
+        if (uo[i] !== to[i]) return tier === 3 ? 'Operator ' + (i + 1) + ' should be ' + to[i] : 'Check operator ' + (i + 1);
+      }
+      return null;
     }
     for (var i = 0; i < (u.params || []).length; i++) {
       if ((u.params[i] || '').trim() !== (t.params[i] || '').trim()) {
@@ -130,14 +153,14 @@
 
   BB.generateCondHint = function (u, t, tier) {
     if (!u && !t) return null; if (!u || !t) return 'Condition missing';
-    var h = BB.generateExprHint(u.leftExpr, t.leftExpr, tier); if (h) return 'Left side: ' + h;
+    if ((u.left || '').trim() !== (t.left || '').trim()) return tier === 3 ? 'Left side should be ' + t.left : 'Check left side';
     if (u.op !== t.op) return tier === 3 ? 'Operator should be ' + t.op : 'Check operator';
-    h = BB.generateExprHint(u.rightExpr, t.rightExpr, tier); if (h) return 'Right side: ' + h;
+    if ((u.right || '').trim() !== (t.right || '').trim()) return tier === 3 ? 'Right side should be ' + t.right : 'Check right side';
     if (t.joiner !== 'none') {
       if (u.joiner !== t.joiner) return 'Check joiner (and/or)';
-      h = BB.generateExprHint(u.leftExpr2, t.leftExpr2, tier); if (h) return '2nd Left: ' + h;
+      if ((u.left2 || '').trim() !== (t.left2 || '').trim()) return tier === 3 ? '2nd left should be ' + t.left2 : 'Check 2nd left side';
       if (u.op2 !== t.op2) return tier === 3 ? '2nd Op should be ' + t.op2 : 'Check 2nd operator';
-      h = BB.generateExprHint(u.rightExpr2, t.rightExpr2, tier); if (h) return '2nd Right: ' + h;
+      if ((u.right2 || '').trim() !== (t.right2 || '').trim()) return tier === 3 ? '2nd right should be ' + t.right2 : 'Check 2nd right side';
     }
     return null;
   };
@@ -462,6 +485,73 @@
   };
 
   // ── Workspace builder ─────────────────────────────────────────────────────
+  // ── Stale-save detection ────────────────────────────────────────────────
+  // BB.STUDENT_SAVES entries are client-side snapshots of BB.SECTIONS taken
+  // at some earlier point in time (see BB.saveBlocks/bbNext). Two things can
+  // make an old snapshot unsafe to load verbatim:
+  //  1. Schema drift — e.g. the block-expression-slot-simplification pass
+  //     renamed condition.leftExpr/rightExpr to flat condition.left/right
+  //     and math's params/children to terms/ops. A pre-refactor snapshot
+  //     still has the old field names; BB.genCond()/genExpr() read the new
+  //     ones, so an old snapshot silently renders as the *default* fallback
+  //     ("x == 0", "(0 + 0)") instead of the student's real answer — no
+  //     error, no signal, just wrong generated code (confirmed live: 19 of
+  //     39 rows in block_saves carried this old schema across 4 users and
+  //     14+ lesson pages).
+  //  2. Lesson-content drift — a step's own template can be rewritten later
+  //     (e.g. project_eleven's if/else moved from a placeable `ifblock` to
+  //     locked text) after a student already saved progress against the
+  //     old shape.
+  // Both cases share one symptom: the saved snapshot no longer matches what
+  // the *current* step template would produce. Rather than special-case
+  // every possible schema rename, this checks both — an explicit scan for
+  // known-legacy field names, and a structural signature comparison against
+  // the fresh (current-schema, current-content) template — and discards the
+  // save if either disagrees, falling back to a clean rebuild.
+  function hasLegacySchema(node) {
+    if (!node || typeof node !== 'object') return false;
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) if (hasLegacySchema(node[i])) return true;
+      return false;
+    }
+    if ('leftExpr' in node || 'rightExpr' in node || 'leftExpr2' in node || 'rightExpr2' in node || 'expectedCondTypes' in node) return true;
+    if (node.type === 'math' && 'children' in node && !('terms' in node)) return true;
+    for (var key in node) {
+      if (Object.prototype.hasOwnProperty.call(node, key) && hasLegacySchema(node[key])) return true;
+    }
+    return false;
+  }
+
+  // A signature per top-level item that reflects lesson content (the fixed
+  // "shape" every student on this step should share) without reflecting the
+  // student's own in-progress answer — a slot's un-filled vs filled content
+  // must not itself count as a mismatch, only its master/hint (which come
+  // from the lesson template, not the student).
+  function itemSignature(item) {
+    if (!item) return 'null';
+    if (item.type === 'slot') {
+      var masterType = item.master ? item.master.type : '?';
+      var hint = item.phantom_meta ? item.phantom_meta.hint : '';
+      return 'slot:' + masterType + ':' + hint;
+    }
+    if (item.type === 'codeblock') return 'code:' + ((item.params && item.params[0]) || '').trim();
+    return item.type + ':' + JSON.stringify(item.params || []);
+  }
+
+  function sectionSignature(arr) { return (arr || []).map(itemSignature).join('|'); }
+
+  function savedStateIsStale(savedState, freshStep) {
+    if (!savedState) return false;
+    if (hasLegacySchema(savedState)) return true;
+    var sections = ['global', 'setup', 'loop'];
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      if (sectionSignature(savedState[s]) !== sectionSignature(freshStep[s])) return true;
+    }
+    return false;
+  }
+  BB._savedStateIsStale = savedStateIsStale; // exposed for testing
+
   BB.buildWorkspace = function (stepIdx) {
     if (!BB.PROGRESSION_MODE || !BB.STEPS || stepIdx >= BB.STEPS.length) return;
     var step = BB.STEPS[stepIdx];
@@ -471,8 +561,15 @@
     console.log('[buildWorkspace] step.global:', JSON.stringify(step.global));
     console.log('[buildWorkspace] step.setup:', JSON.stringify(step.setup));
     console.log('[buildWorkspace] step.loop:', JSON.stringify(step.loop));
-    if (BB.STUDENT_SAVES[stepIdx] && !step.reset) {
-      var savedState = BB.STUDENT_SAVES[stepIdx];
+    var savedState = BB.STUDENT_SAVES[stepIdx];
+    var discardedStale = false;
+    if (savedState && savedStateIsStale(savedState, step)) {
+      console.warn('[buildWorkspace] stepIdx=' + stepIdx + ' saved state is stale (legacy schema or lesson content changed) — discarding and rebuilding from the current step template');
+      delete BB.STUDENT_SAVES[stepIdx];
+      savedState = null;
+      discardedStale = true;
+    }
+    if (savedState && !step.reset) {
       BB.SECTIONS.global = JSON.parse(JSON.stringify(savedState.global));
       BB.SECTIONS.setup  = JSON.parse(JSON.stringify(savedState.setup));
       BB.SECTIONS.loop   = JSON.parse(JSON.stringify(savedState.loop));
@@ -481,6 +578,12 @@
       BB.SECTIONS.setup  = JSON.parse(JSON.stringify(step.setup));
       BB.SECTIONS.loop   = JSON.parse(JSON.stringify(step.loop));
     }
+    // Write the clean rebuild straight back to the DB rather than waiting on
+    // the dirty-tracking autosave interval — that only fires once
+    // BB._autoSaveReady flips (500ms after init), so relying on it here
+    // would make the self-heal a timing race. A discarded stale save should
+    // never be reloadable again on the next visit.
+    if (discardedStale && BB.USERNAME && BB.PAGE) BB.saveBlocks();
     BB.PALETTE_ALLOWED = (step.palette !== undefined && step.palette !== null) ? step.palette : null;
     BB.stepLabel = step.label;
     // Refresh #codeout for the *new* step's SECTIONS before dispatching

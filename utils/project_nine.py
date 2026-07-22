@@ -1,11 +1,13 @@
 
 
 from utils.step_builder import build_step, intro_step, rect, circle
+from utils.affiliate_kits import BASIC_KITS
 
 META = {
     'title': 'Project 9: The Universal Power Slot',
     'circuit_image': 'static/graphics/project_one_circuit.png',
     'banner_image': 'project_nine_banner.png',
+    'required_kits': BASIC_KITS,
 }
 
 STEPS = [

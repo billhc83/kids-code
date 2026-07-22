@@ -1,10 +1,12 @@
 
 from utils.step_builder import build_step, intro_step, rect, circle, line
+from utils.affiliate_kits import UNO_ONLY_KIT
 
 META = {
     'title': 'Project 14: Codebreaker',
     'circuit_image': None,
     'banner_image': 'code_cracker.png',
+    'required_kits': UNO_ONLY_KIT,
 }
 
 STEPS = None

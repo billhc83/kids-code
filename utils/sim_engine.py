@@ -619,9 +619,11 @@ _DEFAULTS_BY_TYPE = {
 
 # Soft cap on a single loop() pass's accumulated delay() time, so a
 # pathological sketch (many/huge delay() calls) can't produce an unbounded
-# pin_sequences timeline. Real projects' delay-paced branches (eight, twelve)
-# top out around 300-450ms per pass.
-_MAX_LOOP_MS = 4000
+# pin_sequences timeline. Raised from 4000 to fit project_twelve's redesigned
+# counter chase (three sequential 1500ms delays = 4500ms in the pass where
+# the red light fires) — 4000 was silently truncating that pass's last
+# delay by 500ms, cutting the final light's on-phase short with no error.
+_MAX_LOOP_MS = 6000
 
 
 class _Env:
@@ -633,7 +635,10 @@ class _Env:
         self.t = 0                # per-pass virtual clock, advanced by delay()
         self.sequence = {}        # {pin: [(t, state), ...]} — write history for this pass
         self.frequencies = {}     # {pin: hz} — last tone() frequency argument per pin
-        self.console = []         # Serial.print/println args, str()'d, in call order
+        self.console = []         # completed Serial lines, str()'d, in call order
+        self.console_buf = ''     # in-progress line — Serial.print() args accumulate
+                                   # here without a newline, same as real hardware,
+                                   # until a Serial.println() (or end of pass) flushes it
         # {servo_var_name: pin_or_None} — registered by a `Servo x;` global
         # declaration, bound to a pin by that variable's own .attach() call.
         # Restored from Phase 1 `state` like pin_modes/vars, since a Servo
@@ -818,7 +823,10 @@ def _eval_call(name, arg_nodes, env):
         return None
     if name in ('Serial.print', 'Serial.println'):
         if args:
-            env.console.append(str(args[0]))
+            env.console_buf += str(args[0])
+        if name == 'Serial.println':
+            env.console.append(env.console_buf)
+            env.console_buf = ''
         return None
     raise ValueError(f"'{name}()' is not supported by the sim interpreter yet")
 
@@ -932,6 +940,12 @@ def interpret(sketch, input_state=None, state=None, now_ms=None):
     }
     if pin_frequencies:
         result['pin_frequencies'] = pin_frequencies
+    if env.console_buf:
+        # A trailing Serial.print() with no matching println() before the pass
+        # ended still needs to reach the console — this pass's interpret() call
+        # won't run again to flush it later (each call gets a fresh buffer).
+        env.console.append(env.console_buf)
+        env.console_buf = ''
     if env.console:
         result['console_lines'] = env.console
     result['_state'] = {

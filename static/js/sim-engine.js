@@ -18,7 +18,8 @@
  *               SIM_ENGINE_ROLLOUT_PLAN.md Step 6a.
  *
  * Special component types:
- *   sonar  — HC-SR04 ultrasonic sensor with a distance slider (0-100 cm). The
+ *   sonar  — HC-SR04 ultrasonic sensor with a distance slider (2-100 cm; the
+ *            HC-SR04's real datasheet minimum sensing range). The
  *            slider's raw pulse duration (debounced) is sent on the component's
  *            `pin_echo`, and whatever the sketch's own map()/if-chain does with
  *            it is what shows up (e.g. a continuous buzzer pitch via
@@ -366,13 +367,19 @@ window.SimEngine = (function () {
         var sliderEl = document.createElement('input');
         sliderEl.type = 'range';
         sliderEl.id = comp.id + '-slider';
-        sliderEl.min = '0';
+        /* HC-SR04's real minimum sensing range is ~2cm (its datasheet's own
+           blanking-zone limit) — closer than that and a real sensor can't
+           get a clean echo at all. Floor the slider there instead of 0 so
+           sonarDurationUs() below can never compute exactly 0us, which
+           would otherwise collide with a sketch's own (correct) `duration
+           == 0` pulseIn()-timeout guard and misread as "nothing detected". */
+        sliderEl.min = '2';
         sliderEl.max = '100';
         sliderEl.value = '80';
         sliderEl.style.cssText = 'width:110px;cursor:pointer;accent-color:#00ff88;';
         var sliderHints = document.createElement('div');
         sliderHints.style.cssText = 'display:flex;justify-content:space-between;width:110px;font-size:8px;color:#475569;';
-        sliderHints.innerHTML = '<span>0 cm</span><span>50</span><span>100 cm</span>';
+        sliderHints.innerHTML = '<span>2 cm</span><span>50</span><span>100 cm</span>';
         sliderWrap.appendChild(sliderEl);
         sliderWrap.appendChild(sliderHints);
         col.appendChild(wrap);
@@ -849,12 +856,43 @@ window.SimEngine = (function () {
        only ever one pending poll tick, never a duplicate chain layered on
        top of it. */
     var POLL_INTERVAL_MS = config.poll_interval_ms || 150;
-    function schedulePoll() {
+    /* Button/switch-driven tabs (e.g. project_twelve's counter) have a clear
+       "nothing is happening" state — released/off — where polling the
+       server every ~150ms-3s forever, even with the tab just sitting idle
+       in a browser for hours, produces nothing but wasted Supabase reads
+       (award_simulator_badge() hits the DB on every /sim/run call). Tabs
+       with no button/switch at all (project_eighteen's dual-sonar speed
+       trap) have no such idle state — it's measuring elapsed time between
+       two sensor triggers, which has to keep evaluating regardless of
+       whether anything is currently "held" — so this only gates tabs that
+       actually have a button/switch to gate on; sonar/ldr-only tabs are
+       unaffected and keep polling continuously as before. */
+    function hasDigitalInput() {
+      return components.some(function (c) { return c.type === 'button' || c.type === 'switch'; });
+    }
+    function anyDigitalInputActive() {
+      return components.some(function (c) {
+        return (c.type === 'button' && inputState[c.id] === 'pressed') ||
+               (c.type === 'switch' && inputState[c.id] === 'on');
+      });
+    }
+    /* lastDuration: the pass just applied may have handed playSequences a
+       multi-second chase (pin_sequences + sequence_duration) — if the next
+       poll fires on the fixed cadence alone, it can land mid-chase and cut
+       a light's on-phase short (see playOnce()'s own t=0 correction above:
+       that fixes a light getting stuck on forever, but a poll landing
+       mid-blink would still visibly truncate whatever hadn't finished yet).
+       Waiting at least as long as this pass's own duration means a new poll
+       only ever lands at a natural cycle boundary, once everything the
+       current response asked for has actually finished displaying. */
+    function schedulePoll(lastDuration) {
       if (!config.polling) return;
+      if (hasDigitalInput() && !anyDigitalInputActive()) return;  // nothing held — the next press/toggle's own run() call restarts the chain
       if (pollHandle) { clearTimeout(pollHandle); }
+      var delay = Math.max(lastDuration || 0, POLL_INTERVAL_MS);
       pollHandle = setTimeout(function () {
         run(buildInputPayload(), null);
-      }, POLL_INTERVAL_MS);
+      }, delay);
     }
 
     /* Loops a {pin: [{t, state}, ...]} timeline (LED/buzzer) and/or a
@@ -876,6 +914,17 @@ window.SimEngine = (function () {
           if (c.pin === undefined || c.pin === '') return;
           var tl = sequences[c.pin];
           if (tl) {
+            /* A pin whose first write in this pass happens later than t=0
+               (e.g. a light that only turns on partway through the chase)
+               has no event here to correct whatever a previous, now-replaced
+               sequence left it showing — without this, interrupting an
+               earlier playOnce() mid-flight (a fresh poll response arriving
+               before that light's own turn-off timer fired) leaves it stuck
+               on indefinitely, since nothing else ever addresses that pin
+               again until its next scheduled event, however many cycles
+               away that is. Force a known-off baseline immediately so this
+               pass's timeline is the sole source of truth from t=0. */
+            if (tl[0].t !== 0) apply(c, 'LOW');
             tl.forEach(function (ev) {
               if (ev.t === 0) {
                 apply(c, ev.state);
@@ -895,7 +944,26 @@ window.SimEngine = (function () {
             });
           }
         });
-        seqLoopHandle = setTimeout(playOnce, loopDelay);
+        /* In polling mode a real new response is already due in ~duration
+           ms via schedulePoll(), so a local self-repeat here would race it:
+           the local repeat is a bare setTimeout firing at exactly
+           `duration`, while the real corrected response also fires around
+           `duration` but only lands after its own network round trip on
+           top of that — a real, if small and often sub-100ms, but non-zero
+           gap. In that gap the local repeat, not knowing a fresher response
+           is already in flight, redraws the old (about-to-be-superseded)
+           pattern from scratch, producing exactly the kind of stray
+           half-second flash of stale state a poll response's own arrival
+           moments later then corrects. Not repeating locally here removes
+           that race entirely — the sequence plays once, holds at its final
+           state, and the next poll's own response is what starts the next
+           cycle, so there's only ever one clock in play. Non-polling tabs
+           (eleven/fifteen's own chase sim tabs) still need this repeat —
+           nothing else keeps their animation going while a button is
+           simply held with no new server call due. */
+        if (!config.polling) {
+          seqLoopHandle = setTimeout(playOnce, loopDelay);
+        }
       }
       playOnce();
     }
@@ -975,7 +1043,7 @@ window.SimEngine = (function () {
             }
           }
           setStatus(msg);
-          schedulePoll();
+          schedulePoll(result.sequence_duration);
         })
         .catch(function () {
           if (thisId !== activeId) return;

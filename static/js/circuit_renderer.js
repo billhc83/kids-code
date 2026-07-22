@@ -41,116 +41,95 @@ const SYMBOL_RENDERERS = {
   // Rotation is derived from the anode→cathode direction so orientation is exact.
   LED: function(renderer, pins, props) {
     const c = props && props.color;
- 
+
     const palettes = {
-      red:    { body: '#FF3333', dark: '#AA1111', glow: '#FF000044', rim: '#CC2222' },
-      green:  { body: '#33DD55', dark: '#118833', glow: '#00FF4433', rim: '#22AA44' },
-      yellow: { body: '#FFEE22', dark: '#AAAA00', glow: '#FFFF0033', rim: '#CCBB00' },
-      blue:   { body: '#3399FF', dark: '#1144BB', glow: '#0066FF33', rim: '#2266CC' },
-      white:  { body: '#EEEEFF', dark: '#9999BB', glow: '#FFFFFF33', rim: '#AAAACC' },
+      red:    { body: '#FF3333', dark: '#AA1111', glow: '#FF000055', rim: '#7A0F0F' },
+      green:  { body: '#33DD55', dark: '#118833', glow: '#00FF4455', rim: '#0B5C22' },
+      yellow: { body: '#FFEE22', dark: '#AAAA00', glow: '#FFFF0050', rim: '#7A7A00' },
+      blue:   { body: '#3399FF', dark: '#1144BB', glow: '#0066FF50', rim: '#0E2C80' },
+      white:  { body: '#EEEEFF', dark: '#9999BB', glow: '#FFFFFF50', rim: '#5F5F78' },
     };
     const pal = palettes[c] || palettes.red;
- 
+
+    // ── Sizing (concentric, outside-in) ──
+    const glowR       = 0.95;   // outermost, diffuse halo
+    const ringOuterR  = 0.58;   // dark lip, solid
+    const domeR       = 0.46;   // top-down dome, semi-transparent, crisp edge
+
     // ── Defs ──
-    const domeGradId = _defOnce(renderer, 'ledDomeGrad_' + (c || 'red'), function(r, defs, id) {
-      const rg = r._el('radialGradient', { id, cx: '36%', cy: '30%', r: '65%' });
-      rg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#FFFFFF', 'stop-opacity': '0.75' }));
-      rg.appendChild(r._el('stop', { offset: '45%',  'stop-color': pal.body }));
-      rg.appendChild(r._el('stop', { offset: '100%', 'stop-color': pal.dark }));
+    const domeGradId = _defOnce(renderer, 'ledDomeGradTD_' + (c || 'red'), function(r, defs, id) {
+      const rg = r._el('radialGradient', { id, cx: '38%', cy: '35%', r: '70%' });
+      rg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#FFFFFF', 'stop-opacity': '0.55' }));
+      rg.appendChild(r._el('stop', { offset: '35%',  'stop-color': pal.body,  'stop-opacity': '0.85' }));
+      rg.appendChild(r._el('stop', { offset: '100%', 'stop-color': pal.dark,  'stop-opacity': '0.9' }));
       defs.appendChild(rg);
     });
- 
-    const bodyGradId = _defOnce(renderer, 'ledBodyGrad_' + (c || 'red'), function(r, defs, id) {
-      const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '100%', y2: '0%' });
-      lg.appendChild(r._el('stop', { offset: '0%',   'stop-color': pal.dark }));
-      lg.appendChild(r._el('stop', { offset: '35%',  'stop-color': pal.body, 'stop-opacity': '0.65' }));
-      lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': pal.dark }));
-      defs.appendChild(lg);
-    });
- 
-    const glowFiltId = _defOnce(renderer, 'ledGlowFilt', function(r, defs, id) {
-      const f = r._el('filter', { id, x: '-80%', y: '-80%', width: '260%', height: '260%' });
-      f.appendChild(r._el('feGaussianBlur', { stdDeviation: '0.25', result: 'blur' }));
+
+    // Only the outer glow gets blurred — the dome itself stays crisp per spec
+    const glowFiltId = _defOnce(renderer, 'ledGlowFiltTD', function(r, defs, id) {
+      const f = r._el('filter', { id, x: '-100%', y: '-100%', width: '300%', height: '300%' });
+      f.appendChild(r._el('feGaussianBlur', { stdDeviation: '0.22', result: 'blur' }));
       const fm = r._el('feMerge', {});
       fm.appendChild(r._el('feMergeNode', { in: 'blur' }));
       fm.appendChild(r._el('feMergeNode', { in: 'SourceGraphic' }));
       f.appendChild(fm);
       defs.appendChild(f);
     });
- 
+
     const x  = pins.anode.x;
     const y  = pins.anode.y;
     const angle = -Math.atan2(pins.cathode.x - x, pins.cathode.y - y) * 180 / Math.PI;
-    const cy = y + 0.45;   // dome centre Y
+    const cy = y + 0.5;   // dome centre, midway between anode/cathode holes
 
     const _origAppendLED = renderer.svgEl.appendChild.bind(renderer.svgEl);
     const _grpLED = renderer._el('g', { transform: 'rotate(' + angle + ',' + x + ',' + y + ')' });
     renderer.svgEl.appendChild = function(el) { return _grpLED.appendChild(el); };
 
-    // Soft ambient glow (behind everything)
+    // ---- 1. Legs first — drawn full length, but later layers cover the middle ----
+    // so only short stubs peek out at the top and bottom of the rim, just enough to anchor.
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: y, x2: x, y2: cy,
+      stroke: '#999999', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+    }));
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: cy, x2: x, y2: y + 1,
+      stroke: '#999999', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+    }));
+
+    // ---- 2. Outer diffuse glow ----
     renderer.svgEl.appendChild(renderer._el('circle', {
-      cx: x, cy: cy, r: 0.6,
+      cx: x, cy: cy, r: glowR,
       fill: pal.glow,
       filter: 'url(#' + glowFiltId + ')'
     }));
- 
-    // Cylindrical body
-    renderer.svgEl.appendChild(renderer._el('rect', {
-      x: x - 0.33, y: cy + 0.08, width: 0.66, height: 0.35,
-      rx: 0.06,
-      fill: 'url(#' + bodyGradId + ')',
-      stroke: '#333', 'stroke-width': 0.05
-    }));
- 
-    // Left-edge body sheen
-    renderer.svgEl.appendChild(renderer._el('rect', {
-      x: x - 0.33, y: cy + 0.08, width: 0.11, height: 0.35,
-      rx: 0.06,
-      fill: '#FFFFFF', 'fill-opacity': 0.12
-    }));
- 
-    // Flat rim / flange
-    renderer.svgEl.appendChild(renderer._el('rect', {
-      x: x - 0.36, y: cy + 0.41, width: 0.72, height: 0.08,
-      rx: 0.04,
-      fill: '#555', stroke: '#333', 'stroke-width': 0.04
-    }));
- 
-    // Cathode flat marker (internal stripe, shorter side)
-    renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x + 0.08, y1: cy + 0.12, x2: x + 0.08, y2: cy + 0.41,
-      stroke: pal.dark, 'stroke-width': 0.16, 'stroke-opacity': 0.6
-    }));
- 
-    // Anode lead — longer, left of centre
-    renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x, y1: cy - 0.4, x2: x, y2: y,
-      stroke: '#BBBBBB', 'stroke-width': 0.1, 'stroke-linecap': 'round'
-    }));
- 
-    // Cathode lead — shorter, right of centre
-    renderer.svgEl.appendChild(renderer._el('line', {
-      x1: x, y1: cy + 0.49, x2: x, y2: y + 1,
-      stroke: '#BBBBBB', 'stroke-width': 0.1, 'stroke-linecap': 'round'
-    }));
- 
-    // Dome (drawn on top of body)
+
+    // ---- 3. Darker lip ring (solid, mimics the breadboard-LED flange from above) ----
     renderer.svgEl.appendChild(renderer._el('circle', {
-      cx: x, cy: cy, r: 0.4,
+      cx: x, cy: cy, r: ringOuterR,
+      fill: pal.rim,
+      stroke: '#000000', 'stroke-opacity': 0.25, 'stroke-width': 0.05
+    }));
+    // faint inner shadow line so the ring reads as a raised lip, not a flat disc
+    renderer.svgEl.appendChild(renderer._el('circle', {
+      cx: x, cy: cy, r: ringOuterR - 0.05,
+      fill: 'none', stroke: '#000000', 'stroke-opacity': 0.2, 'stroke-width': 0.04
+    }));
+
+    // ---- 4. Dome — semi-transparent top-down circle, crisp edge (no blur) ----
+    renderer.svgEl.appendChild(renderer._el('circle', {
+      cx: x, cy: cy, r: domeR,
       fill: 'url(#' + domeGradId + ')',
-      stroke: '#333', 'stroke-width': 0.05
+      stroke: pal.dark, 'stroke-width': 0.04, 'stroke-opacity': 0.6
     }));
 
-    // Primary specular highlight
+    // ---- 5. Specular highlight ----
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.125, cy: cy - 0.125, rx: 0.125, ry: 0.085,
-      fill: '#FFFFFF', 'fill-opacity': 0.78,
-      transform: 'rotate(-30,' + (x - 0.125) + ',' + (cy - 0.125) + ')'
+      cx: x - 0.15, cy: cy - 0.15, rx: 0.15, ry: 0.1,
+      fill: '#FFFFFF', 'fill-opacity': 0.75,
+      transform: 'rotate(-30,' + (x - 0.15) + ',' + (cy - 0.15) + ')'
     }));
-
-    // Secondary soft highlight
     renderer.svgEl.appendChild(renderer._el('ellipse', {
-      cx: x - 0.035, cy: cy + 0.09, rx: 0.057, ry: 0.04,
+      cx: x - 0.03, cy: cy + 0.12, rx: 0.06, ry: 0.045,
       fill: '#FFFFFF', 'fill-opacity': 0.25
     }));
 
@@ -165,8 +144,7 @@ const SYMBOL_RENDERERS = {
   // Center, rotation, and lead length are all derived from the two pin positions.
   RESISTOR: function(renderer, pins, props) {
     const ohms = (props && props.ohms) || 220;
- 
-    // Standard 4-band colour code lookup
+
     const bandTable = {
       100:   ['#8B4513', '#000000', '#8B4513', '#FFD700'],
       220:   ['#FF2222', '#FF2222', '#8B4513', '#FFD700'],
@@ -178,7 +156,7 @@ const SYMBOL_RENDERERS = {
     };
     const bands = bandTable[ohms] || bandTable[220];
     const label = ohms >= 1000 ? (ohms / 1000) + 'k' : ohms + '';
- 
+
     const bodyGradId = _defOnce(renderer, 'resBodyGrad', function(r, defs, id) {
       const lg = r._el('linearGradient', { id, x1: '0%', y1: '0%', x2: '100%', y2: '0%' });
       lg.appendChild(r._el('stop', { offset: '0%',   'stop-color': '#8B7355' }));
@@ -188,7 +166,7 @@ const SYMBOL_RENDERERS = {
       lg.appendChild(r._el('stop', { offset: '100%', 'stop-color': '#8B7355' }));
       defs.appendChild(lg);
     });
- 
+
     const p1 = pins.pin1;
     const p2 = pins.pin2;
     const x = (p1.x + p2.x) / 2;
@@ -199,20 +177,32 @@ const SYMBOL_RENDERERS = {
     const bodyW = 0.75;
     const bodyTop = y - bodyH / 2;
 
+    // Lead sizing — thicker, with a dark outline so it reads against black wires
+    const leadW = 0.16;      // was 0.09
+    const leadOutlineW = 0.26;
+
     const _origAppendRES = renderer.svgEl.appendChild.bind(renderer.svgEl);
     const _grpRES = renderer._el('g', { transform: 'rotate(' + angle + ',' + x + ',' + y + ')' });
     renderer.svgEl.appendChild = function(el) { return _grpRES.appendChild(el); };
 
-    // Lead to pin1 (pre-rotation: upward from body top to y - halfDist)
+    // ---- Lead 1: dark outline first, bright core on top ----
     renderer.svgEl.appendChild(renderer._el('line', {
       x1: x, y1: y - halfDist, x2: x, y2: bodyTop,
-      stroke: '#CCCCCC', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+      stroke: '#2A2A2A', 'stroke-width': leadOutlineW, 'stroke-linecap': 'round'
+    }));
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: y - halfDist, x2: x, y2: bodyTop,
+      stroke: '#E8E8E8', 'stroke-width': leadW, 'stroke-linecap': 'round'
     }));
 
-    // Lead to pin2 (pre-rotation: downward from body bottom to y + halfDist)
+    // ---- Lead 2: dark outline first, bright core on top ----
     renderer.svgEl.appendChild(renderer._el('line', {
       x1: x, y1: bodyTop + bodyH, x2: x, y2: y + halfDist,
-      stroke: '#CCCCCC', 'stroke-width': 0.09, 'stroke-linecap': 'round'
+      stroke: '#2A2A2A', 'stroke-width': leadOutlineW, 'stroke-linecap': 'round'
+    }));
+    renderer.svgEl.appendChild(renderer._el('line', {
+      x1: x, y1: bodyTop + bodyH, x2: x, y2: y + halfDist,
+      stroke: '#E8E8E8', 'stroke-width': leadW, 'stroke-linecap': 'round'
     }));
 
     // Body drop shadow
@@ -237,14 +227,27 @@ const SYMBOL_RENDERERS = {
       fill: '#FFFFFF', 'fill-opacity': 0.14
     }));
 
-    // Colour bands — 3 value bands at 25%, 44%, 63% + tolerance at 82%
+    // ---- Colour bands — thicker, solid, with a crisp dark edge for pop ----
     const bandFracs = [0.25, 0.44, 0.63, 0.82];
+    const bandHeight = 0.24;   // was 0.13
     bands.forEach(function(color, i) {
+      const bandY = bodyTop + bodyH * bandFracs[i] - bandHeight / 2;
+      // slightly wider dark backing so the band reads as a crisp ring, not a smear
       renderer.svgEl.appendChild(renderer._el('rect', {
-        x: x - bodyW / 2 + 0.045, y: bodyTop + bodyH * bandFracs[i] - 0.06,
-        width: bodyW - 0.09, height: 0.13,
-        fill: color, 'fill-opacity': 0.92,
-        stroke: '#00000022', 'stroke-width': 0.3
+        x: x - bodyW / 2 - 0.015, y: bandY - 0.015,
+        width: bodyW + 0.03, height: bandHeight + 0.03,
+        fill: '#00000055'
+      }));
+      renderer.svgEl.appendChild(renderer._el('rect', {
+        x: x - bodyW / 2 + 0.02, y: bandY,
+        width: bodyW - 0.04, height: bandHeight,
+        fill: color, 'fill-opacity': 1
+      }));
+      // subtle gloss strip on each band so it doesn't look flat-painted
+      renderer.svgEl.appendChild(renderer._el('rect', {
+        x: x - bodyW / 2 + 0.06, y: bandY + 0.02,
+        width: bodyW - 0.12, height: bandHeight * 0.3,
+        fill: '#FFFFFF', 'fill-opacity': 0.2
       }));
     });
 
@@ -912,11 +915,17 @@ const SYMBOL_RENDERERS = {
 
 };
 SYMBOL_RENDERERS.LED.bbox = function(pins, props) {
-  const domeCY = pins.anode.y + 0.45;
-  const xMin = Math.min(pins.anode.x, pins.cathode.x) - 0.5;
-  const xMax = Math.max(pins.anode.x, pins.cathode.x) + 0.5;
-  const yMin = domeCY - 0.6;
-  const yMax = Math.max(pins.cathode.y, pins.anode.y) + 0.1;
+  // The dome group is rotated about the anode pin, so its true on-screen
+  // center is always the anode/cathode midpoint, not a fixed local offset —
+  // use that midpoint plus the renderer's outer glow radius (its largest
+  // visible extent) so the obstacle box actually contains the drawn LED.
+  const glowR = 0.95;
+  const mx = (pins.anode.x + pins.cathode.x) / 2;
+  const my = (pins.anode.y + pins.cathode.y) / 2;
+  const xMin = mx - glowR;
+  const xMax = mx + glowR;
+  const yMin = my - glowR;
+  const yMax = my + glowR;
   return { x0: xMin - 0.5, y0: yMin - 0.5, x1: xMax + 0.5, y1: yMax + 0.5 };
 };
 
@@ -1189,13 +1198,27 @@ class CircuitRenderer {
       rx: 1, fill: '#000000', opacity: 0.3
     }));
 
-    // Board body
+    // Board body (base)
     this.svgEl.appendChild(this._el('rect', {
       x: a.x - 0.5, y: a.y - 0.5, width: W + 2.5, height: H + 1,
-      rx: 1, fill: '#00979C', stroke: '#005f63', 'stroke-width': 0.2
+      rx: 1, fill: '#008184', stroke: '#004d4f', 'stroke-width': 0.25
     }));
-    
-    // Add mounting holes
+
+    // Subtle top-edge highlight for depth (real PCBs catch light along the edge)
+    this.svgEl.appendChild(this._el('rect', {
+      x: a.x - 0.3, y: a.y - 0.3, width: W + 2.1, height: 0.6,
+      rx: 0.5, fill: '#22A5A8', opacity: 0.5
+    }));
+
+    // Fine silkscreen grid texture (very faint, suggests traces without being noisy)
+    for (let gx = 2; gx < W; gx += 3) {
+      this.svgEl.appendChild(this._el('line', {
+        x1: a.x + gx, y1: a.y + 5.5, x2: a.x + gx, y2: a.y + 6.3,
+        stroke: '#FFFFFF', 'stroke-width': 0.06, opacity: 0.15
+      }));
+    }
+
+    // Mounting holes
     const mHoles = [
       {x: a.x + 0.5, y: a.y + 0.5},
       {x: a.x + W + 1, y: a.y + 0.5},
@@ -1203,95 +1226,124 @@ class CircuitRenderer {
       {x: a.x + W + 1, y: a.y + H - 0.5}
     ];
     mHoles.forEach(h => {
-      this.svgEl.appendChild(this._el('circle', { cx: h.x, cy: h.y, r: 0.6, fill: '#E5E5E5', stroke: '#CCC', 'stroke-width': 0.1 }));
-      this.svgEl.appendChild(this._el('circle', { cx: h.x, cy: h.y, r: 0.35, fill: '#222' }));
+      this.svgEl.appendChild(this._el('circle', { cx: h.x, cy: h.y, r: 0.65, fill: '#D8D8D8', stroke: '#AAA', 'stroke-width': 0.12 }));
+      this.svgEl.appendChild(this._el('circle', { cx: h.x, cy: h.y, r: 0.38, fill: '#1a1a1a' }));
+      this.svgEl.appendChild(this._el('circle', { cx: h.x - 0.1, cy: h.y - 0.1, r: 0.1, fill: '#666' })); // tiny highlight
     });
 
     this._track(a.x - 2.5, a.y - 0.5);
     this._track(a.x + W + 1.5, a.y + H + 3);
 
-    // USB-B connector at bottom (was the "left" side in landscape orientation)
+    // ---- USB-B connector (metal-shell look) ----
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x + 1.5, y: a.y + H + 0.5, width: 4.5, height: 2,
-      rx: 0.3, fill: '#CCCCCC', stroke: '#888', 'stroke-width': 0.1
+      x: a.x + 1.3, y: a.y + H + 0.4, width: 4.9, height: 2.3,
+      rx: 0.15, fill: '#B8BCC0', stroke: '#7A7D80', 'stroke-width': 0.12
     }));
+    // shell shading (top lighter, bottom darker = metal cylinder feel)
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x + 2.0, y: a.y + H + 0.8, width: 3.5, height: 1.4,
-      fill: '#BBBBBB', stroke: '#999', 'stroke-width': 0.05
+      x: a.x + 1.3, y: a.y + H + 0.4, width: 4.9, height: 0.9,
+      fill: '#D6D9DC', opacity: 0.8
     }));
-    this._txt('USB', { x: a.x + 3.75, y: a.y + H + 1.8, 'text-anchor': 'middle',
-      'font-size': 0.6, fill: '#555', 'font-family': 'monospace' });
+    // dark port opening
+    this.svgEl.appendChild(this._el('rect', {
+      x: a.x + 1.9, y: a.y + H + 0.85, width: 3.7, height: 1.5,
+      fill: '#2B2B2B'
+    }));
+    this._txt('USB', { x: a.x + 3.75, y: a.y + H + 2.05, 'text-anchor': 'middle',
+      'font-size': 0.55, fill: '#FFF', 'font-family': 'monospace', opacity: 0.85 });
 
-    // DC power jack (top-left corner — was top of board in landscape)
+    // ---- DC barrel power jack ----
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x - 2.5, y: a.y + 0.5, width: 2.3, height: 3.0,
-      rx: 0.2, fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      x: a.x - 2.6, y: a.y + 0.4, width: 2.5, height: 3.2,
+      rx: 0.15, fill: '#1c1c1c', stroke: '#000', 'stroke-width': 0.1
     }));
-    this.svgEl.appendChild(this._el('rect', {
-      x: a.x - 0.7, y: a.y + 1.0, width: 0.5, height: 2.0,
-      fill: '#555'
+    // barrel ring (silver rim)
+    this.svgEl.appendChild(this._el('circle', {
+      cx: a.x - 1.35, cy: a.y + 2.0, r: 0.85, fill: '#3a3a3a', stroke: '#888', 'stroke-width': 0.15
+    }));
+    this.svgEl.appendChild(this._el('circle', {
+      cx: a.x - 1.35, cy: a.y + 2.0, r: 0.4, fill: '#111'
     }));
 
-    // Voltage Regulator (near power jack)
+    // Voltage regulator (with 3 legs suggested)
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x + 1.0, y: a.y + 1.5, width: 1.5, height: 1.0,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.05
+      x: a.x + 1.0, y: a.y + 1.5, width: 1.6, height: 1.1,
+      fill: '#222', stroke: '#000', 'stroke-width': 0.06
     }));
+    [0.3, 0.8, 1.3].forEach(lx => {
+      this.svgEl.appendChild(this._el('rect', {
+        x: a.x + 1.0 + lx - 0.05, y: a.y + 2.6, width: 0.1, height: 0.35, fill: '#999'
+      }));
+    });
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 1.25, y: a.y + 1.3, width: 1.0, height: 0.2, fill: '#AAA'
     }));
 
-    // USB-to-Serial chip (ATmega16U2)
+    // USB-to-Serial chip (ATmega16U2) with pin legs
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 3.0, y: a.y + H - 3.5, width: 2.5, height: 2.5,
-      rx: 0.1, fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.1, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
+    for (let i = 0; i < 5; i++) {
+      const ly = a.y + H - 3.3 + i * 0.5;
+      this.svgEl.appendChild(this._el('rect', { x: a.x + 2.75, y: ly, width: 0.25, height: 0.15, fill: '#999' }));
+      this.svgEl.appendChild(this._el('rect', { x: a.x + 5.5, y: ly, width: 0.25, height: 0.15, fill: '#999' }));
+    }
 
-    // Crystal Oscillator (silver oval) near USB chip
+    // Crystal oscillator (silver can)
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 6.0, y: a.y + H - 2.5, width: 1.0, height: 2.0,
-      rx: 0.5, fill: '#E0E0E0', stroke: '#999', 'stroke-width': 0.1
+      rx: 0.5, fill: '#E8E8E8', stroke: '#999', 'stroke-width': 0.1
+    }));
+    this.svgEl.appendChild(this._el('rect', {
+      x: a.x + 6.35, y: a.y + H - 2.2, width: 0.3, height: 1.4, fill: '#FFF', opacity: 0.5
     }));
 
-    // Reset Button (top right-ish)
+    // Reset button (silver tactile switch, red top)
     this.svgEl.appendChild(this._el('rect', {
-      x: a.x + 16, y: a.y + 1, width: 1.5, height: 1.5,
-      fill: '#E0E0E0', stroke: '#999', 'stroke-width': 0.1
+      x: a.x + 15.8, y: a.y + 0.8, width: 1.9, height: 1.9,
+      rx: 0.2, fill: '#C8C8C8', stroke: '#888', 'stroke-width': 0.1
     }));
     this.svgEl.appendChild(this._el('circle', {
-      cx: a.x + 16.75, cy: a.y + 1.75, r: 0.4, fill: '#DAA520'
+      cx: a.x + 16.75, cy: a.y + 1.75, r: 0.55, fill: '#B22222', stroke: '#7a1717', 'stroke-width': 0.08
     }));
 
-    // ATmega chip (Main MCU)
+    // ATmega328P main MCU (with pin legs both sides)
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 4.5, y: a.y + 6.5, width: 9, height: 7,
-      rx: 0.3, fill: '#1a1a1a', stroke: '#333', 'stroke-width': 0.1
+      rx: 0.3, fill: '#161616', stroke: '#000', 'stroke-width': 0.12
     }));
     this.svgEl.appendChild(this._el('circle', {
-      cx: a.x + 5.2, cy: a.y + 7.2, r: 0.3, fill: '#333'
+      cx: a.x + 5.2, cy: a.y + 7.2, r: 0.3, fill: '#3a3a3a'
     }));
+    for (let i = 0; i < 7; i++) {
+      const ly = a.y + 6.9 + i * 0.85;
+      this.svgEl.appendChild(this._el('rect', { x: a.x + 4.2, y: ly, width: 0.3, height: 0.18, fill: '#999' }));
+      this.svgEl.appendChild(this._el('rect', { x: a.x + 13.5, y: ly, width: 0.3, height: 0.18, fill: '#999' }));
+    }
     this._txt('ATmega328P', { x: a.x + 9, y: a.y + 10.3, 'text-anchor': 'middle',
       'font-size': 0.65, fill: '#888', 'font-family': 'monospace' });
 
-    // Board name/logo
-    this._txt('Arduino', { x: a.x + 10, y: a.y + 3.5, 'text-anchor': 'middle',
-      'font-size': 1.1, fill: '#FFF', 'font-weight': 'bold', 'font-family': 'sans-serif' });
-    this._txt('UNO', { x: a.x + 10, y: a.y + 5.0, 'text-anchor': 'middle',
-      'font-size': 0.9, fill: '#FFF', 'font-weight': 'bold', 'font-family': 'sans-serif' });
+    // Board name/logo — bolder, closer to real wordmark proportions
+    this._txt('Arduino', { x: a.x + 10, y: a.y + 3.6, 'text-anchor': 'middle',
+      'font-size': 1.3, fill: '#FFF', 'font-weight': 'bold',
+      'font-family': "Georgia, 'Times New Roman', serif", 'font-style': 'italic' });
+    this._txt('UNO', { x: a.x + 10, y: a.y + 5.1, 'text-anchor': 'middle',
+      'font-size': 0.85, fill: '#FFF', 'font-weight': 'bold', 'font-family': 'sans-serif',
+      'letter-spacing': '0.15em' });
     this._txt('MADE IN ITALY', { x: a.x + 10, y: a.y + 16, 'text-anchor': 'middle',
-      'font-size': 0.5, fill: '#FFF', 'font-family': 'sans-serif' });
+      'font-size': 0.45, fill: '#FFF', 'font-family': 'sans-serif', opacity: 0.8 });
 
-    // Headers - Right edge (D0-D13, GND, AREF)
+    // ---- Headers - Right edge (D0-D13, GND, AREF) ----
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 19.5, y: a.y + 0.5, width: 1.0, height: 8.0,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.15, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 19.5, y: a.y + 9.5, width: 1.0, height: 8.0,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.15, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
 
-    // Right edge pins: AREF, GND, D13–D8, D7–D0
     [
       'AREF','GND','D13','D12','D11','D10','D9','D8',
       null,
@@ -1299,23 +1351,22 @@ class CircuitRenderer {
     ].forEach(function(p) {
       if (!p) return;
       const pin = this.pinToSVG(p);
-      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.25, fill: '#444' }));
-      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.15, fill: '#888' }));
+      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.27, fill: '#3a3a3a' }));
+      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.15, fill: '#D4AF37' })); // gold-plated pin look
       this._txt(p, { x: pin.x - 1.0, y: pin.y + 0.25, 'text-anchor': 'end',
         'font-size': 0.55, fill: '#FFF', 'font-family': 'monospace', 'font-weight': 'bold' });
     }, this);
 
-    // Headers - Left edge (A0-A5, Power)
+    // ---- Headers - Left edge (A0-A5, Power) ----
     this.svgEl.appendChild(this._el('rect', {
       x: a.x - 0.5, y: a.y + 0.5, width: 1.0, height: 6.0,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.15, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
     this.svgEl.appendChild(this._el('rect', {
       x: a.x - 0.5, y: a.y + 7.5, width: 1.0, height: 5.0,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.15, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
 
-    // Left edge pins: A5–A0, VIN, 5V, 3V3, RST, IOREF
     [
       'A5','A4','A3','A2','A1','A0',
       null,
@@ -1323,35 +1374,32 @@ class CircuitRenderer {
     ].forEach(function(p) {
       if (!p) return;
       const pin = this.pinToSVG(p);
-      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.25, fill: '#444' }));
-      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.15, fill: '#888' }));
+      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.27, fill: '#3a3a3a' }));
+      this.svgEl.appendChild(this._el('circle', { cx: pin.x, cy: pin.y, r: 0.15, fill: '#D4AF37' }));
       this._txt(p, { x: pin.x + 1.0, y: pin.y + 0.25, 'text-anchor': 'start',
         'font-size': 0.55, fill: '#FFF', 'font-family': 'monospace', 'font-weight': 'bold' });
     }, this);
 
-    // TX/RX LEDs
-    this.svgEl.appendChild(this._el('rect', { x: a.x + 16, y: a.y + 11.5, width: 0.6, height: 0.6, fill: '#FFD700' }));
-    this._txt('TX', { x: a.x + 17, y: a.y + 12, 'text-anchor': 'start', 'font-size': 0.4, fill: '#FFF', 'font-family': 'monospace' });
-    this.svgEl.appendChild(this._el('rect', { x: a.x + 16, y: a.y + 12.5, width: 0.6, height: 0.6, fill: '#FFD700' }));
-    this._txt('RX', { x: a.x + 17, y: a.y + 13, 'text-anchor': 'start', 'font-size': 0.4, fill: '#FFF', 'font-family': 'monospace' });
+    // TX/RX/L/ON status LEDs (small glow ring for realism)
+    const statusLed = (x, y, color, label) => {
+      this.svgEl.appendChild(this._el('circle', { cx: x + 0.3, cy: y + 0.3, r: 0.5, fill: color, opacity: 0.25 }));
+      this.svgEl.appendChild(this._el('rect', { x, y, width: 0.6, height: 0.6, rx: 0.1, fill: color }));
+      this._txt(label, { x: x + 1.0, y: y + 0.5, 'text-anchor': 'start', 'font-size': 0.4, fill: '#FFF', 'font-family': 'monospace' });
+    };
+    statusLed(a.x + 16, a.y + 9.0, '#FFD700', 'L');
+    statusLed(a.x + 16, a.y + 11.5, '#FFD700', 'TX');
+    statusLed(a.x + 16, a.y + 12.5, '#FFD700', 'RX');
+    statusLed(a.x + 16, a.y + 15.0, '#39FF14', 'ON');
 
-    // Built-in LED (L)
-    this.svgEl.appendChild(this._el('rect', { x: a.x + 16, y: a.y + 9, width: 0.6, height: 0.6, fill: '#FFD700' }));
-    this._txt('L', { x: a.x + 17, y: a.y + 9.5, 'text-anchor': 'start', 'font-size': 0.4, fill: '#FFF', 'font-family': 'monospace' });
-
-    // ON LED
-    this.svgEl.appendChild(this._el('rect', { x: a.x + 16, y: a.y + 15, width: 0.6, height: 0.6, fill: '#00FF00' }));
-    this._txt('ON', { x: a.x + 17, y: a.y + 15.5, 'text-anchor': 'start', 'font-size': 0.4, fill: '#FFF', 'font-family': 'monospace' });
-
-    // ICSP Header (2x3 pins) near ATmega
+    // ICSP Header (2x3 pins, gold-plated)
     this.svgEl.appendChild(this._el('rect', {
       x: a.x + 14, y: a.y + 4.5, width: 1.8, height: 2.8,
-      fill: '#222', stroke: '#111', 'stroke-width': 0.1
+      rx: 0.1, fill: '#1a1a1a', stroke: '#000', 'stroke-width': 0.1
     }));
     [0.5, 1.3].forEach(hx => {
       [0.5, 1.4, 2.3].forEach(hy => {
         this.svgEl.appendChild(this._el('circle', {
-          cx: a.x + 14 + hx, cy: a.y + 4.5 + hy, r: 0.15, fill: '#FFD700'
+          cx: a.x + 14 + hx, cy: a.y + 4.5 + hy, r: 0.16, fill: '#D4AF37'
         }));
       });
     });

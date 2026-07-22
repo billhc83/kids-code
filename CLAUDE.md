@@ -1,5 +1,11 @@
 # KidsCode — Project Context for Claude
 
+## Planning docs
+
+Standalone planning/assessment docs (not lesson skills, not audits) live in `plans/`
+while still open, and move to `finished_plans/` once every item in them is done.
+Write new plans directly into `plans/`.
+
 ## What This Is
 A Flask-based platform that teaches kids (ages 8–14) Arduino programming through themed, story-driven lessons. Each lesson has a physical circuit-building guide, an in-browser block builder IDE, and rich educational drawer content.
 
@@ -12,12 +18,14 @@ A lesson is made of these files:
 | `utils/project_{key}.py` | All data: meta, assembly steps, drawer content, sketch presets |
 | `templates/lessons/{page_key}.html` | One template per page (single or multi-part) |
 | `utils/lessons.py` | Registry — one entry per page |
-| `static/graphics/project_{key}_circuit.png` | Circuit diagram image (provided manually) |
-| `static/graphics/project_{key}_banner.png` | Banner image (provided manually, optional) |
+| `static/graphics/project_{key}_circuit.png` | Circuit diagram image (provided manually, unless `circuit_spec` is used — see below) |
+| `static/graphics/project_{key}_banner.png` | Banner image (provided manually, optional — or generate with `/lesson-banner`) |
 
 The project registry (`utils/project_registry.py`) auto-discovers any `utils/project_*.py` that defines a `PROJECT` dict — **no imports needed**, just drop the file in.
 
-**Building a lesson that mixes an editor-view step with blocks and/or a code-driven sim tab?** Read [`BLOCK_BUILDER_SYNC.md`](BLOCK_BUILDER_SYNC.md) first — it documents the editor↔blocks↔sim sync invariants (namespace, sync timing, validation mode, live-source reads) that every such lesson must follow, each backed by a real bug found and fixed.
+**Building a lesson that mixes an editor-view step with blocks and/or a code-driven sim tab?** Read [`BLOCK_BUILDER_SYNC.md`](BLOCK_BUILDER_SYNC.md) and [`BLOCK_BUILDER_INTERACTION.md`](BLOCK_BUILDER_INTERACTION.md) first — the former documents the editor↔blocks↔sim sync invariants (namespace, sync timing, validation mode, live-source reads), the latter documents the click-to-place interaction model students actually see. Every such lesson must follow both, each backed by a real bug found and fixed.
+
+**Circuit diagram: static PNG vs. auto-rendered.** A project can either ship a hand-made `circuit_image` PNG (hover-zoomed on the lesson page), or define a `circuit_spec` in `PROJECT` — a logical component/connection list that `utils/circuit_engine.py` resolves into a `circuit_definition` JSON, rendered live in-browser as an interactive SVG breadboard by `circuit_renderer.js` (no hand-placed coordinates, no manual artwork). If `circuit_definition` is present it takes priority over `circuit_image` on the lesson page's overview tab. See [`CIRCUIT_ENGINE.md`](CIRCUIT_ENGINE.md) for the full schema and `/dev/circuit/<key>` (admin-only) to preview one. The manual `STEPS`/`circuit_image` assembly guide (below) is a separate, still-required system for the step-by-step build instructions regardless of which circuit diagram approach is used.
 
 ### Single-page lessons
 Templates extend `lessons/project_base.html`. Use `{% block intro %}`, `{% block parts %}`, `{% block tips %}`.
@@ -111,6 +119,12 @@ PROJECT = {
     }
 }
 ```
+
+**Optional PROJECT keys, added as needed:**
+- `META['required_kits']` — list from `utils/affiliate_kits.py`, renders the parts-kit callout box
+- `"circuit_spec"` — logical circuit description resolved by `circuit_engine.py` into an interactive diagram; see the circuit diagram note above and [`CIRCUIT_ENGINE.md`](CIRCUIT_ENGINE.md)
+- `"chips"` — list of canned bug-report strings for `troubleshoot` lesson types
+- Additional `presets` entries (e.g. `"challenge"`, `"progression"`) beyond `"default"` for lessons with more than one sketch mode
 
 ### Sketch Directives — exact syntax
 
@@ -243,7 +257,17 @@ as an admin user. Reference these URLs in checklists as requiring admin access.
 
 ## Skills — Lesson Generation Pipeline
 
-Lessons are built in stages using modular skills. Run them in order:
+Lessons are built using modular skills. Skills are markdown files in `.claude/commands/`.
+Type `/skill-name` in any Claude Code chat opened in this project to invoke one.
+
+**Pick one path:**
+
+| Skill | What it does |
+|-------|-------------|
+| `/generate-lesson` | Guided end-to-end: gathers inputs, then generates sketch+drawer and page+steps in two approval batches, then scaffolds |
+| `/generate-project` | Headless one-command: no user input, LLM-generates the whole concept/circuit/sketch/drawer via `run_local_task`, runs `circuit_engine.py`, scaffolds — for bulk/autonomous generation |
+
+**Or run the granular pipeline manually, in order** (same stages `/generate-lesson` walks through interactively, as separate skills):
 
 | Skill | What it does |
 |-------|-------------|
@@ -251,8 +275,12 @@ Lessons are built in stages using modular skills. Run them in order:
 | `/lesson-sketch` | Annotates a user-provided sketch with `//>>`, `//?? `, and `//##` directives |
 | `/lesson-drawer` | Generates themed drawer tab content from sketch steps |
 
-Skills are markdown files in `.claude/commands/`. Type `/skill-name` in any
-Claude Code chat opened in this project to invoke one.
+**Supporting skills, run as needed:**
+
+| Skill | What it does |
+|-------|-------------|
+| `/lesson-banner` | Generates a themed banner image for an existing project via Gemini image generation |
+| `/lesson-drawer-audit` | Audits or enriches an *existing* project's drawer content against its real sketch/circuit (read-only audit mode, or write mode) |
 
 ### `utils/lesson_scaffold.py`
 All skills write a `lesson_spec.json` to the project root then call:
