@@ -8,6 +8,9 @@ config.py
 __pycache__/
 *.pyc
 
+# JS test tooling (static/js/) — installed deps, not shipped code
+static/js/node_modules/
+
 # Virtual environment
 venv/
 .venv/

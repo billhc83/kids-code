@@ -14,10 +14,10 @@
       if (b.type === 'slot') {
         if (b.content === null) n++;
         else {
-          if (b.content.type === 'ifblock') { n += BB.countPhantoms(b.content.ifbody); b.content.elseifs.forEach(function (ei) { n += BB.countPhantoms(ei.body); }); if (b.content.elsebody) n += BB.countPhantoms(b.content.elsebody); }
+          if (b.content.type === 'ifblock') { n += BB.countPhantoms(b.content.ifbody); b.content.elseifs.forEach(function (ei) { n += BB.countPhantoms(ei.body); }); if (b.content.elsebody) n += BB.countPhantoms(b.content.elsebody.body); }
           if ((b.content.type === 'forloop' || b.content.type === 'whileloop') && b.content.body) n += BB.countPhantoms(b.content.body);
         }
-      } else if (b.type === 'ifblock') { n += BB.countPhantoms(b.ifbody); b.elseifs.forEach(function (ei) { n += BB.countPhantoms(ei.body); }); if (b.elsebody) n += BB.countPhantoms(b.elsebody); }
+      } else if (b.type === 'ifblock') { n += BB.countPhantoms(b.ifbody); b.elseifs.forEach(function (ei) { n += BB.countPhantoms(ei.body); }); if (b.elsebody) n += BB.countPhantoms(b.elsebody.body); }
       else if ((b.type === 'forloop' || b.type === 'whileloop') && b.body) n += BB.countPhantoms(b.body);
       else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) n += BB.countPhantoms(b.body);
     });
@@ -42,7 +42,7 @@
           if (ec) { if (!ec.left) n++; if (!ec.right) n++; }
           n += BB.countIncomplete(ei.body);
         });
-        if (currentBlock.elsebody) n += BB.countIncomplete(currentBlock.elsebody);
+        if (currentBlock.elsebody) n += BB.countIncomplete(currentBlock.elsebody.body);
         return;
       }
       if (currentBlock.type === 'whileloop') {
@@ -217,7 +217,7 @@
           if (pm.expects === 'ifblock') {
             BB.collectBadIds(uc.ifbody, pm.ifbody, tier, badIds);
             if (uc.elseifs && pm.elseifs) uc.elseifs.forEach(function (ei, k) { if (pm.elseifs[k]) BB.collectBadIds(ei.body, pm.elseifs[k].body, tier, badIds); });
-            if (uc.elsebody && pm.elsebody) BB.collectBadIds(uc.elsebody, pm.elsebody, tier, badIds);
+            if (uc.elsebody && pm.elsebody) BB.collectBadIds(uc.elsebody.body, pm.elsebody.body, tier, badIds);
           } else if (pm.expects === 'forloop' || pm.expects === 'whileloop') { BB.collectBadIds(uc.body, pm.body, tier, badIds); }
           else if (pm.expects === 'elseifclause' || pm.expects === 'elseclause') { BB.collectBadIds(uc.body, pm.body, tier, badIds); }
         }
@@ -288,7 +288,7 @@
             if (mb.elseifs[k]) BB.checkSketchFields(ei.body, mb.elseifs[k].body, badIds, path.concat([i, 'elseifs', k, 'body']), section);
           });
         }
-        if (mb.elsebody) BB.checkSketchFields(ub.elsebody || [], mb.elsebody, badIds, path.concat([i, 'elsebody']), section);
+        if (mb.elsebody) BB.checkSketchFields((ub.elsebody && ub.elsebody.body) || [], mb.elsebody.body, badIds, path.concat([i, 'elsebody', 'body']), section);
       } else if (ub.type === 'forloop' || ub.type === 'whileloop') {
         BB.checkSketchFields(ub.body, mb.body, badIds, path.concat([i, 'body']), section);
       } else if (ub.type === 'elseifclause' || ub.type === 'elseclause') {
@@ -650,7 +650,7 @@
       BB.STUDENT_SAVES[BB.CURRENT_STEP] = JSON.parse(JSON.stringify(BB.SECTIONS));
       BB.CURRENT_STEP++; BB.buildWorkspace(BB.CURRENT_STEP); BB.saveBlocks();
       if (window.openDrawer) window.openDrawer();
-    } catch (e) { BB.flash('ERR: ' + e.message); console.error(e); }
+    } catch (e) { BB.flash('ERR: ' + e.message); /* console.error(e); */ }
   };
 
   window.bbPrev = function () {

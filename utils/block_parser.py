@@ -130,9 +130,11 @@ class BlockTransformer(Transformer):
         cond = items[0]
         ifbody = items[1]
         
-        # In Earley, items[2:] includes all subsequent clauses
+        # In Earley, items[2:] includes all subsequent clauses. else_clause
+        # transforms to {'body': [...]} (see else_clause below) so it's the
+        # one dict in items[2:] that isn't an elseif.
         elseifs = [i for i in items[2:] if isinstance(i, dict) and i.get('_is_elseif')]
-        elsebody = next((i for i in items[2:] if isinstance(i, list)), None)
+        elsebody = next((i for i in items[2:] if isinstance(i, dict) and not i.get('_is_elseif')), None)
         
         return {
             'type': 'ifblock',
@@ -157,7 +159,10 @@ class BlockTransformer(Transformer):
         return {'_is_phantom_elseclause': True, 'hint': hint, 'body': body}
 
     def else_clause(self, items):
-        return items[0] # Returns the block_list (list)
+        # Wrapped (not a bare list) so an else clause has somewhere to carry
+        # its own id/flag/hint, the same way elseifs entries do — see
+        # plans/TEACHER_AUTHORING_LIVE_BUILDER_UI_SPEC.md §4.
+        return {'body': items[0]}
 
     def while_loop(self, items):
         return {'type': 'whileloop', 'condition': items[0], 'body': items[1]}
@@ -402,7 +407,7 @@ def strip_block_values(block):
                 c['left'] = ''
                 c['right'] = ''
                 ei['condition'] = c
-    if res.get('elsebody'): res['elsebody'] = [strip_block_values(b) for b in res['elsebody']]
+    if res.get('elsebody'): res['elsebody'] = {**res['elsebody'], 'body': [strip_block_values(b) for b in res['elsebody']['body']]}
     if res.get('body'): res['body'] = [strip_block_values(b) for b in res['body']]
     
     return res
@@ -450,7 +455,7 @@ def _resolve_nested_bodies(item, fill_values=False, initial_fill_content=False):
             elseifs.append(ei_copy)
         elsebody = item.get('elsebody')
         if elsebody:
-            elsebody = resolve_phantom_items(elsebody, fill_values, initial_fill_content)
+            elsebody = {**elsebody, 'body': resolve_phantom_items(elsebody['body'], fill_values, initial_fill_content)}
         return {**item, 'ifbody': ifbody, 'elseifs': elseifs, 'elsebody': elsebody}
     if t in ('whileloop', 'forloop'):
         body = resolve_phantom_items(item.get('body') or [], fill_values, initial_fill_content)
@@ -608,7 +613,7 @@ def collect_types(blocks):
                 for ei in b.get('elseifs', []):
                     types.update(collect_types(ei.get('body', [])))
                 if b.get('elsebody'):
-                    types.update(collect_types(b['elsebody']))
+                    types.update(collect_types(b['elsebody']['body']))
             elif b['type'] in ('forloop', 'whileloop'):
                 types.update(collect_types(b.get('body', [])))
     return types
@@ -753,7 +758,7 @@ def parse_steps(sketch_code):
             'interface': view if view in ['blocks', 'editor'] else 'blocks',
             'palette_override': palette_override,
         }
-        print(f"[PARSE_STEPS]   fill_after_override={fill}  config.fill={step_config['fill']}")
+        # print(f"[PARSE_STEPS]   fill_after_override={fill}  config.fill={step_config['fill']}")
 
         raw_steps.append({
             'label': label,
@@ -773,13 +778,13 @@ def parse_steps(sketch_code):
     steps = []
 
     for step in raw_steps:
-        print(f"\n[PARSE_STEPS] ── processing '{step['label']}' | reset={step.get('reset')} | fill={step['config']['fill']} ──")
-        print(f"[PARSE_STEPS]   cumulative_global len={len(cumulative_global)}  setup={len(cumulative_setup)}  loop={len(cumulative_loop)}")
+        # print(f"\n[PARSE_STEPS] ── processing '{step['label']}' | reset={step.get('reset')} | fill={step['config']['fill']} ──")
+        # print(f"[PARSE_STEPS]   cumulative_global len={len(cumulative_global)}  setup={len(cumulative_setup)}  loop={len(cumulative_loop)}")
         if step.get('reset'):
             cumulative_global = []
             cumulative_setup = []
             cumulative_loop = []
-            print(f"[PARSE_STEPS]   *** RESET applied ***")
+            # print(f"[PARSE_STEPS]   *** RESET applied ***")
 
         # For verify mode, split chunk on //== to get initial workspace and correct answer
         verify_sep = re.compile(r'^\s*//==\s*$', re.MULTILINE)
@@ -797,14 +802,14 @@ def parse_steps(sketch_code):
 
         # Parse this step's chunk as a sketch using the explicit fill control
         fill_val = step['config']['fill']
-        print(f"[PARSE_STEPS]   fill_val={fill_val}  chunk[:80]={repr(step['chunk'][:80])}")
+        # print(f"[PARSE_STEPS]   fill_val={fill_val}  chunk[:80]={repr(step['chunk'][:80])}")
         parsed = parse_sketch(step['chunk'], fill_conditions=fill_val, fill_values=fill_val, initial_fill_content=fill_val)
-        print(f"[PARSE_STEPS]   parsed → global={len(parsed['global'])} blocks, setup={len(parsed['setup'])} blocks, loop={len(parsed['loop'])} blocks")
+        # print(f"[PARSE_STEPS]   parsed → global={len(parsed['global'])} blocks, setup={len(parsed['setup'])} blocks, loop={len(parsed['loop'])} blocks")
         def _block_summary(blocks):
             return [(b.get('type'), b.get('params'), b.get('exChildren')) for b in blocks]
-        print(f"[PARSE_STEPS]   parsed.global  : {_block_summary(parsed['global'])}")
-        print(f"[PARSE_STEPS]   parsed.setup   : {_block_summary(parsed['setup'])}")
-        print(f"[PARSE_STEPS]   parsed.loop    : {_block_summary(parsed['loop'])}")
+        # print(f"[PARSE_STEPS]   parsed.global  : {_block_summary(parsed['global'])}")
+        # print(f"[PARSE_STEPS]   parsed.setup   : {_block_summary(parsed['setup'])}")
+        # print(f"[PARSE_STEPS]   parsed.loop    : {_block_summary(parsed['loop'])}")
         if step['config'].get('palette_override'):
             step['palette'] = step['config']['palette_override']
         elif step['config']['filter']:
@@ -853,8 +858,8 @@ def parse_steps(sketch_code):
             'setup': parsed['setup'] if parsed['setup'] else cumulative_setup,
             'loop': parsed['loop'] if parsed['loop'] else cumulative_loop,
         }
-        print(f"[PARSE_STEPS]   full → global={len(full['global'])}  setup={len(full['setup'])}  loop={len(full['loop'])}")
-        print(f"[PARSE_STEPS]   full.global: {_block_summary(full['global'])}")
+        # print(f"[PARSE_STEPS]   full → global={len(full['global'])}  setup={len(full['setup'])}  loop={len(full['loop'])}")
+        # print(f"[PARSE_STEPS]   full.global: {_block_summary(full['global'])}")
         
         
         

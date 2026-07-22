@@ -78,6 +78,10 @@ select.blk-input { width: var(--bb-w-md); }
 .act:active { transform:scale(.9); }
 .act-danger { color:var(--bb-danger); }
 .act-danger:hover { color:#fff; background:var(--bb-danger); border-color:var(--bb-danger); }
+.authoring-toggle-wrap { display:inline-flex; align-items:center; gap:4px; }
+.authoring-toggle { font-weight:700; }
+.authoring-toggle-forced { color:var(--bb-ink-muted); font-style:italic; cursor:default; font-weight:400; }
+.authoring-hint-input { width:140px; }
 .if-block { margin-bottom:3px; }
 .if-header, .elseif-header, .else-header { display:flex; align-items:flex-end;
   gap:4px; flex-wrap:wrap; background: color-mix(in srgb, var(--bb-loop) 10%, var(--bb-surface)); border:1px solid var(--bb-loop); padding:3px 6px; }

@@ -105,20 +105,64 @@ def sim_run():
     except Exception as e:
         return {'error': str(e)}, 400
 
+def _build_authored_preview_config(project):
+    """Config for previewing a teacher-authored (unpublished) draft through
+    the same block-builder fragment a real lesson uses — mirrors what
+    routes/teacher_authoring.py's preview() already computes for its own
+    (now-retired) bare-fragment render."""
+    from utils.teacher_authoring_serializer import materialize
+    from utils.block_parser import parse_steps
+
+    draft = project["draft_data"]
+    sketch = materialize(draft.get("steps", []))
+    parsed_steps = parse_steps(sketch)
+    return {
+        "mode": "progression",
+        "steps": parsed_steps,
+        "palette": None,
+        "master": None,
+        "username": session.get("user_id"),
+        "page": str(project["project_key"]),
+        "drawer": draft.get("drawer", {}),
+        "lock_mode": False,
+        "is_overlay": False,
+        "default_view": "blocks",
+        "lock_view": False,
+        "readonly_mode": False,
+        "force_preset": True,
+    }
+
+
 @builder_bp.route("/builder")
 @login_required
 def builder_endpoint():
     from utils.block_builder_config import build_config
-    
+    from utils.authored_projects import get_authored_project
+
     preset = request.args.get("preset", "codebreaker")
     page = request.args.get("page") or preset
 
-    config = build_config(
-        preset=preset,
-        username=session.get("user_id"),
-        page=page,
-        is_overlay=False,
-    )
+    # A teacher-authoring preview passes an authored_projects row id as
+    # `preset` (see routes/teacher_authoring.py's preview()) instead of a
+    # utils/project_registry.py or utils/presets.py key. `.eq("id", preset)`
+    # fails UUID casting for a normal preset string like "codebreaker", so
+    # any lookup error just means "not a draft" — fall through to the
+    # existing preset-registry path unchanged.
+    authored = None
+    try:
+        authored = get_authored_project(preset)
+    except Exception:
+        authored = None
+
+    if authored and authored["created_by"] == session.get("user_id"):
+        config = _build_authored_preview_config(authored)
+    else:
+        config = build_config(
+            preset=preset,
+            username=session.get("user_id"),
+            page=page,
+            is_overlay=False,
+        )
     config_json = json.dumps(config).replace('</', '<\\/')
     return render_template("block_builder_fragment.html", config=config_json)
 
@@ -136,11 +180,11 @@ def get_preset(name):
     fill_values = False
     fill_conditions = False
 
-    print(f"[get_preset] name={name!r}  in_PROJECTS={name in PROJECTS}  PROJECTS keys={list(PROJECTS.keys())}", flush=True)
+    # print(f"[get_preset] name={name!r}  in_PROJECTS={name in PROJECTS}  PROJECTS keys={list(PROJECTS.keys())}", flush=True)
     if name in PROJECTS:
         p = PROJECTS[name]
         preset_obj = p.get("presets", {}).get("default", {})
-        print(f"[get_preset] preset_obj type={type(preset_obj).__name__}  has_sketch={'sketch' in preset_obj if isinstance(preset_obj, dict) else 'N/A'}", flush=True)
+        # print(f"[get_preset] preset_obj type={type(preset_obj).__name__}  has_sketch={'sketch' in preset_obj if isinstance(preset_obj, dict) else 'N/A'}", flush=True)
         if isinstance(preset_obj, dict):
             sketch_code = preset_obj.get("sketch")
             default_view = preset_obj.get("default_view", "blocks")
@@ -186,16 +230,16 @@ def get_preset(name):
             sketch_code = preset
         drawer_content = DRAWER_CONTENT.get(name)
 
-    print(f"[get_preset] sketch_code present={bool(sketch_code)}  has_steps_marker={'//>>' in (sketch_code or '')}", flush=True)
+    # print(f"[get_preset] sketch_code present={bool(sketch_code)}  has_steps_marker={'//>>' in (sketch_code or '')}", flush=True)
     if sketch_code and '//>>' in sketch_code:
         progression_data = parse_steps(sketch_code)
-        print(f"[get_preset] parse_steps → {len(progression_data) if progression_data else 'None'} steps", flush=True)
+        # print(f"[get_preset] parse_steps → {len(progression_data) if progression_data else 'None'} steps", flush=True)
         parsed_sketch = None
     elif sketch_code:
         progression_data = None
         parsed_sketch = parse_sketch(sketch_code, fill_conditions=fill_conditions, fill_values=fill_values)
     else:
-        print(f"[get_preset] WARNING: sketch_code is empty/None — nothing to return!", flush=True)
+        # print(f"[get_preset] WARNING: sketch_code is empty/None — nothing to return!", flush=True)
         progression_data = None
         parsed_sketch = None
 

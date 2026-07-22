@@ -3,7 +3,7 @@ from utils.decorators import login_required
 from utils.progression import complete_lesson, is_unlocked, get_completed_lessons
 from utils.classes import get_assignment_keys_for_student
 from utils.badges import check_and_award_badges
-from utils.lessons import get_lesson
+from utils.lessons import get_lesson, get_next_lesson
 from utils.project_registry import PROJECTS
 from utils.assembly_guide_flask import render_assembly_guide
 from config import SUPABASE_URL, SUPABASE_KEY
@@ -134,6 +134,7 @@ def lesson(lesson_key):
         lesson=lesson_data,
         lesson_key=lesson_key,
         already_completed=already_completed,
+        has_next_lesson=get_next_lesson(lesson_key) is not None,
         **extra
     )
 

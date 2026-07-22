@@ -5,13 +5,15 @@ blocks-first teacher-authoring tool needs (plans/SCHOOL_INFRASTRUCTURE_PLAN.md
 docs/superpowers/specs/2026-07-21-teacher-authoring-serializer-design.md
 
 materialize(steps) -> annotated_sketch_string
+hydrate_steps(steps) -> [live-workspace step, ...]  (the reverse direction)
 
-Pure function: no DB access, no Flask imports, deterministic. Turns a
-teacher's ordered list of step drafts (a block tree per section, the same
-shape bb-render.js's live workspace already uses, plus `flag`/`hint` layered
-on top) into the `//>>`/`//??`/`//##`-annotated sketch string
+Pure functions: no DB access, no Flask imports, deterministic. materialize()
+turns a teacher's ordered list of step drafts (a block tree per section, the
+same shape bb-render.js's live workspace already uses, plus `flag`/`hint`
+layered on top) into the `//>>`/`//??`/`//##`-annotated sketch string
 utils/block_parser.py's parse_steps() already consumes for every
-hand-authored lesson today.
+hand-authored lesson today. hydrate_steps() is its mirror image, used to load
+a previously-saved draft back into the live block-builder workspace.
 
 Node shapes (plain dicts, matching the design doc's §2 input contract):
 
@@ -178,3 +180,201 @@ def materialize(steps):
 
     chunks.append(FINAL_STEP)
     return '\n\n'.join(chunks) + '\n'
+
+
+# ── hydrate_steps() — the reverse direction (build order step 4) ────────────
+#
+# Turns a saved StepDraft list back into the shape
+# static/js/teacher-authoring.js's TA.STEPS needs to re-populate the live
+# workspace (BB.SECTIONS-shaped block trees, id/flag/hint attached to every
+# node) — the mirror image of emit_node()/extractNode(). There is no
+# "un-generate code" step per se: each node's stored `line`/`header` text is
+# valid Arduino already (that's what materialize() emits and what compiles
+# on real hardware), so we re-run it through utils/block_parser.py's real
+# grammar (the exact same parser every published lesson's sketch goes
+# through) and re-attach id/flag/hint from the StepDraft onto the resulting
+# block dicts, position-for-position. If the parse doesn't line up
+# structurally with the node tree that generated it (a hand-edited raw JSON
+# draft with a `line` the grammar can't parse, for instance), this raises
+# ValueError — callers should catch that and fall back to the raw JSON view,
+# never show a broken workspace.
+
+
+def _emit_plain(node, out):
+    """Like emit_node(), but without the //??///## directives — just real
+    Arduino text, since we're about to hand it back to the same grammar."""
+    if node['kind'] == 'leaf':
+        out.append(node['line'])
+        return
+    keyword = _KEYWORD[node['compound_type']]
+    out.append('{} ({}) {{'.format(keyword, node['header']))
+    for child in node['body']:
+        _emit_plain(child, out)
+    out.append('}')
+    for ei in node.get('elseifs') or []:
+        out.append('else if ({}) {{'.format(ei['header']))
+        for child in ei['body']:
+            _emit_plain(child, out)
+        out.append('}')
+    eb = node.get('elsebody')
+    if eb:
+        out.append('else {')
+        for child in eb['body']:
+            _emit_plain(child, out)
+        out.append('}')
+
+
+def _zip_node(node, block):
+    """Merge one StepDraft node's id/flag/hint onto the runtime block dict
+    parse_sketch() produced from its text, recursing into compound bodies in
+    lockstep. Raises ValueError on any shape mismatch instead of silently
+    misattaching metadata to the wrong block."""
+    block = dict(block)
+    block.pop('locked', None)  # parse_sketch's own readonly marker — not
+    block.pop('parser_error', None)  # teacher-authoring's flag/hint concept.
+    block['id'] = node['id']
+    block['flag'] = node['flag']
+    block['hint'] = node.get('hint')
+
+    if node['kind'] == 'leaf':
+        return block
+
+    ctype = node['compound_type']
+    if block.get('type') != ctype:
+        raise ValueError('expected {}, parsed {}'.format(ctype, block.get('type')))
+
+    if ctype == 'ifblock':
+        body, parsed_body = node['body'], block.get('ifbody') or []
+        if len(body) != len(parsed_body):
+            raise ValueError('ifbody length mismatch')
+        block['ifbody'] = [_zip_node(n, b) for n, b in zip(body, parsed_body)]
+
+        elseifs, parsed_elseifs = node.get('elseifs') or [], block.get('elseifs') or []
+        if len(elseifs) != len(parsed_elseifs):
+            raise ValueError('elseifs length mismatch')
+        zipped_elseifs = []
+        for ei, eib in zip(elseifs, parsed_elseifs):
+            ei_body, parsed_ei_body = ei['body'], eib.get('body') or []
+            if len(ei_body) != len(parsed_ei_body):
+                raise ValueError('elseif body length mismatch')
+            zipped_elseifs.append({
+                'id': ei['id'], 'flag': ei['flag'], 'hint': ei.get('hint'),
+                'condition': eib.get('condition'),
+                'body': [_zip_node(n, b) for n, b in zip(ei_body, parsed_ei_body)],
+            })
+        block['elseifs'] = zipped_elseifs
+
+        eb, ebb = node.get('elsebody'), block.get('elsebody')
+        if bool(eb) != bool(ebb):
+            raise ValueError('elsebody presence mismatch')
+        if eb:
+            eb_body, parsed_eb_body = eb['body'], ebb.get('body') or []
+            if len(eb_body) != len(parsed_eb_body):
+                raise ValueError('elsebody body length mismatch')
+            block['elsebody'] = {
+                'id': eb['id'], 'flag': eb['flag'], 'hint': eb.get('hint'),
+                'body': [_zip_node(n, b) for n, b in zip(eb_body, parsed_eb_body)],
+            }
+        else:
+            block['elsebody'] = None
+        return block
+
+    # forloop / whileloop — single body list.
+    body, parsed_body = node['body'], block.get('body') or []
+    if len(body) != len(parsed_body):
+        raise ValueError('body length mismatch')
+    block['body'] = [_zip_node(n, b) for n, b in zip(body, parsed_body)]
+    return block
+
+
+def hydrate_step(step):
+    """The reverse of materialize_step()/extractStepDraft(): turns one
+    StepDraft back into {label, guidance, view, read_only, sections, raw} —
+    the shape TA.STEPS entries need. Raises ValueError if the stored code
+    text doesn't round-trip through the real grammar structurally."""
+    from utils.block_parser import parse_sketch
+
+    result = {
+        'label': step['label'], 'guidance': step['guidance'],
+        'view': step.get('view', 'blocks'), 'read_only': step.get('read_only'),
+    }
+
+    if step['guidance'] == 'open':
+        result['raw'] = step.get('raw') or ''
+        result['sections'] = {'global': [], 'setup': [], 'loop': []}
+        return result
+
+    global_nodes = step.get('global', [])
+    setup_nodes = step.get('setup', [])
+    loop_nodes = step.get('loop', [])
+
+    global_lines, setup_lines, loop_lines = [], [], []
+    for node in global_nodes:
+        _emit_plain(node, global_lines)
+    for node in setup_nodes:
+        _emit_plain(node, setup_lines)
+    for node in loop_nodes:
+        _emit_plain(node, loop_lines)
+
+    parts = []
+    if global_lines:
+        parts.append('\n'.join(global_lines))
+    parts.append('void setup() {\n' + _indent(setup_lines) + '\n}')
+    parts.append('void loop() {\n' + _indent(loop_lines) + '\n}')
+    code = '\n\n'.join(parts)
+
+    # fill_conditions/fill_values=True: this is reloading a teacher's own
+    # already-decided draft, not building a blank student-facing progression
+    # step — resolve_phantom_items() strips concrete param/condition values
+    # from every non-phantom block when these are False (see
+    # utils/block_parser.py's fill_values docstring), which would blank out
+    # every locked block's pin numbers/values on reload.
+    parsed = parse_sketch(code, fill_conditions=True, fill_values=True, initial_fill_content=True)
+
+    if len(global_nodes) != len(parsed['global']):
+        raise ValueError('global section length mismatch')
+    if len(setup_nodes) != len(parsed['setup']):
+        raise ValueError('setup section length mismatch')
+    if len(loop_nodes) != len(parsed['loop']):
+        raise ValueError('loop section length mismatch')
+
+    result['raw'] = ''
+    result['sections'] = {
+        'global': [_zip_node(n, b) for n, b in zip(global_nodes, parsed['global'])],
+        'setup': [_zip_node(n, b) for n, b in zip(setup_nodes, parsed['setup'])],
+        'loop': [_zip_node(n, b) for n, b in zip(loop_nodes, parsed['loop'])],
+    }
+    return result
+
+
+def hydrate_steps(steps):
+    return [hydrate_step(step) for step in steps]
+
+
+# ── What the teacher-authoring tool itself is allowed to produce ────────────
+#
+# Deliberately narrower than what utils/block_parser.py's engine can parse.
+# A corpus audit (2026-07-22) of every real, published lesson's steps showed
+# `editor` view has exactly one safe real-world pairing — `guidance: verify`
+# (project_try_it's "Turn it ON") — which this tool has no UI for at all
+# (verify's answer-key shape isn't representable by StepDraft/materialize()).
+# `guided`/`free`/`open` never appear with `editor` anywhere in the corpus,
+# and `full` never appears at all. So rather than defending the engine
+# against every theoretical combination, the tool just refuses to produce
+# anything outside what's already shipped and working.
+ALLOWED_GUIDANCE = {"guided", "free", "open"}
+
+
+def validate_step_shape(steps):
+    """Returns an error string on the first step outside the supported set,
+    or None if every step is within it. Called both from build()'s save path
+    and publish_project(), so the raw-JSON fallback textarea can't be used to
+    smuggle in a combination the settings-panel UI no longer offers."""
+    for i, step in enumerate(steps):
+        guidance = step.get("guidance")
+        if guidance not in ALLOWED_GUIDANCE:
+            return f"Step {i + 1}: guidance {guidance!r} isn't supported by this tool — use guided, free, or open."
+        view = step.get("view", "blocks")
+        if view != "blocks":
+            return f"Step {i + 1}: only 'blocks' view is supported by this tool right now."
+    return None

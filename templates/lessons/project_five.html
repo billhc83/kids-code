@@ -32,8 +32,8 @@
     <form method="POST" action="{{ url_for('lessons.complete_lesson_route') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="lesson_key" value="project_five">
-        <button type="submit" class="next-btn">Next Step →</button>
+        <button type="submit" class="next-btn">Next Project →</button>
     </form>
-    <p>⬅️ Click here to continue to the next step!</p>
+    <p>⬅️ Click here to add the next project to the menu</p>
 </div>
 {% endblock %}

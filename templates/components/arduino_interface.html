@@ -442,6 +442,23 @@ window.getCurrentSketch = function () {
   return window.getGeneratedCode ? window.getGeneratedCode() : '';
 };
 
+// A phantom slot that's still unresolved (content: null) never appears in
+// generated code at all — BB.genCode() skips it (static/js/block_builder.js).
+// So it's invisible in editor view, and switching back to blocks blindly
+// reparses that text via /parse + setBlockData(), which has no way to know
+// a phantom slot ever existed there — it's just gone. The fix isn't to
+// reconstruct it after the fact; it's to never let the destructive path run
+// while one's still unresolved. Ignores whatever a step's own `readonly`
+// value says whenever any phantom remains, regardless of guidance.
+function hasUnresolvedPhantoms() {
+  var BB = window._BB;
+  if (!BB || !BB.PROGRESSION_MODE || !BB.countPhantoms || !BB.SECTIONS) return false;
+  return (BB.countPhantoms(BB.SECTIONS.global) + BB.countPhantoms(BB.SECTIONS.setup) + BB.countPhantoms(BB.SECTIONS.loop)) > 0;
+}
+function effectiveReadOnly(metaReadOnly) {
+  return !!metaReadOnly || hasUnresolvedPhantoms();
+}
+
 const DRAWER_STEPS = {{ drawer_steps|tojson|safe if drawer_steps else 'null' }};
 let drawerOpen = DRAWER_STEPS !== null && DRAWER_STEPS.length > 0;
 
@@ -494,7 +511,7 @@ window.addEventListener('stepchange', function(e) {
     setMode(e.detail.view);
   }
   if (e.detail && e.detail.readOnly !== undefined && editor) {
-    editor.updateOptions({ readOnly: e.detail.readOnly });
+    editor.updateOptions({ readOnly: effectiveReadOnly(e.detail.readOnly) });
   }
 });
 
@@ -712,8 +729,8 @@ async function setMode(mode) {
     if (toggleBtn) toggleBtn.textContent = 'Switch to Blocks';
     if (editor) {
       const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
-      editor.updateOptions({ readOnly: !!meta.readOnly });
-      // Trigger layout multiple times to ensure we catch the final container size 
+      editor.updateOptions({ readOnly: effectiveReadOnly(meta.readOnly) });
+      // Trigger layout multiple times to ensure we catch the final container size
       // after the browser finishes the flexbox reflow.
       [10, 50, 150, 300].forEach(delay => setTimeout(() => editor.layout(), delay));
     }
@@ -721,21 +738,7 @@ async function setMode(mode) {
 
   if (mode === 'blocks') {
     // Sync Editor -> Blocks
-    const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
-    if (!meta.readOnly && editor) {
-      const code = editor.getValue();
-      try {
-        const res = await fetch('/parse', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
-        });
-        const data = await res.json();
-        if (window.setBlockData) window.setBlockData(data);
-      } catch (e) {
-        console.error("Failed to parse code into blocks:", e);
-      }
-    }
+    await window.syncEditorToBlocks();
   } else {
     // Sync Blocks -> Editor
     if (window.getGeneratedCode && editor) {
@@ -744,6 +747,29 @@ async function setMode(mode) {
     }
   }
 }
+
+// Parses the current editor text into blocks and applies it to BB.SECTIONS.
+// Used both by setMode('blocks') (switching views) and by the bbNext
+// wrapper below (clicking Check Code/Complete Step while still in editor
+// view — without this, that click validated whatever was last synced,
+// which on a step that opens in editor view is nothing). Mirrors
+// templates/try_it_builder.html's syncEditorToBlocks() exactly.
+window.syncEditorToBlocks = async function () {
+  const meta = window.getCurrentStepMeta ? window.getCurrentStepMeta() : {};
+  if (effectiveReadOnly(meta.readOnly) || !editor) return;
+  const code = editor.getValue();
+  try {
+    const res = await fetch('/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (window.setBlockData) window.setBlockData(data);
+  } catch (e) {
+    console.error("Failed to parse code into blocks:", e);
+  }
+};
 
 // UI helpers
 function logToSerial(msg, isError = false) {
@@ -1414,6 +1440,37 @@ window.addEventListener('bb_step_update', function(e){
 
 // Initial sync for step nav padding based on default drawer state
 syncStepNavPadding();
+</script>
+
+<script>
+(function () {
+  // window.bbNext (static/js/bb-validation.js) is the actual step-advance
+  // handler wired to the Next-step button's onclick. It's defined inside
+  // the block-builder scripts that loadBlockBuilder() injects asynchronously
+  // (see /builder), so poll until it exists before wrapping it — mirrors
+  // templates/try_it_builder.html's identical wrapper exactly.
+  var installPoll = setInterval(function () {
+    if (typeof window.bbNext !== 'function') return;
+    clearInterval(installPoll);
+    var originalBbNext = window.bbNext;
+    window.bbNext = function () {
+      // Clicking "Check Code" while still in editor view (never having
+      // tapped "Switch to Blocks") would otherwise validate whatever was
+      // last synced into BB.SECTIONS — nothing, on a step that opens in
+      // editor view. Sync first, same as switching modes does, but only
+      // when we're about to actually check (not on the second "Next Step"
+      // click, which doesn't re-validate). syncEditorToBlocks() itself
+      // no-ops on a readonly editor, so this is safe on any step.
+      var aboutToCheck = typeof currentMode !== 'undefined' && currentMode === 'editor'
+        && window._BB && window._BB.nextBtnState && window._BB.nextBtnState.mode === 'check-mode';
+      if (aboutToCheck) {
+        window.syncEditorToBlocks().then(originalBbNext);
+      } else {
+        originalBbNext();
+      }
+    };
+  }, 100);
+})();
 </script>
 
 </body>

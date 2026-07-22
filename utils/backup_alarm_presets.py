@@ -300,7 +300,7 @@ void loop() {
   delay(50);
 }
 
-//>> Step 13 - Complete System | locked
+//>> Step 13 - Complete System | free
 
 void loop() {
   //## digitalWrite(trigPin, LOW);

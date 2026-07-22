@@ -1,10 +1,10 @@
 // block_builder.js — Entry point: reads BB_CONFIG, code generation, persistence, window exports, and initialization
 // Load order: bb-blocks.js → bb-render.js → bb-validation.js → block_builder.js (this file)
 (function () {
-  console.log('[BB] block_builder.js: Execution started.');
+  // console.log('[BB] block_builder.js: Execution started.');
   var CFG = window.BB_CONFIG;
-  if (!CFG) { console.error('[BB] block_builder.js: BB_CONFIG is missing!'); return; }
-  console.log('[BB] Config loaded. mode=' + CFG.mode + ' steps=' + (CFG.steps ? CFG.steps.length : 'undefined') + ' force_preset=' + CFG.force_preset);
+  if (!CFG) { /* console.error('[BB] block_builder.js: BB_CONFIG is missing!'); */ return; }
+  // console.log('[BB] Config loaded. mode=' + CFG.mode + ' steps=' + (CFG.steps ? CFG.steps.length : 'undefined') + ' force_preset=' + CFG.force_preset);
 
   var BB = window._BB;
 
@@ -17,6 +17,7 @@
   BB.LOCK_VIEW     = CFG.lock_view;
   BB.READONLY_MODE = CFG.readonly_mode;
   BB.LOCK_MODE     = CFG.lock_mode;
+  BB.AUTHORING_MODE = !!CFG.authoring_mode;
   BB.PALETTE_ALLOWED = CFG.palette || null;
 
   // ── Code generation ────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@
       });
       if (blockToGen.elsebody !== null) {
         lines.push(pad + 'else {');
-        lines.push(BB.genBlocks(blockToGen.elsebody, indent + 1));
+        lines.push(BB.genBlocks(blockToGen.elsebody.body, indent + 1));
         lines.push(pad + '}');
       }
       return lines.join('\n');
@@ -102,7 +103,7 @@
         if (b.type && b.type.indexOf('servo') === 0) return true;
         if (b.ifbody && walkArr(b.ifbody)) return true;
         if (b.elseifs) for (var j = 0; j < b.elseifs.length; j++) { if (walkArr(b.elseifs[j].body)) return true; }
-        if (b.elsebody && walkArr(b.elsebody)) return true;
+        if (b.elsebody && walkArr(b.elsebody.body)) return true;
         if (b.body && walkArr(b.body)) return true;
       }
       return false;
@@ -137,14 +138,14 @@
           if (b.content.type === 'ifblock') {
             if (b.content.ifbody) walk(b.content.ifbody);
             if (b.content.elseifs) b.content.elseifs.forEach(function (ei) { walk(ei.body); });
-            if (b.content.elsebody) walk(b.content.elsebody);
+            if (b.content.elsebody) walk(b.content.elsebody.body);
           } else if (b.content.type === 'forloop' || b.content.type === 'whileloop') { if (b.content.body) walk(b.content.body); }
           else if ((b.content.type === 'elseifclause' || b.content.type === 'elseclause') && b.content.body) walk(b.content.body);
         } else if (b.type !== 'slot') {
           if (b.type === 'ifblock') {
             if (b.ifbody) walk(b.ifbody);
             if (b.elseifs) b.elseifs.forEach(function (ei) { walk(ei.body); });
-            if (b.elsebody) walk(b.elsebody);
+            if (b.elsebody) walk(b.elsebody.body);
           } else if ((b.type === 'forloop' || b.type === 'whileloop') && b.body) walk(b.body);
           else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) walk(b.body);
         }
@@ -224,16 +225,16 @@
       .then(function (r) { return r.json(); })
       .then(function (resp) {
         var data = resp.data;
-        console.log('[BB:loadBlocks] response rows=' + (data ? data.length : 'null'));
+        // console.log('[BB:loadBlocks] response rows=' + (data ? data.length : 'null'));
         if (data && data.length > 0) {
           var saved = JSON.parse(data[0].blocks_json);
-          console.log('[BB:loadBlocks] found save: current_step=' + saved.current_step + ' student_saves len=' + (saved.student_saves ? saved.student_saves.length : 'none'));
+          // console.log('[BB:loadBlocks] found save: current_step=' + saved.current_step + ' student_saves len=' + (saved.student_saves ? saved.student_saves.length : 'none'));
           if (BB.PROGRESSION_MODE) {
-            console.log('[BB:loadBlocks] saved.student_saves:', JSON.stringify(saved.student_saves));
+            // console.log('[BB:loadBlocks] saved.student_saves:', JSON.stringify(saved.student_saves));
             if (saved.current_step !== undefined) {
               var savedStep = saved.current_step;
               if (savedStep >= BB.STEPS.length) {
-                console.log('[loadBlocks] saved step ' + savedStep + ' out of bounds (len=' + BB.STEPS.length + '), resetting to 0');
+                // console.log('[loadBlocks] saved step ' + savedStep + ' out of bounds (len=' + BB.STEPS.length + '), resetting to 0');
                 savedStep = 0;
               }
               BB.CURRENT_STEP   = savedStep;
@@ -322,13 +323,13 @@
   }
 
   // ── Initialization ─────────────────────────────────────────────────────────
-  console.log('[BB] Initializing workspace. mode=' + CFG.mode + ' USERNAME=' + BB.USERNAME + ' PAGE=' + BB.PAGE);
+  // console.log('[BB] Initializing workspace. mode=' + CFG.mode + ' USERNAME=' + BB.USERNAME + ' PAGE=' + BB.PAGE);
   if (CFG.mode === 'progression') {
     BB.PROGRESSION_MODE = true;
     BB.STEPS = CFG.steps;
     BB.CURRENT_STEP = 0;
     BB.STUDENT_SAVES = [];
-    console.log('[BB] Progression mode: ' + (BB.STEPS ? BB.STEPS.length : 'NO STEPS') + ' steps. Step[0]:', BB.STEPS && BB.STEPS[0] ? BB.STEPS[0].label : 'MISSING');
+    // console.log('[BB] Progression mode: ' + (BB.STEPS ? BB.STEPS.length : 'NO STEPS') + ' steps. Step[0]:', BB.STEPS && BB.STEPS[0] ? BB.STEPS[0].label : 'MISSING');
     BB.buildWorkspace(0, null);
   } else {
     BB.SECTIONS.global = CFG.blocks ? CFG.blocks.global : [];
@@ -337,7 +338,7 @@
     BB.render();
     BB.genCode();
   }
-  console.log('[BB] loadBlocks check: USERNAME=' + !!BB.USERNAME + ' PROGRESSION_MODE=' + !!BB.PROGRESSION_MODE + ' force_preset=' + CFG.force_preset + ' → will load=' + !!(BB.USERNAME && (BB.PROGRESSION_MODE || !CFG.force_preset)));
+  // console.log('[BB] loadBlocks check: USERNAME=' + !!BB.USERNAME + ' PROGRESSION_MODE=' + !!BB.PROGRESSION_MODE + ' force_preset=' + CFG.force_preset + ' → will load=' + !!(BB.USERNAME && (BB.PROGRESSION_MODE || !CFG.force_preset)));
   if (BB.USERNAME && (BB.PROGRESSION_MODE || !CFG.force_preset)) BB.loadBlocks();
   BB.updatePalette();
   BB.render();

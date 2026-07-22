@@ -30,6 +30,8 @@
     LOCK_VIEW: null,
     READONLY_MODE: null,
     LOCK_MODE: null,
+    AUTHORING_MODE: false,
+    AUTHORING_SEEN_IDS: null,
   };
 
   var BB = window._BB;
@@ -368,7 +370,7 @@
         checkDecl(b);
         if (b.ifbody) walkBody(b.ifbody);
         if (b.elseifs) b.elseifs.forEach(function (ei) { walkBody(ei.body); });
-        if (b.elsebody) walkBody(b.elsebody);
+        if (b.elsebody) walkBody(b.elsebody.body);
         if (b.body) walkBody(b.body);
       });
     }

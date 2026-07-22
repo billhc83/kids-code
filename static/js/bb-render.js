@@ -507,7 +507,7 @@
           var eifs = isPartial && ph.elseifs ? JSON.parse(JSON.stringify(ph.elseifs)) : [];
           var eb = isPartial && ph.elsebody ? JSON.parse(JSON.stringify(ph.elsebody)) : null;
           newBlock = {
-            id: (Date.now() + Math.random()).toString(), type: 'ifblock',
+            id: (Date.now() + Math.random()).toString(), type: 'ifblock', flag: 'locked', hint: null,
             condition: cond, ifbody: ib, elseifs: eifs, elsebody: eb
           };
         } else if (type === 'elseifclause') {
@@ -518,23 +518,23 @@
             cond.op2 = ph.condition.op2 || '==';
           }
           var bd = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
-          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseifclause', condition: cond, body: bd };
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseifclause', flag: 'locked', hint: null, condition: cond, body: bd };
         } else if (type === 'elseclause') {
           var bd = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
-          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseclause', body: bd };
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'elseclause', flag: 'locked', hint: null, body: bd };
         } else if (type === 'forloop') {
           var ib = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
           var fi = isPartial ? (ph.forinit || 'int i = 0') : 'int i = 0';
           var fc = isPartial ? (ph.forcond || 'i < 10') : 'i < 10';
           var fr = isPartial ? (ph.forincr || 'i++') : 'i++';
-          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'forloop', forinit: fi, forcond: fc, forincr: fr, body: ib };
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'forloop', flag: 'locked', hint: null, forinit: fi, forcond: fc, forincr: fr, body: ib };
         } else if (type === 'whileloop') {
           var wcond = { left: '', op: '!=', right: '', joiner: 'none', left2: '', op2: '==', right2: '' };
           if (ph.condition && (isPartial || (isMatchingPhantom && config.fill === false))) {
             wcond.op = ph.condition.op || '!=';
           }
           var wb = isPartial && ph.body ? JSON.parse(JSON.stringify(ph.body)) : [];
-          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'whileloop', condition: wcond, body: wb };
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: 'whileloop', flag: 'locked', hint: null, condition: wcond, body: wb };
         } else {
           var params = (isMatchingPhantom && ph.params)
             ? JSON.parse(JSON.stringify(ph.params))
@@ -557,7 +557,7 @@
               : (def.defaults ? def.defaults.map(function (d) { return d ? JSON.parse(JSON.stringify(d)) : null; }) : []) || [];
           }
           var expectedExpr = (isPartial || isMatchingPhantom) ? (ph.expectedExTypes || (ph.exChildren ? ph.exChildren.map(function (e) { return e ? e.type : null; }) : null)) : null;
-          newBlock = { id: (Date.now() + Math.random()).toString(), type: type, params: params, exChildren: exch };
+          newBlock = { id: (Date.now() + Math.random()).toString(), type: type, flag: 'locked', hint: null, params: params, exChildren: exch };
           if (expectedExpr) newBlock._expectedExpr = expectedExpr;
         }
         slot.content = newBlock;
@@ -573,15 +573,15 @@
       var block;
       if (type === 'ifblock') {
         block = {
-          id: (Date.now() + Math.random()).toString(), type: 'ifblock',
+          id: (Date.now() + Math.random()).toString(), type: 'ifblock', flag: 'locked', hint: null,
           condition: { left: '', op: '==', right: '', joiner: 'none', left2: '', op2: '==', right2: '' },
           ifbody: [], elseifs: [], elsebody: null
         };
       } else if (type === 'forloop') {
-        block = { id: (Date.now() + Math.random()).toString(), type: 'forloop', forinit: 'int i = 0', forcond: 'i < 10', forincr: 'i++', body: [] };
+        block = { id: (Date.now() + Math.random()).toString(), type: 'forloop', flag: 'locked', hint: null, forinit: 'int i = 0', forcond: 'i < 10', forincr: 'i++', body: [] };
       } else if (type === 'whileloop') {
         block = {
-          id: (Date.now() + Math.random()).toString(), type: 'whileloop',
+          id: (Date.now() + Math.random()).toString(), type: 'whileloop', flag: 'locked', hint: null,
           condition: { left: '', op: '!=', right: '', joiner: 'none', left2: '', op2: '==', right2: '' },
           body: []
         };
@@ -590,7 +590,7 @@
           if (inp.t === 'sel') return BB.selDefault(inp); return '';
         });
         var exChildren = def.defaults ? def.defaults.map(function (d) { return d ? JSON.parse(JSON.stringify(d)) : null; }) : [];
-        block = { id: (Date.now() + Math.random()).toString(), type: type, params: params, exChildren: exChildren };
+        block = { id: (Date.now() + Math.random()).toString(), type: type, flag: 'locked', hint: null, params: params, exChildren: exChildren };
       }
       if (BB.sel.insertIdx !== null && BB.sel.insertIdx !== undefined) {
         BB.sel.targetArr.splice(BB.sel.insertIdx, 0, block);
@@ -643,7 +643,7 @@
         var b = arr[i];
         if (b.type === 'ifblock') {
           if (containsTarget(b)) anc.push(b.id);
-          walk(b.ifbody); b.elseifs.forEach(function (ei) { walk(ei.body); }); if (b.elsebody) walk(b.elsebody);
+          walk(b.ifbody); b.elseifs.forEach(function (ei) { walk(ei.body); }); if (b.elsebody) walk(b.elsebody.body);
         } else if (b.type === 'forloop' || b.type === 'whileloop') { if (b.body && isDescendantOf(b.body, BB.sel.targetArr)) anc.push(b.id); if (b.body) walk(b.body); }
         else if ((b.type === 'elseifclause' || b.type === 'elseclause') && b.body) { if (isDescendantOf(b.body, BB.sel.targetArr)) anc.push(b.id); walk(b.body); }
       }
@@ -655,7 +655,7 @@
   function containsTarget(ifBlock) {
     if (ifBlock.ifbody === BB.sel.targetArr) return true;
     for (var i = 0; i < ifBlock.elseifs.length; i++) if (ifBlock.elseifs[i].body === BB.sel.targetArr) return true;
-    if (ifBlock.elsebody === BB.sel.targetArr) return true;
+    if (ifBlock.elsebody && ifBlock.elsebody.body === BB.sel.targetArr) return true;
     function walkDeep(arr) {
       for (var j = 0; j < arr.length; j++) {
         var b = arr[j];
@@ -664,7 +664,7 @@
       } return false;
     }
     return walkDeep(ifBlock.ifbody) || ifBlock.elseifs.some(function (ei) { return walkDeep(ei.body); }) ||
-      (ifBlock.elsebody ? walkDeep(ifBlock.elsebody) : false);
+      (ifBlock.elsebody ? walkDeep(ifBlock.elsebody.body) : false);
   }
   BB.containsTarget = containsTarget;
 
@@ -800,6 +800,7 @@
         }
         d.appendChild(mkact('\u00D7', function () { parentArr.splice(idx, 1); render(); window.genCode(); }));
       }
+      if (BB.AUTHORING_MODE) d.appendChild(renderAuthoringToggle(block));
       return d;
     }
     var nm = document.createElement('span'); nm.className = 'blk-name'; nm.textContent = block.type; d.appendChild(nm);
@@ -900,6 +901,7 @@
         render(); BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) d.appendChild(renderAuthoringToggle(block));
     return d;
   }
   BB.renderActionBlock = renderActionBlock;
@@ -912,9 +914,9 @@
     hdr.appendChild(kw('if (')); appendCondFields(hdr, block.condition); hdr.appendChild(kw(')'));
     if (!BB.READONLY_MODE) {
       hdr.appendChild(mkact('+ else if', function () {
-        block.elseifs.push({ condition: { left: '', op: '==', right: '', joiner: 'none', left2: '', op2: '==', right2: '' }, body: [] }); render();
+        block.elseifs.push({ id: (Date.now() + Math.random()).toString(), flag: 'locked', hint: null, condition: { left: '', op: '==', right: '', joiner: 'none', left2: '', op2: '==', right2: '' }, body: [] }); render();
       }));
-      if (block.elsebody === null) hdr.appendChild(mkact('+ else', function () { block.elsebody = []; render(); }));
+      if (block.elsebody === null) hdr.appendChild(mkact('+ else', function () { block.elsebody = { id: (Date.now() + Math.random()).toString(), flag: 'locked', hint: null, body: [] }; render(); }));
       hdr.appendChild(mkact('\u00D7', function () {
         if (parentArr[idx] && parentArr[idx].type === 'slot') {
           parentArr[idx].content = null;
@@ -924,6 +926,7 @@
         if (BB.sel && (BB.sel.targetArr === block.ifbody || isDescendant(block, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) hdr.appendChild(renderAuthoringToggle(block));
     wrap.appendChild(hdr);
     var ifPathStr = parentPathStr + ' \u2192 if';
     var isOnlyBody = block.elseifs.length === 0 && block.elsebody === null;
@@ -934,6 +937,7 @@
       if (!BB.READONLY_MODE) {
         eiHdr.appendChild(mkact('\u00D7', function () { block.elseifs.splice(eiIdx, 1); render(); window.genCode(); }));
       }
+      if (BB.AUTHORING_MODE) eiHdr.appendChild(renderAuthoringToggle(ei));
       wrap.appendChild(eiHdr);
       var eiPathStr = parentPathStr + ' \u2192 else if';
       var eiIsLast = eiIdx === block.elseifs.length - 1 && block.elsebody === null;
@@ -945,8 +949,9 @@
       if (!BB.READONLY_MODE) {
         elHdr.appendChild(mkact('\u00D7', function () { block.elsebody = null; render(); window.genCode(); }));
       }
+      if (BB.AUTHORING_MODE) elHdr.appendChild(renderAuthoringToggle(block.elsebody));
       wrap.appendChild(elHdr);
-      wrap.appendChild(makeBodyZone(block.elsebody, section, parentPathStr + ' \u2192 else', true, anc));
+      wrap.appendChild(makeBodyZone(block.elsebody.body, section, parentPathStr + ' \u2192 else', true, anc));
     }
     return wrap;
   }
@@ -968,6 +973,7 @@
         BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) hdr.appendChild(renderAuthoringToggle(block));
     wrap.appendChild(hdr);
     wrap.appendChild(makeBodyZone(block.body, section, parentPathStr + ' \u2192 else if', true, anc));
     return wrap;
@@ -989,6 +995,7 @@
         BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) hdr.appendChild(renderAuthoringToggle(block));
     wrap.appendChild(hdr);
     wrap.appendChild(makeBodyZone(block.body, section, parentPathStr + ' \u2192 else', true, anc));
     return wrap;
@@ -1027,6 +1034,7 @@
         if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) hdr.appendChild(renderAuthoringToggle(block));
     wrap.appendChild(hdr);
     if (!block.body) block.body = [];
     var bodyPath = parentPathStr + ' \u2192 for';
@@ -1072,6 +1080,7 @@
         if (BB.sel && (BB.sel.targetArr === block.body || isDescendantOf(block.body, BB.sel.targetArr))) clearSelection(); else render(); BB.checkStepComplete(); window.genCode();
       }));
     }
+    if (BB.AUTHORING_MODE) hdr.appendChild(renderAuthoringToggle(block));
     wrap.appendChild(hdr);
     if (!block.body) block.body = [];
     var bodyPath = parentPathStr + ' \u2192 while';
@@ -1109,7 +1118,7 @@
         if (blockToCheck.type === 'ifblock') {
           if (isDescendantOf(blockToCheck.ifbody, targetArr)) return true;
           for (var j = 0; j < blockToCheck.elseifs.length; j++) if (isDescendantOf(blockToCheck.elseifs[j].body, targetArr)) return true;
-          if (blockToCheck.elsebody && isDescendantOf(blockToCheck.elsebody, targetArr)) return true;
+          if (blockToCheck.elsebody && isDescendantOf(blockToCheck.elsebody.body, targetArr)) return true;
         } else if (blockToCheck.type === 'forloop' || blockToCheck.type === 'whileloop') { if (blockToCheck.body && isDescendantOf(blockToCheck.body, targetArr)) return true; }
       }
     }
@@ -1148,7 +1157,7 @@
   function isDescendant(ifBlock, targetArr) {
     if (ifBlock.ifbody === targetArr) return true;
     for (var i = 0; i < ifBlock.elseifs.length; i++) if (ifBlock.elseifs[i].body === targetArr) return true;
-    if (ifBlock.elsebody === targetArr) return true;
+    if (ifBlock.elsebody && ifBlock.elsebody.body === targetArr) return true;
     function walkDeep(arr) {
       for (var j = 0; j < arr.length; j++) {
         var b = arr[j];
@@ -1160,7 +1169,7 @@
       } return false;
     }
     return walkDeep(ifBlock.ifbody) || ifBlock.elseifs.some(function (ei) { return walkDeep(ei.body); }) ||
-      (ifBlock.elsebody ? walkDeep(ifBlock.elsebody) : false);
+      (ifBlock.elsebody ? walkDeep(ifBlock.elsebody.body) : false);
   }
   BB.isDescendant = isDescendant;
 
@@ -1174,6 +1183,43 @@
     b.addEventListener('click', function (e) { e.stopPropagation(); fn(); }); return b;
   }
   BB.mkact = mkact;
+
+  // ── Authoring mode: phantom/locked toggle ─────────────────────────────────
+  function renderAuthoringToggle(block) {
+    if (block.flag === undefined) block.flag = 'locked';
+    var wrap = document.createElement('span'); wrap.className = 'authoring-toggle-wrap';
+    // Accumulation rule (spec §3): a block whose id was introduced in an
+    // earlier step is forced to 'locked' server-side (materialize()'s
+    // id-diffing), regardless of what's tagged here. Show that instead of a
+    // clickable control so a teacher isn't confused when a phantom toggle
+    // silently has no effect on publish.
+    if (BB.AUTHORING_SEEN_IDS && BB.AUTHORING_SEEN_IDS[block.id]) {
+      var forced = document.createElement('span');
+      forced.className = 'act authoring-toggle authoring-toggle-forced';
+      forced.textContent = '🔒 locked (already introduced)';
+      forced.title = 'Placed in an earlier step — always locked here, regardless of this toggle.';
+      wrap.appendChild(forced);
+      return wrap;
+    }
+    var btn = document.createElement('button'); btn.className = 'act authoring-toggle';
+    btn.textContent = block.flag === 'phantom' ? '🧩 phantom' : '🔒 locked';
+    btn.title = block.flag === 'phantom' ? 'Student places this block' : 'Pre-placed for the student';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      block.flag = block.flag === 'phantom' ? 'locked' : 'phantom';
+      render();
+    });
+    wrap.appendChild(btn);
+    if (block.flag === 'phantom') {
+      var hi = document.createElement('input'); hi.type = 'text'; hi.className = 'blk-input authoring-hint-input';
+      hi.placeholder = 'hint for student'; hi.value = block.hint || '';
+      hi.addEventListener('click', function (e) { e.stopPropagation(); });
+      hi.addEventListener('input', function (e) { e.stopPropagation(); block.hint = e.target.value; });
+      wrap.appendChild(hi);
+    }
+    return wrap;
+  }
+  BB.renderAuthoringToggle = renderAuthoringToggle;
 
   // ── Condition rendering ───────────────────────────────────────────────────
   function renderCondField(cond, key, label) {

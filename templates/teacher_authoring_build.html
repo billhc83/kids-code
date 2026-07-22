@@ -2,6 +2,17 @@
 {% block title %}{{ project.project_key }} — Build — KidsCode{% endblock %}
 
 {% block content %}
+<style>
+    .ta-tab { padding:6px 12px; border-radius:6px; border:1px solid #d0d7de; background:#fff;
+        color:#24292f; cursor:pointer; font-size:12px; font-weight:600; }
+    .ta-tab:hover { border-color:#0969da; color:#0969da; }
+    .ta-tab.active { background:#0969da; border-color:#0969da; color:#fff; }
+    .ta-tab-add { background:#f6f8fa; color:#57606a; border-style:dashed; }
+    .ta-field { display:flex; flex-direction:column; gap:4px; font-size:11px; }
+    .ta-field label { color:#57606a; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+    .ta-field input[type="text"], .ta-field select { padding:5px 8px; border:1px solid #d0d7de; border-radius:6px; font-family:inherit; }
+    .ta-field input[type="checkbox"] { align-self:flex-start; margin-top:4px; }
+</style>
 <div class="dashboard-wrap">
 
     <div class="dash-header">
@@ -19,17 +30,58 @@
     {% endif %}
 
     <div class="dash-card">
+        <div class="dash-card-label">🧱 Live Block Builder (beta)</div>
+        <p style="font-size:12px;color:#57606a;">
+            Build steps with the same block builder students use — click a block's
+            🔒/🧩 toggle to mark it phantom (student places it) or locked (pre-placed).
+            Switching tabs keeps each step's blocks in memory; nothing is saved to the
+            server until you click "Save Draft (Live)" below.
+            {% if hydrate_failed %}
+            <strong>This project has saved steps that couldn't be loaded into the live
+            editor</strong> — use the <a href="?raw=1">raw JSON view</a> to see/edit them
+            instead.
+            {% endif %}
+        </p>
+
+        <div id="ta-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <div id="ta-settings" style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;"></div>
+
+        <textarea id="ta-open-raw" rows="8" style="display:none;width:100%;font-family:monospace;font-size:13px;" placeholder="Free-form content for this open step — not validated, not required to compile."></textarea>
+
+        <div id="ta-workspace-wrap" style="height:600px;border:1px solid #d0d7de;border-radius:8px;overflow:hidden;">
+            <script>window.BB_CONFIG = {{ config | safe }};</script>
+            {% include "block_builder_fragment.html" %}
+        </div>
+
+        <form method="POST" id="ta-form" style="margin-top:12px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="steps_json" id="ta-steps-json">
+            <button type="submit" class="next-btn" id="ta-save-btn">Save Draft (Live)</button>
+        </form>
+    </div>
+
+    <script src="/static/js/teacher-authoring.js"></script>
+    <script>TA.init();</script>
+
+    {% if show_raw %}
+    <div class="dash-card">
         <div class="dash-card-label">📝 Steps (JSON)</div>
+        <p><a href="?">&larr; Back to the live editor only</a></p>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <textarea name="steps_json" rows="24" style="width:100%;font-family:monospace;font-size:13px;">{{ steps_json }}</textarea>
             <button type="submit" class="next-btn" style="margin-top:12px;">Save Draft</button>
         </form>
     </div>
+    {% else %}
+    <div class="dash-card">
+        <p style="font-size:12px;"><a href="?raw=1">View/edit the raw JSON draft &rarr;</a></p>
+    </div>
+    {% endif %}
 
     <div class="dash-card">
         <div class="dash-card-label">🔍 Try it</div>
-        <p><a href="{{ url_for('teacher_authoring.preview', project_id=project.id) }}" target="_blank">Preview in the real block builder &rarr;</a></p>
+        <p><a href="{{ url_for('teacher_authoring.preview', project_id=project.id) }}?preset={{ project.id }}&amp;page={{ project.id }}" target="_blank">Preview in the real block builder &rarr;</a></p>
         <p><a href="{{ url_for('teacher_authoring.drawer', project_id=project.id) }}">Edit drawer content &rarr;</a></p>
     </div>
 

@@ -16,7 +16,7 @@ from utils.authored_projects import (
     get_authored_project, save_draft, publish,
 )
 from utils.classes import get_or_create_teacher_org
-from utils.teacher_authoring_serializer import materialize
+from utils.teacher_authoring_serializer import materialize, hydrate_steps, validate_step_shape
 from utils.block_parser import parse_steps
 from config import SUPABASE_URL, SUPABASE_KEY
 
@@ -79,14 +79,66 @@ def build(project_id):
         except (ValueError, json.JSONDecodeError) as e:
             error = f"Invalid JSON: {e}"
         else:
-            draft_data = dict(project["draft_data"])
-            draft_data["steps"] = steps
-            save_draft(project_id, draft_data)
-            flash("Draft saved.")
-            return redirect(url_for("teacher_authoring.build", project_id=project_id))
+            shape_error = validate_step_shape(steps)
+            if shape_error:
+                error = shape_error
+            else:
+                draft_data = dict(project["draft_data"])
+                draft_data["steps"] = steps
+                save_draft(project_id, draft_data)
+                flash("Draft saved.")
+                return redirect(url_for("teacher_authoring.build", project_id=project_id))
 
-    steps_json = json.dumps(project["draft_data"].get("steps", []), indent=2)
-    return render_template("teacher_authoring_build.html", project=project, steps_json=steps_json, error=error)
+    existing_steps = project["draft_data"].get("steps", [])
+    steps_json = json.dumps(existing_steps, indent=2)
+
+    # Load a previously-saved draft back into the live workspace (build order
+    # step 4 — the reverse of extractStepDraft()). Any failure here (e.g. a
+    # draft hand-edited via the raw JSON view into something the real grammar
+    # can't parse) must not break the page — fall back to a blank workspace
+    # and let hydrate_failed steer the teacher at the raw JSON view instead.
+    hydrated_steps = None
+    hydrate_failed = False
+    if existing_steps:
+        try:
+            hydrated_steps = hydrate_steps(existing_steps)
+        except Exception:
+            hydrate_failed = True
+
+    # Live block-builder authoring surface (plans/TEACHER_AUTHORING_LIVE_BUILDER_UI_SPEC.md
+    # §5/§6, build order step 3). Freeform mode — the step-tabs shell
+    # (static/js/teacher-authoring.js) owns BB.SECTIONS from here on, seeded
+    # from `initial_steps` when a draft already has hydratable content.
+    # `username: None` deliberately keeps block_builder.js's Supabase-backed
+    # BB.loadBlocks()/autosave paths dark; this tool's own "Save Draft (Live)"
+    # button is the only persistence path.
+    live_config = {
+        "mode": "freeform",
+        "steps": None,
+        "palette": None,
+        "master": None,
+        "username": None,
+        "page": project["project_key"],
+        "drawer": {},
+        "lock_mode": False,
+        "is_overlay": False,
+        "default_view": "blocks",
+        "lock_view": False,
+        "readonly_mode": False,
+        "authoring_mode": True,
+        "force_preset": True,
+        "initial_steps": hydrated_steps,
+        "supabase_url": SUPABASE_URL,
+        "supabase_key": SUPABASE_KEY,
+    }
+    live_config_json = json.dumps(live_config).replace('</', '<\\/')
+
+    return render_template(
+        "teacher_authoring_build.html", project=project, steps_json=steps_json,
+        error=error, config=live_config_json,
+        show_raw=(request.args.get("raw") == "1"),
+        hydrate_failed=hydrate_failed,
+    )
 
 
 @teacher_authoring_bp.route("/<project_id>/preview")
@@ -97,31 +149,32 @@ def preview(project_id):
     steps = project["draft_data"].get("steps", [])
 
     try:
-        sketch = materialize(steps)
-        parsed_steps = parse_steps(sketch)
+        materialize(steps)  # validate only — real config-building happens in /builder
     except Exception as e:
         flash(f"Preview failed: {e}", "error")
         return redirect(url_for("teacher_authoring.build", project_id=project_id))
 
-    config = {
-        "mode": "progression",
-        "steps": parsed_steps,
-        "palette": None,
-        "master": None,
-        "username": None,
-        "page": project["project_key"],
-        "drawer": project["draft_data"].get("drawer", {}),
-        "lock_mode": False,
-        "is_overlay": False,
-        "default_view": "blocks",
-        "lock_view": False,
-        "readonly_mode": False,
-        "force_preset": True,
-        "supabase_url": SUPABASE_URL,
-        "supabase_key": SUPABASE_KEY,
-    }
-    config_json = json.dumps(config).replace('</', '<\\/')
-    return render_template("block_builder_fragment.html", config=config_json)
+    # Full student-facing IDE (drawer, blocks/editor toggle, compile/upload/
+    # serial monitor via the local KidsCode Link agent) — not the bare
+    # workspace fragment. arduino_interface.html's own loadBlockBuilder() JS
+    # fetches /builder?preset=<val>&page=<val>, reading preset/page from
+    # *this page's own URL query string* (window.location.search), not from
+    # any Jinja var — so the caller's link MUST be
+    # ".../preview?preset=<project_id>&page=<project_id>"
+    # (see templates/teacher_authoring_build.html) for loadBlockBuilder() to
+    # resolve the right draft. routes/builder.py's builder_endpoint()
+    # recognizes that preset value as a draft id (owned by this session) and
+    # builds the real progression config from it, via the same
+    # materialize()/parse_steps() pipeline this route just validated with.
+    from routes.builder import normalize_drawer_steps
+
+    drawer_content = project["draft_data"].get("drawer", {})
+    drawer_steps = normalize_drawer_steps(list(drawer_content.values())) if isinstance(drawer_content, dict) else []
+
+    return render_template(
+        "components/arduino_interface.html",
+        preset=project_id, drawer_steps=drawer_steps,
+    )
 
 
 @teacher_authoring_bp.route("/<project_id>/drawer", methods=["GET", "POST"])
@@ -160,6 +213,11 @@ def publish_project(project_id):
 
     if not steps:
         flash("Add at least one step before publishing.", "error")
+        return redirect(url_for("teacher_authoring.build", project_id=project_id))
+
+    shape_error = validate_step_shape(steps)
+    if shape_error:
+        flash(f"Publish failed — {shape_error}", "error")
         return redirect(url_for("teacher_authoring.build", project_id=project_id))
 
     try:
